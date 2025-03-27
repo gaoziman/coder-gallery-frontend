@@ -265,13 +265,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, reactive} from 'vue';
-import {message} from 'ant-design-vue';
+import { computed, reactive, ref, onMounted, onUnmounted } from 'vue';
+import { message } from 'ant-design-vue';
 import {
   UserOutlined,
   LockOutlined,
   CheckOutlined,
-  CloseOutlined,
   CloudOutlined,
   BookOutlined,
   LinkOutlined,
@@ -279,13 +278,20 @@ import {
   GiftOutlined,
   SafetyOutlined
 } from '@ant-design/icons-vue';
-import {useUserStore} from '@/stores/user';
+import { useUserStore } from '@/stores/user';
+import emitter from '@/utils/eventBus';
 
 // 获取用户状态存储
 const userStore = useUserStore();
 
-// 模态框可见性
-const visible = ref(false);
+// 修改：使用计算属性绑定模态框可见性
+const visible = computed({
+  get: () => userStore.showLoginModal,
+  set: (value) => {
+    if (!value) userStore.closeLoginModal();
+  }
+});
+
 const activeTab = ref('login');
 const loading = ref(false);
 const rememberMe = ref(false);
@@ -332,7 +338,8 @@ const handleLogin = async () => {
     userStore.login(userData);
 
     message.success('登录成功，欢迎回来！');
-    visible.value = false;
+    // 修改：使用 store 中的方法关闭模态框
+    userStore.closeLoginModal();
   } catch (error) {
     message.error('登录失败，请检查用户名和密码');
     console.error('Login error:', error);
@@ -362,7 +369,8 @@ const handleRegister = async () => {
     userStore.login(userData);
 
     message.success('注册成功！');
-    visible.value = false;
+    // 修改：使用 store 中的方法关闭模态框
+    userStore.closeLoginModal();
   } catch (error) {
     message.error('注册失败，请稍后再试');
     console.error('Register error:', error);
@@ -371,10 +379,32 @@ const handleRegister = async () => {
   }
 };
 
+// 添加事件监听逻辑
+const handleOpenLoginModal = () => {
+  // 使用 store 中的方法打开模态框
+  userStore.openLoginModal();
+  activeTab.value = 'login'; // 确保默认显示登录选项卡
+};
+
 // 打开登录弹窗
 const open = () => {
-  visible.value = true;
+  userStore.openLoginModal();
 };
+
+// 同时支持两种方式触发模态框显示
+onMounted(() => {
+  // 监听事件总线事件
+  emitter.on('openLoginModal', handleOpenLoginModal);
+
+  // 同时监听自定义事件，保持兼容性
+  window.addEventListener('openLoginModal', handleOpenLoginModal);
+});
+
+onUnmounted(() => {
+  // 移除事件监听
+  emitter.off('openLoginModal', handleOpenLoginModal);
+  window.removeEventListener('openLoginModal', handleOpenLoginModal);
+});
 
 // 暴露方法给父组件
 defineExpose({

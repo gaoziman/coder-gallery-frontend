@@ -347,92 +347,7 @@
       </div>
     </a-card>
 
-    <!-- 排序和筛选器 - 修改布局：筛选在左侧，排序在右侧 -->
-    <div class="filter-header">
-      <div class="filter-left">
-        <a-button type="primary"
-                  class="create-filter-btn"
-                  @click="showCreateFilterModal"
-                  @mousedown="addRippleEffect">
-          <template #icon><plus-outlined /></template>
-          创建筛选器
-        </a-button>
 
-        <!-- 添加我的筛选器下拉菜单 -->
-        <filter-list
-            :filters="filterStore.savedFilters"
-            @select="handleApplyFilter"
-            @delete="handleDeleteFilter"
-            @create="showCreateFilterModal"
-        />
-      </div>
-
-      <div class="filter-right">
-        <a-dropdown :trigger="['click']">
-          <a-button class="sort-dropdown">
-            筛选排序：{{ currentSortLabel }}
-            <down-outlined />
-          </a-button>
-          <template #overlay>
-            <a-menu @click="handleSortMenuClick">
-              <a-menu-item key="newest">最新发布</a-menu-item>
-              <a-menu-item key="popular">最受欢迎</a-menu-item>
-              <a-menu-item key="look">最多浏览</a-menu-item>
-              <a-menu-item key="oldest">最多收藏</a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
-      </div>
-    </div>
-
-    <!-- 显示活动筛选器 -->
-    <div v-if="filterStore.activeFilter" class="active-filter">
-      <a-alert type="info" show-icon>
-        <template #message>
-          <div class="active-filter-info">
-            <span>当前筛选器: <b>{{ filterStore.activeFilter.name }}</b></span>
-            <a-button type="link" size="small" @click="handleClearFilter">
-              清除筛选
-            </a-button>
-          </div>
-        </template>
-      </a-alert>
-    </div>
-
-    <!-- 分类浏览 -->
-    <div class="category-section">
-      <div class="section-title">
-        <h3>分类浏览</h3>
-      </div>
-      <div class="category-tags">
-        <a-tag
-            v-for="(category, index) in categories"
-            :key="index"
-            :class="['category-tag', { 'active': category.active }]"
-            @click="toggleCategory(index)"
-        >
-          {{ category.name }}
-        </a-tag>
-      </div>
-
-      <!-- 热门标签 -->
-      <div class="tag-section">
-        <div class="section-title">
-          <h3>热门标签</h3>
-        </div>
-        <div class="tag-list">
-          <a-tag
-              v-for="(tag, index) in tags"
-              :key="index"
-              :class="['custom-tag', { 'tag-hot': tag.hot }]"
-              @click="toggleTag(index)"
-          >
-            {{ tag.name }}
-            <span v-if="tag.count" class="tag-count">{{ tag.count }}</span>
-          </a-tag>
-        </div>
-      </div>
-    </div>
 
     <!-- 瀑布流图片展示 - 修改图片卡片样式 -->
     <div class="masonry-gallery"
@@ -504,13 +419,6 @@
       </a-button>
     </div>
 
-    <!-- 创建筛选器弹窗 -->
-    <create-filter-modal
-        v-model:visible="filterModalVisible"
-        :categories="categories"
-        :tags="tags"
-        @save="saveFilter"
-    />
   </div>
 </template>
 
@@ -529,7 +437,6 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   CheckOutlined,
-  PlusOutlined,
 } from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 
@@ -539,7 +446,6 @@ import {useIntersectionObserver} from "@vueuse/core";
 import {useFilterStore} from "@/stores/filterStore";
 import 'animate.css';
 import CreateFilterModal from "@/pages/home/CreateFilterModal.vue";
-import FilterList from "@/pages/home/FilterList.vue";
 
 const {RangePicker} = DatePicker;
 
@@ -599,35 +505,7 @@ const categories = reactive([
   { name: '动漫', active: false },
 ]);
 
-// 切换分类选中状态
-const toggleCategory = (index: number) => {
-  if (index === 0) {
-    // 如果是全部，则只激活全部
-    categories.forEach((cat, i) => {
-      cat.active = i === 0;
-    });
-  } else {
-    // 取消全部的激活
-    categories[0].active = false;
-    // 切换当前分类的激活状态
-    categories[index].active = !categories[index].active;
 
-    // 如果没有任何激活的分类，则激活全部
-    const hasActive = categories.some(cat => cat.active);
-    if (!hasActive) {
-      categories[0].active = true;
-    }
-  }
-  // 应用筛选
-  fetchGalleryImages();
-};
-
-// 切换标签选中状态
-const toggleTag = (index: number) => {
-  tags[index].hot = !tags[index].hot;
-  // 应用筛选
-  fetchGalleryImages();
-};
 
 // 标签数据
 const tags = reactive([
@@ -683,19 +561,7 @@ const selectColor = (color: string) => {
 const currentSort = ref('newest');
 const currentSortLabel = ref('最新上传');
 
-const handleSortMenuClick = (e: any) => {
-  currentSort.value = e.key;
 
-  const sortLabels: Record<string, string> = {
-    newest: '最新上传',
-    oldest: '最早上传',
-    popular: '最受欢迎',
-    look: '最多浏览'
-  };
-
-  currentSortLabel.value = sortLabels[e.key] || '最新上传';
-  fetchGalleryImages();
-};
 
 // 图库数据
 const galleryImages = reactive([
@@ -795,22 +661,6 @@ const galleryImages = reactive([
 // 原始图库数据（用于筛选）
 const originalGalleryImages = [...galleryImages];
 
-// 处理应用筛选器
-const handleApplyFilter = (filter) => {
-  const result = filterStore.applyFilter(filter);
-  if (result.success) {
-    message.info(result.message);
-    fetchGalleryImages();
-
-    // 添加滚动到图片区域的代码
-    setTimeout(() => {
-      const galleryEl = document.querySelector('.masonry-gallery');
-      if (galleryEl) {
-        galleryEl.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 300);
-  }
-};
 
 // 扩展筛选条件
 const filterConditions = reactive({
@@ -937,11 +787,6 @@ const fetchGalleryImages = () => {
 
   // 更新图库数据
   galleryImages.splice(0, galleryImages.length, ...sortedImages);
-
-  // 如果筛选结果为空，显示提示信息
-  if (sortedImages.length === 0) {
-    message.info('未找到符合条件的图片');
-  }
 };
 
 // 初始化
@@ -981,32 +826,6 @@ onMounted(() => {
   }, 800); // 给DOM渲染足够的时间
 });
 
-// 添加点击涟漪效果函数
-const addRippleEffect = (event) => {
-  const button = event.currentTarget;
-  const ripple = document.createElement('span');
-  const rect = button.getBoundingClientRect();
-
-  const size = Math.max(rect.width, rect.height);
-  const x = event.clientX - rect.left - size / 2;
-  const y = event.clientY - rect.top - size / 2;
-
-  ripple.style.width = ripple.style.height = `${size}px`;
-  ripple.style.left = `${x}px`;
-  ripple.style.top = `${y}px`;
-  ripple.classList.add('ripple');
-
-  const existingRipple = button.querySelector('.ripple');
-  if (existingRipple) {
-    existingRipple.remove();
-  }
-
-  button.appendChild(ripple);
-
-  setTimeout(() => {
-    ripple.remove();
-  }, 600);
-};
 
 // 加载更多
 const loadMore = () => {
@@ -1015,40 +834,6 @@ const loadMore = () => {
   // 模拟加载更多，实际应该从API获取
 };
 
-// 筛选器相关
-const filterModalVisible = ref(false);
-const savedFilters = ref([]);
-
-// 显示创建筛选器弹窗
-const showCreateFilterModal = () => {
-  filterModalVisible.value = true;
-};
-
-// 保存筛选器
-const saveFilter = (filter) => {
-  // 检查是否已有相同名称的筛选器
-  const exists = savedFilters.value.some(f => f.name === filter.name);
-  if (exists) {
-    message.warning(`已存在名为"${filter.name}"的筛选器`);
-    return;
-  }
-
-  // 添加到保存的筛选器中
-  savedFilters.value.push(filter);
-
-  // 保存到本地存储
-  localStorage.setItem('userFilters', JSON.stringify(savedFilters.value));
-
-  message.success(`筛选器"${filter.name}"已创建`);
-};
-
-// 处理删除筛选器
-const handleDeleteFilter = (filterId) => {
-  const result = filterStore.deleteFilter(filterId);
-  if (result.success) {
-    message.success(result.message);
-  }
-};
 
 // 处理清除筛选器
 const handleClearFilter = () => {
