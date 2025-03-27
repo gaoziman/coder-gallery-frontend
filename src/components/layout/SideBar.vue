@@ -27,7 +27,7 @@
         <div
             v-for="item in menuGroups[0].items"
             :key="item.key"
-            :class="['menu-item', {'active': selectedKeys.includes(item.key)}]"
+            :class="['menu-item', {'active': isItemActive(item.key)}]"
             @click="handleMenuClick(item)"
         >
           <component :is="item.icon" class="menu-item-icon"/>
@@ -41,7 +41,7 @@
         <div
             v-for="item in menuGroups[1].items"
             :key="item.key"
-            :class="['menu-item', {'active': selectedKeys.includes(item.key)}]"
+            :class="['menu-item', {'active': isItemActive(item.key)}]"
             @click="handleMenuClick(item)"
         >
           <component :is="item.icon" class="menu-item-icon"/>
@@ -68,8 +68,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useMenuStore } from '@/stores/menu';
 import {
   CloudOutlined,
   PictureOutlined,
@@ -82,9 +83,10 @@ import {
   PlusOutlined
 } from '@ant-design/icons-vue';
 
-// 获取路由实例
+// 获取路由实例和菜单状态
 const router = useRouter();
 const route = useRoute();
+const menuStore = useMenuStore();
 
 // 侧边栏折叠状态，加入props双向绑定
 const props = defineProps({
@@ -102,16 +104,13 @@ const collapsed = computed({
   set: (value) => emit('update:collapsed', value)
 });
 
-// 选中的菜单项
-const selectedKeys = ref(['gallery']);
-
 // 定义菜单组数据结构
 const menuGroups = [
   {
     title: '主要菜单',
     items: [
       {
-        key: 'gallery',
+        key: 'public-gallery',
         icon: PictureOutlined,
         label: '公共图库',
         path: '/'
@@ -161,37 +160,39 @@ const menuGroups = [
   }
 ];
 
-// 根据路由路径设置选中的菜单
-watch(() => route.path, (newPath) => {
-  // 遍历所有菜单项找到匹配的路径
-  for (const group of menuGroups) {
-    for (const item of group.items) {
-      if (item.path === newPath ||
-          (newPath === '/' && item.key === 'gallery') ||
-          (newPath.startsWith(item.path) && item.path !== '/')) {
-        selectedKeys.value = [item.key];
-        break;
-      }
-    }
-  }
-}, { immediate: true });
+// 判断菜单项是否激活
+const isItemActive = (key) => {
+  return menuStore.sideSelectedKeys.includes(key);
+};
 
 // 菜单点击处理函数
 const handleMenuClick = (item) => {
-  selectedKeys.value = [item.key];
+  menuStore.activateSideMenu(item.key);
   router.push(item.path);
 };
 
 // 导航到首页函数
 const navigateToHome = () => {
-  selectedKeys.value = ['gallery'];
+  menuStore.activateSideMenu('public-gallery');
   router.push('/');
 };
 
 // 创建团队处理函数
 const handleCreateTeam = () => {
+  menuStore.activateSideMenu('team');
   router.push('/team/create');
 };
+
+// 初始化侧边栏状态
+onMounted(() => {
+  // 初始化菜单选中状态
+  menuStore.updateMenuByPath(route.path);
+
+  // 监听路由变化
+  watch(() => route.path, (newPath) => {
+    menuStore.updateMenuByPath(newPath);
+  });
+});
 </script>
 
 <style scoped>
@@ -234,7 +235,7 @@ const handleCreateTeam = () => {
 
 .logo-icon {
   font-size: 24px;
-  color: var(--primary-color, #4F46E5);
+  color: #4F46E5;
 }
 
 .logo-title {
@@ -284,19 +285,19 @@ const handleCreateTeam = () => {
 }
 
 .menu-item:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(79, 70, 229, 0.05);
 }
 
 .menu-item.active {
-  background-color: rgba(var(--primary-rgb, 79, 70, 229), 0.1);
+  background-color: rgba(79, 70, 229, 0.1);
 }
 
 .menu-item.active .menu-item-icon {
-  color: var(--primary-color, #4F46E5);
+  color: #4F46E5;
 }
 
 .menu-item.active .menu-item-label {
-  color: var(--primary-color, #4F46E5);
+  color: #4F46E5;
   font-weight: 500;
 }
 
@@ -329,19 +330,19 @@ const handleCreateTeam = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-color, #4F46E5);
+  background: #4F46E5;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 2px 10px rgba(var(--primary-rgb, 79, 70, 229), 0.2);
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.2);
   transition: all 0.3s;
 }
 
 .create-team-btn:hover {
-  background: var(--primary-hover, #4338CA);
+  background: #4338CA;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 79, 70, 229), 0.25);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
 }
 
 .create-team-btn .anticon {
@@ -371,32 +372,51 @@ const handleCreateTeam = () => {
 
 /* 深色模式下的样式调整 */
 :global([data-theme="dark"]) .sidebar {
-  background: var(--bg-white);
+  background: #1f2937;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 :global([data-theme="dark"]) .sidebar-header {
-  border-bottom-color: var(--border-color);
+  border-bottom-color: #374151;
 }
 
 :global([data-theme="dark"]) .logo-title {
-  color: var(--text-primary);
+  color: #f3f4f6;
 }
 
 :global([data-theme="dark"]) .menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(129, 140, 248, 0.1);
 }
 
 :global([data-theme="dark"]) .menu-item.active {
-  background-color: rgba(var(--primary-rgb, 99, 102, 241), 0.2);
+  background-color: rgba(129, 140, 248, 0.2);
 }
 
-:global([data-theme="dark"]) .menu-item-icon,
+:global([data-theme="dark"]) .menu-item.active .menu-item-icon {
+  color: #818cf8;
+}
+
+:global([data-theme="dark"]) .menu-item.active .menu-item-label {
+  color: #818cf8;
+}
+
+:global([data-theme="dark"]) .menu-item-icon {
+  color: #d1d5db;
+}
+
 :global([data-theme="dark"]) .menu-item-label {
-  color: var(--text-primary);
+  color: #e5e7eb;
 }
 
 :global([data-theme="dark"]) .menu-group-title {
-  color: var(--text-secondary);
+  color: #9ca3af;
+}
+
+:global([data-theme="dark"]) .create-team-btn {
+  background: #6366F1;
+}
+
+:global([data-theme="dark"]) .create-team-btn:hover {
+  background: #818cf8;
 }
 </style>

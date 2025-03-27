@@ -28,6 +28,15 @@ const routes: Array<RouteRecordRaw> = [
                     requiresAuth: true
                 },
             },
+            {
+                path: '/create-image',
+                name: 'CreateImage',
+                component: () => import('@/pages/picture/CreatePicture.vue'),
+                meta: {
+                    title: '创建图片 - 智能云图库',
+                    requiresAuth: true
+                },
+            }
         ]
     }
 ];

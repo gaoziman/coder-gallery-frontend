@@ -7,13 +7,14 @@
         <TransitionGroup name="nav-item">
           <div
               v-for="(item, index) in navItems"
-              :key="item.path"
+              :key="item.key"
               class="nav-item-container"
           >
             <a v-if="!item.children"
-               :href="item.path"
+               href="javascript:void(0)"
                class="header-link"
                :class="{ active: item.active }"
+               @click="handleNavItemClick(item)"
                @mouseenter="onHover(index)"
                @mouseleave="onLeave(index)"
             >
@@ -43,11 +44,11 @@
               <!-- 下拉菜单 -->
               <transition name="dropdown">
                 <div v-show="activeDropdown === index" class="dropdown-menu">
-
                   <a v-for="child in item.children"
-                     :key="child.path"
-                     :href="child.path"
+                     :key="child.key"
+                     href="javascript:void(0)"
                      class="dropdown-item"
+                     @click="handleSubItemClick(child)"
                   >
                     <div class="dropdown-icon-container">
                       <component :is="child.icon"/>
@@ -79,7 +80,6 @@
             </template>
           </a-button>
         </a-badge>
-
 
         <!-- 用户头像或登录按钮 -->
         <template v-if="userStore.isLoggedIn">
@@ -133,10 +133,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from 'vue';
-import {useMotion} from '@vueuse/motion';
-import {useUserStore} from '@/stores/user';
-import {message} from 'ant-design-vue';
+import { ref, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useMotion } from '@vueuse/motion';
+import { useUserStore } from '@/stores/user';
+import { useMenuStore } from '@/stores/menu';
+import { message } from 'ant-design-vue';
 import AuthModal from '@/components/auth/AuthModal.vue';
 import {
   HomeOutlined,
@@ -156,37 +158,71 @@ import {
   LogoutOutlined,
 } from '@ant-design/icons-vue';
 
-// 获取用户状态存储
+// 获取路由和状态管理
+const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
+const menuStore = useMenuStore();
 
-// 导航菜单数据 - 增加了二级菜单结构
+// 导航菜单数据
 const navItems = ref([
-  {path: '/', title: '主页', icon: HomeOutlined, active: true},
-  {path: '/create', title: '创建图片', icon: PlusOutlined, active: false},
+  {key: 'home', path: '/', title: '主页', icon: HomeOutlined, active: false},
+  {key: 'create-image', path: '/create-image', title: '创建图片', icon: PlusOutlined, active: false},
   {
+    key: 'content-management',
     title: '内容管理',
     icon: AppstoreOutlined,
     active: false,
     children: [
-      {path: '/dashboard', title: '仪表盘', icon: DashboardOutlined},
-      {path: '/images', title: '图片管理', icon: PictureOutlined},
-      {path: '/spaces', title: '空间管理', icon: AppstoreOutlined},
-      {path: '/categories', title: '分类管理', icon: AppstoreOutlined},
-      {path: '/tags', title: '标签管理', icon: TagOutlined},
-      {path: '/comments', title: '评论管理', icon: CommentOutlined}
+      {key: 'dashboard', path: '/dashboard', title: '仪表盘', icon: DashboardOutlined},
+      {key: 'images', path: '/images', title: '图片管理', icon: PictureOutlined},
+      {key: 'spaces', path: '/spaces', title: '空间管理', icon: AppstoreOutlined},
+      {key: 'categories', path: '/categories', title: '分类管理', icon: AppstoreOutlined},
+      {key: 'tags', path: '/tags', title: '标签管理', icon: TagOutlined},
+      {key: 'comments', path: '/comments', title: '评论管理', icon: CommentOutlined}
     ]
   },
   {
+    key: 'system-settings',
     title: '系统设置',
     icon: SettingOutlined,
     active: false,
     children: [
-      {path: '/users', title: '用户管理', icon: UserOutlined},
-      {path: '/settings', title: '系统设置', icon: SettingOutlined},
-      {path: '/security', title: '安全中心', icon: SafetyCertificateOutlined}
+      {key: 'users', path: '/users', title: '用户管理', icon: UserOutlined},
+      {key: 'settings', path: '/settings', title: '系统设置', icon: SettingOutlined},
+      {key: 'security', path: '/security', title: '安全中心', icon: SafetyCertificateOutlined}
     ]
   },
 ]);
+
+// 更新导航项激活状态 - 需要在watch之前定义
+const updateNavItemsActiveState = (activeKeys) => {
+  navItems.value.forEach(item => {
+    item.active = activeKeys.includes(item.key);
+  });
+};
+
+// 监听菜单状态变化，更新导航栏高亮
+watch(() => menuStore.topSelectedKeys, (newKeys) => {
+  updateNavItemsActiveState(newKeys);
+}, { deep: true, immediate: true });
+
+// 导航项点击处理
+const handleNavItemClick = (item) => {
+  if (item.path) {
+    menuStore.activateTopMenu(item.key);
+    router.push(item.path);
+  }
+};
+
+
+// 子菜单项点击处理
+const handleSubItemClick = (child) => {
+  if (child.path) {
+    menuStore.updateMenuByPath(child.path);
+    router.push(child.path);
+  }
+};
 
 // 处理鼠标悬停效果
 const hoveredIndex = ref(null);
@@ -202,7 +238,7 @@ const activeDropdown = ref(null);
 const onDropdownHover = (index) => {
   activeDropdown.value = index;
 };
-const onDropdownLeave = (index) => {
+const onDropdownLeave = () => {
   activeDropdown.value = null;
 };
 
@@ -220,8 +256,7 @@ const handleUploadClick = () => {
     message.warning('请先登录后再进行上传');
     openAuthModal();
   } else {
-    // 处理上传操作
-    // ...
+    router.push('/create-image');
   }
 };
 
@@ -229,13 +264,24 @@ const handleUploadClick = () => {
 const handleLogout = () => {
   userStore.logout();
   message.success('已成功退出登录');
+  router.push('/');
 };
 
-// 全局监听登录事件
+// 全局监听登录事件和初始化
 onMounted(() => {
+  // 初始化导航状态
+  menuStore.updateMenuByPath(route.path);
+
   // 监听全局事件
   window.addEventListener('openLoginModal', () => {
     openAuthModal();
+  });
+
+  // 监听导航更新事件
+  window.addEventListener('update-nav-active', (event) => {
+    if (event.detail && event.detail.path) {
+      menuStore.updateMenuByPath(event.detail.path);
+    }
   });
 
   // 为上传按钮添加动画
@@ -421,9 +467,21 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-
 .upload-button:active:not(:disabled) {
   transform: translateY(0);
+}
+
+/* 上传按钮悬停效果 - 确保在启用状态下正常工作 */
+.upload-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
+}
+
+/* 禁用状态的上传按钮样式 */
+.upload-button:disabled {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.5), rgba(99, 102, 241, 0.5));
+  color: rgba(255, 255, 255, 0.8);
+  cursor: not-allowed;
 }
 
 /* 登录按钮样式 */
@@ -444,21 +502,6 @@ onMounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 6px 10px -2px rgba(79, 70, 229, 0.3);
 }
-
-
-/* 上传按钮悬停效果 - 确保在启用状态下正常工作 */
-.upload-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
-}
-
-/* 禁用状态的上传按钮样式 */
-.upload-button:disabled {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.5), rgba(99, 102, 241, 0.5));
-  color: rgba(255, 255, 255, 0.8);
-  cursor: not-allowed;
-}
-
 
 .login-button:active {
   transform: translateY(0);
@@ -481,7 +524,6 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.3s ease;
 }
-
 
 /* 导航项目进入/离开动画 */
 .nav-item-enter-active,
@@ -539,7 +581,6 @@ onMounted(() => {
   margin: 4px 0; /* 减小分割线边距 */
 }
 
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -580,5 +621,58 @@ onMounted(() => {
   .upload-button span {
     display: none;
   }
+}
+
+/* 深色模式适配 */
+:global([data-theme="dark"]) .header {
+  background-color: #1f2937;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"]) .header-link {
+  color: #e5e7eb;
+}
+
+:global([data-theme="dark"]) .header-link:hover {
+  color: #818cf8;
+  background-color: rgba(129, 140, 248, 0.1);
+}
+
+:global([data-theme="dark"]) .header-link.active {
+  color: #818cf8;
+}
+
+:global([data-theme="dark"]) .active-indicator {
+  background: linear-gradient(90deg, rgba(129, 140, 248, 0), rgba(129, 140, 248, 1), rgba(129, 140, 248, 0));
+}
+
+:global([data-theme="dark"]) .dropdown-menu {
+  background-color: #374151;
+}
+
+:global([data-theme="dark"]) .dropdown-item {
+  color: #e5e7eb;
+}
+
+:global([data-theme="dark"]) .dropdown-item:hover {
+  color: #818cf8;
+  background-color: rgba(129, 140, 248, 0.1);
+}
+
+:global([data-theme="dark"]) .custom-dropdown-menu {
+  background: #374151;
+}
+
+:global([data-theme="dark"]) .custom-menu-item {
+  color: #e5e7eb;
+}
+
+:global([data-theme="dark"]) .custom-menu-item:hover {
+  color: #818cf8;
+  background-color: rgba(129, 140, 248, 0.1);
+}
+
+:global([data-theme="dark"]) .menu-divider {
+  background-color: #4b5563;
 }
 </style>
