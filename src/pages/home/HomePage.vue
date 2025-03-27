@@ -140,18 +140,35 @@
           }
         }"
         >
-          <div class="image-card">
+          <div class="image-card" @click="navigateToDetail(image)">
             <div class="image-cover-container">
               <img :src="image.src" :alt="image.title" class="gallery-image" />
               <div class="image-actions-overlay">
-                <a-button type="text" class="image-action-btn">
+                <a-button type="text" class="image-action-btn" @click.stop="viewImage(image)">
                   <template #icon><eye-outlined /></template>
                 </a-button>
-                <a-button type="text" class="image-action-btn">
+                <a-button type="text" class="image-action-btn" @click.stop="downloadImage(image)">
                   <template #icon><download-outlined /></template>
                 </a-button>
-                <a-button type="text" class="image-action-btn">
+                <a-button
+                    v-if="isOwner(image)"
+                    type="text"
+                    class="image-action-btn delete-btn"
+                    @click.stop="confirmDelete(image)"
+                >
                   <template #icon><delete-outlined /></template>
+                </a-button>
+                <a-button
+                    v-else
+                    type="text"
+                    class="image-action-btn like-btn"
+                    :class="{ 'liked': image.liked }"
+                    @click.stop="toggleLike(image)"
+                >
+                  <template #icon>
+                    <heart-filled v-if="image.liked" />
+                    <heart-outlined v-else />
+                  </template>
                 </a-button>
               </div>
             </div>
@@ -209,8 +226,9 @@ import CreateFilterModal from "@/pages/home/CreateFilterModal.vue";
 import FilterList from "@/pages/home/FilterList.vue";
 import { useFilterStore } from '@/stores/filterStore';
 import 'animate.css';
-import {message} from "ant-design-vue";
+import {message, Modal} from "ant-design-vue";
 import {useIntersectionObserver} from "@vueuse/core";
+import router from "@/router";
 
 // 搜索文本
 const searchText = ref('');
@@ -256,6 +274,65 @@ const categories = reactive([
   { name: '壁纸', active: false },
   { name: '动漫', active: false },
 ]);
+
+
+// 导航到图片详情页
+const navigateToDetail = (image :any) => {
+  // 假设image对象有id属性，如果没有可以使用其他唯一标识
+  const imageId = image.id || index;
+  router.push({
+    name: 'PictureDetail',
+    params: { id: imageId },
+    // 可以通过state传递一些数据，避免重新加载
+    state: { imageData: image }
+  });
+};
+
+// 处理图片浏览
+const viewImage = (image :any) => {
+  // 这里可以实现预览功能，或者直接导航到详情页
+  navigateToDetail(image);
+};
+
+// 处理图片下载
+const downloadImage = (image :any) => {
+  message.success('图片下载中...');
+  // 实际下载逻辑
+  const a = document.createElement('a');
+  a.href = image.src;
+  a.download = image.title || 'download-image';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+// 检查是否是图片所有者
+const isOwner = (image :any) => {
+  // 这里需要根据实际登录用户ID和图片作者ID比较
+  // 示例中简单返回false，表示当前用户不是所有图片的所有者
+  return false;
+};
+
+// 确认删除图片
+const confirmDelete = (image :any) => {
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定要删除这张图片吗？删除后将无法恢复。',
+    okText: '确定',
+    cancelText: '取消',
+    onOk: () => {
+      // 删除逻辑
+      message.success('图片已删除');
+      // 实际应用中应调用API删除图片，并从列表移除
+    }
+  });
+};
+
+// 点赞或取消点赞
+const toggleLike = (image :any) => {
+  image.liked = !image.liked;
+  message.success(image.liked ? '已添加到喜欢' : '已取消喜欢');
+};
 
 // 处理分类标签点击
 const handleToggleCategory = (index: number) => {
@@ -323,12 +400,13 @@ const tags = reactive([
 // 切换标签选中状态
 const toggleTagActive = (index: number) => {
   filterStore.toggleTagActive(index);
-  fetchGalleryImages();
+    fetchGalleryImages();
 };
 
 // 图库数据
 const galleryImages = reactive([
   {
+    id: '1',
     src: 'https://images.unsplash.com/photo-1481487196290-c152efe083f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
     title: 'macbook-abstract-40',
     author: {
@@ -342,6 +420,7 @@ const galleryImages = reactive([
     liked: false,
   },
   {
+    id: '2',
     src: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
     title: '自然风光摄影集',
     author: {
@@ -355,6 +434,7 @@ const galleryImages = reactive([
     liked: false,
   },
   {
+    id: '3',
     src: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
     title: '现代UI组件设计集',
     author: {
@@ -368,6 +448,7 @@ const galleryImages = reactive([
     liked: false,
   },
   {
+    id: '4',
     src: 'https://images.unsplash.com/photo-1580477667995-2b94f01c9516?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
     title: '二次元精选壁纸',
     author: {
@@ -381,6 +462,7 @@ const galleryImages = reactive([
     liked: false,
   },
   {
+    id: '5',
     src: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
     title: 'Spring Boot项目结构',
     author: {
@@ -394,6 +476,7 @@ const galleryImages = reactive([
     liked: false,
   },
   {
+    id: '6',
     src: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
     title: '校园风光四季集',
     author: {
@@ -407,6 +490,7 @@ const galleryImages = reactive([
     liked: false,
   },
   {
+    id: '7',
     src: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
     title: '现代抽象艺术作品',
     author: {
@@ -1308,6 +1392,25 @@ watch(
   margin: 0;
 }
 
+/* 添加以下样式 */
+.image-card {
+  cursor: pointer; /* 添加鼠标指针样式表明可点击 */
+}
 
+.like-btn.liked {
+  background-color: rgba(255, 77, 79, 0.2) !important;
+}
+
+.like-btn.liked :deep(.anticon) {
+  color: #ff4d4f;
+}
+
+.delete-btn:hover {
+  background-color: rgba(255, 77, 79, 0.2) !important;
+}
+
+.delete-btn:hover :deep(.anticon) {
+  color: #ff4d4f;
+}
 
 </style>

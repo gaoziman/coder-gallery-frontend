@@ -36,6 +36,25 @@ const routes: Array<RouteRecordRaw> = [
                     title: '创建图片 - 智能云图库',
                     requiresAuth: true
                 },
+            },
+            {
+                path: '/picture/:id',
+                name: 'PictureDetail',
+                component: () => import('@/pages/picture/PictureDetail.vue'),
+                meta: {
+                    title: '图片详情 - 智能云图库',
+                    requiresAuth: false
+                },
+            },
+            // 添加图片编辑页路由
+            {
+                path: '/edit-image/:id',
+                name: 'EditImage',
+                component: () => import('@/pages/picture/EditPicture.vue'),
+                meta: {
+                    title: '编辑图片 - 智能云图库',
+                    requiresAuth: true
+                },
             }
         ]
     }
