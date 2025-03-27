@@ -201,9 +201,7 @@ import {ref, reactive, onMounted, watch} from 'vue';
 import {
   PlusOutlined,
   DownOutlined,
-  HeartOutlined,
   DownloadOutlined,
-  ShareAltOutlined,
   EyeOutlined,
   DeleteOutlined
 } from '@ant-design/icons-vue';;
@@ -423,10 +421,7 @@ const galleryImages = reactive([
   },
 ]);
 
-// 切换喜欢状态
-const toggleLike = (index: number) => {
-  galleryImages[index].liked = !galleryImages[index].liked;
-};
+
 
 // 加载更多
 const loadMore = () => {
@@ -434,13 +429,10 @@ const loadMore = () => {
   // 模拟加载更多，这里可以添加实际的加载逻辑
 };
 
-// 排序相关
-const currentSort = ref('newest');
 
 // 筛选器相关
 const filterModalVisible = ref(false);
 const savedFilters = ref([]);
-const activeFilter = ref(null);
 
 // 显示创建筛选器弹窗
 const showCreateFilterModal = () => {
@@ -486,7 +478,6 @@ const handleClearFilter = () => {
 // 原始图库数据（完整数据）
 const originalGalleryImages = [...galleryImages];
 
-// 获取图片数据
 // 获取图片数据
 const fetchGalleryImages = () => {
   // 获取当前筛选条件
@@ -1060,16 +1051,6 @@ watch(
   width: 100%;
 }
 
-/* 筛选器列表按钮 */
-.filter-list-btn {
-  border-radius: 8px;
-  height: 38px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-}
-
 /* 确保筛选器按钮的图标垂直居中 */
 .create-filter-btn {
   display: flex;
@@ -1172,27 +1153,6 @@ watch(
   color: var(--primary-color);
 }
 
-/* 添加涟漪效果样式 */
-.ripple-button {
-  position: relative;
-  overflow: hidden;
-}
-
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.5);
-  transform: scale(0);
-  animation: ripple 0.6s linear;
-  pointer-events: none;
-}
-
-@keyframes ripple {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
 
 /* 保持瀑布流布局不变 */
 .masonry-gallery {
@@ -1278,40 +1238,35 @@ watch(
 }
 
 .image-action-btn {
+  background-color: white !important;
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
-  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: none !important;
 }
 
+/* 添加悬停效果 - 按钮背景变为紫色 */
 .image-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  background: white; /* 确保悬停时背景也是白色 */
+  transform: scale(1.1);
+  background-color: #6366F1 !important; /* 使用紫色背景，与主题色一致 */
 }
 
-/* 点击（激活）状态也保持白色背景 */
-.image-action-btn:active {
-  background: white;
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* 确保图标颜色为深色，与白色背景形成对比 */
-.image-action-btn .anticon {
-  color: #333;
+/* 悬停时图标颜色变为白色，提高对比度 */
+.image-action-btn:hover :deep(.anticon) {
   font-size: 18px;
+  color: white; /* 悬停时图标变为白色 */
 }
 
-/* 悬停时可以更改图标颜色，但保持背景白色 */
-.image-action-btn:hover .anticon {
-  color: var(--primary-color, #4F46E5);
+/* 默认图标颜色 */
+.image-action-btn :deep(.anticon) {
+  font-size: 18px;
+  color: #333;
+  transition: color 0.3s ease; /* 添加颜色过渡效果 */
 }
 
 .image-info {

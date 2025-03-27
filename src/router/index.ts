@@ -19,12 +19,12 @@ const routes: Array<RouteRecordRaw> = [
                     requiresAuth: false
                 },
             },
-            // {
-            //     path: '/my-space',
-            //     name: 'MySpace',
-            //     component: () => import('../pages/MySpace.vue'),
-            //     meta: { title: '智能云图库 - 我的空间' }
-            // },
+            {
+                path: '/space',
+                name: 'MySpacePage',
+                component: () => import('@/pages/space/MySpacePage.vue'),
+                meta: { title: '智能云图库 - 我的空间' }
+            },
             // {
             //     path: '/team',
             //     name: 'Team',
