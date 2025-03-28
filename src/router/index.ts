@@ -75,7 +75,7 @@ const routes: Array<RouteRecordRaw> = [
                     },
                     {
                         path: 'users',
-                        name: 'AdminUsers',
+                        name: 'UsersManagement',
                         component: () => import('@/pages/admin/UsersManagement.vue'),
                         meta: {
                             title: '用户管理 - 智能云图库',
@@ -83,16 +83,16 @@ const routes: Array<RouteRecordRaw> = [
                             requiresAdmin: true
                         },
                     },
-                    // {
-                    //     path: 'images',
-                    //     name: 'AdminImages',
-                    //     component: () => import('@/pages/admin/images/ImagesManagement.vue'),
-                    //     meta: {
-                    //         title: '图片管理 - 智能云图库',
-                    //         requiresAuth: true,
-                    //         requiresAdmin: true
-                    //     },
-                    // },
+                    {
+                        path: 'images',
+                        name: 'PictureManagement',
+                        component: () => import('@/pages/admin/PictureManagement.vue'),
+                        meta: {
+                            title: '图片管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
                     // {
                     //     path: 'categories',
                     //     name: 'AdminCategories',
