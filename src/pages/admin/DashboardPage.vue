@@ -61,7 +61,6 @@ const fetchDashboardData = async () => {
 <style scoped>
 .dashboard-container {
   padding: 24px;
-  background-color: #f0f2f5;
   min-height: calc(100vh - 64px); /* 减去头部导航的高度 */
 }
 
