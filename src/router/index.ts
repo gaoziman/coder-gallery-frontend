@@ -103,26 +103,26 @@ const routes: Array<RouteRecordRaw> = [
                             requiresAdmin: true
                         },
                     },
-                    // {
-                    //     path: 'categories',
-                    //     name: 'AdminCategories',
-                    //     component: () => import('@/pages/admin/categories/CategoriesManagement.vue'),
-                    //     meta: {
-                    //         title: '分类管理 - 智能云图库',
-                    //         requiresAuth: true,
-                    //         requiresAdmin: true
-                    //     },
-                    // },
-                    // {
-                    //     path: 'tags',
-                    //     name: 'AdminTags',
-                    //     component: () => import('@/pages/admin/tags/TagsManagement.vue'),
-                    //     meta: {
-                    //         title: '标签管理 - 智能云图库',
-                    //         requiresAuth: true,
-                    //         requiresAdmin: true
-                    //     },
-                    // },
+                    {
+                        path: 'categories',
+                        name: 'CategoryManagement',
+                        component: () => import('@/pages/admin/CategoryManagement.vue'),
+                        meta: {
+                            title: '分类管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
+                    {
+                        path: 'tags',
+                        name: 'TagsManagement',
+                        component: () => import('@/pages/admin/TagsManagement.vue'),
+                        meta: {
+                            title: '标签管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
                     // {
                     //     path: 'users',
                     //     name: 'AdminUsers',
