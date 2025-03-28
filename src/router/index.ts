@@ -93,6 +93,16 @@ const routes: Array<RouteRecordRaw> = [
                             requiresAdmin: true
                         },
                     },
+                    {
+                        path: 'spaces',
+                        name: 'SpaceManagement',
+                        component: () => import('@/pages/admin/SpaceManagement.vue'),
+                        meta: {
+                            title: '空间管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
                     // {
                     //     path: 'categories',
                     //     name: 'AdminCategories',
