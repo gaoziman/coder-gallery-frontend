@@ -673,3 +673,374 @@ a.ant-typography:hover {
 .ant-btn-link:focus {
     color: var(--primary-hover) !important;
 }
+
+/* 修复表格复选框样式 */
+.ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+.ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner,
+.ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-checkbox-wrapper .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: #6554C0 !important;
+}
+
+/* 修复查询按钮样式 */
+.ant-btn.ant-btn-primary.search-button,
+.user-management-container [class*="ant-btn"].ant-btn-primary {
+    background-color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+.ant-btn.ant-btn-primary.search-button:hover,
+.ant-btn.ant-btn-primary.search-button:focus,
+.user-management-container [class*="ant-btn"].ant-btn-primary:hover,
+.user-management-container [class*="ant-btn"].ant-btn-primary:focus {
+    background-color: #7C68EE !important;
+    border-color: #7C68EE !important;
+}
+
+/* 修复分页组件样式 */
+.ant-pagination .ant-pagination-item-active {
+    border-color: #6554C0 !important;
+}
+
+.ant-pagination .ant-pagination-item-active a,
+.ant-pagination .ant-pagination-item:hover a {
+    color: #6554C0 !important;
+}
+
+.ant-pagination .ant-pagination-item:hover {
+    border-color: #6554C0 !important;
+}
+
+.ant-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
+.ant-pagination .ant-pagination-next:hover .ant-pagination-item-link {
+    color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+.ant-pagination .ant-pagination-jump-prev .ant-pagination-item-container .ant-pagination-item-link-icon,
+.ant-pagination .ant-pagination-jump-next .ant-pagination-item-container .ant-pagination-item-link-icon {
+    color: #6554C0 !important;
+}
+
+.ant-pagination-options .ant-select:hover .ant-select-selector {
+    border-color: #6554C0 !important;
+}
+
+.ant-pagination-options .ant-select-focused .ant-select-selector {
+    border-color: #6554C0 !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+.ant-pagination-options-quick-jumper input:hover,
+.ant-pagination-options-quick-jumper input:focus {
+    border-color: #6554C0 !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 修复表格操作列按钮样式 */
+.user-table .ant-btn-link {
+    color: #6554C0 !important;
+}
+
+.user-table .ant-btn-link:hover,
+.user-table .ant-btn-link:focus {
+    color: #7C68EE !important;
+    background-color: rgba(101, 84, 192, 0.05);
+}
+
+.user-table .ant-btn-link.ant-btn-dangerous,
+.user-table .ant-btn-link.ant-btn-dangerous:hover {
+    color: #F5222D !important;
+}
+
+/* 修复搜索和重置按钮 */
+.operation-bar .ant-btn.ant-btn-icon-only,
+.ant-btn-circle {
+    color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+.operation-bar .ant-btn.ant-btn-icon-only:hover,
+.operation-bar .ant-btn.ant-btn-icon-only:focus,
+.ant-btn-circle:hover,
+.ant-btn-circle:focus {
+    color: #7C68EE !important;
+    border-color: #7C68EE !important;
+    background-color: rgba(101, 84, 192, 0.1);
+}
+
+/* 修复选择框样式 */
+.ant-select-dropdown .ant-select-item-option-selected {
+    background-color: rgba(101, 84, 192, 0.1) !important;
+    color: #6554C0 !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background-color: rgba(101, 84, 192, 0.05) !important;
+}
+
+/* 强制修复所有按钮图标颜色 */
+.ant-btn > .anticon {
+    color: inherit !important;
+}
+
+/* 修复查看、编辑、重置密码、删除按钮图标 */
+.user-table .ant-btn-link .anticon,
+.user-table .ant-btn-link .anticon + span {
+    color: inherit !important;
+}
+
+/* 修复查询搜索按钮 */
+.user-management-container .ant-btn-primary.search-button {
+    background-color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+.user-management-container .ant-btn-primary.search-button:hover,
+.user-management-container .ant-btn-primary.search-button:focus {
+    background-color: #7C68EE !important;
+    border-color: #7C68EE !important;
+}
+
+.user-management-container .ant-btn-primary.search-button .anticon,
+.user-management-container .ant-btn-primary.search-button span {
+    color: white !important;
+}
+
+/* 修复添加用户按钮 */
+.ant-btn-primary.primary-button {
+    background-color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+.ant-btn-primary.primary-button:hover,
+.ant-btn-primary.primary-button:focus {
+    background-color: #7C68EE !important;
+    border-color: #7C68EE !important;
+}
+
+.ant-btn-primary.primary-button .anticon,
+.ant-btn-primary.primary-button span {
+    color: white !important;
+}
+
+/* 修复弹窗右上角关闭按钮 */
+.ant-modal-close:hover {
+    color: #6554C0 !important;
+}
+
+/* 修复日期选择器 */
+.ant-picker:hover,
+.ant-picker-focused {
+    border-color: #6554C0 !important;
+}
+
+.ant-picker-focused {
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner {
+    background-color: #6554C0 !important;
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+    border-color: #6554C0 !important;
+}
+
+.ant-picker-header-view button:hover {
+    color: #6554C0 !important;
+}
+
+/* 设置搜索图标和分页定位图标的颜色 */
+.user-management-container .anticon-search,
+.user-management-container .anticon-eye,
+.user-management-container .anticon-edit,
+.user-management-container .anticon-key,
+.user-management-container .ant-pagination-jump-prev .ant-pagination-item-container .ant-pagination-item-link-icon,
+.user-management-container .ant-pagination-jump-next .ant-pagination-item-container .ant-pagination-item-link-icon {
+    color: #6554C0 !important;
+}
+
+/* 修复表格头部筛选和排序图标 */
+.ant-table-column-sorter-up.active,
+.ant-table-column-sorter-down.active {
+    color: #6554C0 !important;
+}
+
+/* 表格行选中背景颜色 */
+.ant-table-tbody > tr.ant-table-row-selected > td {
+    background-color: rgba(101, 84, 192, 0.1) !important;
+}
+
+/* 修复批量选择提示文本 */
+.ant-table-selection-extra .ant-dropdown-trigger:hover {
+    color: #6554C0 !important;
+}
+
+/* 修复复选框勾选标记不可见的问题 */
+
+/* 确保勾选标记可见 */
+.ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important; /* 白色勾选标记 */
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    border-width: 0 2px 2px 0 !important; /* 确保勾选标记的宽度 */
+    border-style: solid !important;
+    transform: rotate(45deg) !important;
+    transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s !important;
+}
+
+/* 确保正确的尺寸和位置 */
+.ant-checkbox-inner::after {
+    position: absolute !important;
+    top: 50% !important;
+    left: 21.5% !important;
+    display: table !important;
+    width: 5.71428571px !important;
+    height: 9.14285714px !important;
+    margin-top: -6.14285714px !important;
+}
+
+/* 确保背景色正确 */
+.ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+/* 确保鼠标悬停时背景色正确 */
+.ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #7C68EE !important;
+    border-color: #7C68EE !important;
+}
+
+/* 确保禁用状态的样式正确 */
+.ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 确保复选框内部尺寸正确 */
+.ant-checkbox-inner {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+/* 确保表头复选框勾选标记也可见 */
+.ant-table-thead .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 确保表格行中的复选框勾选标记可见 */
+.ant-table-tbody .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 为半选状态单独处理 */
+.ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    border: 0 !important;
+    transform: none !important;
+    left: 50% !important;
+    top: 50% !important;
+    width: 8px !important;
+    height: 8px !important;
+    margin-left: -4px !important;
+    margin-top: -4px !important;
+}
+
+
+/* 修复复选框和单选框聚焦时的蓝色边框闪烁 */
+
+/* 复选框获得焦点时的样式 */
+.ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: #6554C0 !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+    outline: none !important;
+}
+
+/* 复选框点击瞬间的样式 */
+.ant-checkbox-wrapper .ant-checkbox-inner::after {
+    border-color: #6554C0 !important;
+}
+
+/* 处理 Chrome 浏览器的 focus-visible 状态 */
+.ant-checkbox-wrapper .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
+    outline: none !important;
+    border-color: #6554C0 !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 处理全选复选框 */
+.ant-table-thead .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner,
+.ant-table-thead .ant-checkbox-wrapper .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
+    border-color: #6554C0 !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 点击行复选框时整行的样式 */
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+    background-color: rgba(101, 84, 192, 0.15) !important;
+}
+
+/* 确保选中状态的复选框以及其内部的对勾符号保持紫色 */
+.ant-checkbox-checked::after {
+    border: 1px solid #6554C0 !important;
+}
+
+/* 处理IE和Edge浏览器的特殊情况 */
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner,
+    .ant-checkbox-wrapper .ant-checkbox-input:active + .ant-checkbox-inner {
+        border-color: #6554C0 !important;
+        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+        outline: none !important;
+    }
+}
+
+/* 修复Safari浏览器的特殊情况 */
+@media not all and (min-resolution:.001dpcm) {
+    @supports (-webkit-appearance:none) {
+        .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+            border-color: #6554C0 !important;
+            box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+            outline: none !important;
+        }
+    }
+}
+
+/* 处理Firefox的特殊情况 */
+@-moz-document url-prefix() {
+    .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+        border-color: #6554C0 !important;
+        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+        outline: none !important;
+    }
+}
+
+/* 禁用浏览器默认的focus样式 */
+.ant-checkbox:focus {
+    outline: none !important;
+}
+
+.ant-checkbox-input:focus {
+    outline: none !important;
+}
+
+/* 修复表格头部单元格中的复选框 */
+.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: #6554C0 !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
