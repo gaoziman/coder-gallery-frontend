@@ -6,7 +6,7 @@
       <div class="nav-links">
         <TransitionGroup name="nav-item">
           <div
-              v-for="(item, index) in navItems"
+              v-for="(item, index) in filteredNavItems"
               :key="item.key"
               class="nav-item-container"
           >
@@ -29,7 +29,7 @@
             <div
                 v-else
                 class="header-link dropdown-trigger"
-                :class="{ active: item.active }"
+                :class="{ active: item.active || isParentActive(item) }"
                 @mouseenter="onDropdownHover(index)"
                 @mouseleave="onDropdownLeave(index)"
             >
@@ -133,12 +133,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { useMotion } from '@vueuse/motion';
-import { useUserStore } from '@/stores/user';
-import { useMenuStore } from '@/stores/menu';
-import { message } from 'ant-design-vue';
+import {ref, onMounted, watch, computed} from 'vue';
+import {useRouter, useRoute} from 'vue-router';
+import {useMotion} from '@vueuse/motion';
+import {useUserStore} from '@/stores/user';
+import {useMenuStore} from '@/stores/menu';
+import {message} from 'ant-design-vue';
 import AuthModal from '@/components/auth/AuthModal.vue';
 import {
   HomeOutlined,
@@ -174,12 +174,12 @@ const navItems = ref([
     icon: AppstoreOutlined,
     active: false,
     children: [
-      {key: 'dashboard', path: '/dashboard', title: '仪表盘', icon: DashboardOutlined},
-      {key: 'images', path: '/images', title: '图片管理', icon: PictureOutlined},
-      {key: 'spaces', path: '/spaces', title: '空间管理', icon: AppstoreOutlined},
-      {key: 'categories', path: '/categories', title: '分类管理', icon: AppstoreOutlined},
-      {key: 'tags', path: '/tags', title: '标签管理', icon: TagOutlined},
-      {key: 'comments', path: '/comments', title: '评论管理', icon: CommentOutlined}
+      {key: 'dashboard', path: '/admin/dashboard', title: '仪表盘', icon: DashboardOutlined},
+      {key: 'images', path: '/admin/images', title: '图片管理', icon: PictureOutlined},
+      {key: 'spaces', path: '/admin/spaces', title: '空间管理', icon: AppstoreOutlined},
+      {key: 'categories', path: '/admin/categories', title: '分类管理', icon: AppstoreOutlined},
+      {key: 'tags', path: '/admin/tags', title: '标签管理', icon: TagOutlined},
+      {key: 'comments', path: '/admin/comments', title: '评论管理', icon: CommentOutlined}
     ]
   },
   {
@@ -188,12 +188,29 @@ const navItems = ref([
     icon: SettingOutlined,
     active: false,
     children: [
-      {key: 'users', path: '/users', title: '用户管理', icon: UserOutlined},
-      {key: 'settings', path: '/settings', title: '系统设置', icon: SettingOutlined},
-      {key: 'security', path: '/security', title: '安全中心', icon: SafetyCertificateOutlined}
+      {key: 'users', path: '/admin/users', title: '用户管理', icon: UserOutlined},
+      {key: 'settings', path: '/admin/settings', title: '系统设置', icon: SettingOutlined},
+      {key: 'security', path: '/admin/security', title: '安全中心', icon: SafetyCertificateOutlined}
     ]
   },
 ]);
+
+// 过滤菜单项，根据用户角色显示或隐藏管理员菜单
+const filteredNavItems = computed(() => {
+  // 如果是管理员，显示所有菜单项
+  if (userStore.userInfo?.role === 'admin') {
+    return navItems.value;
+  }
+
+  // 非管理员，过滤掉管理员专用菜单
+  return navItems.value.filter(item => {
+    // 过滤掉内容管理和系统设置这两个管理员菜单组
+    if (item.key === 'content-management' || item.key === 'system-settings') {
+      return false;
+    }
+    return true;
+  });
+});
 
 // 更新导航项激活状态 - 需要在watch之前定义
 const updateNavItemsActiveState = (activeKeys) => {
@@ -202,10 +219,22 @@ const updateNavItemsActiveState = (activeKeys) => {
   });
 };
 
+
+const isParentActive = (item) => {
+  // 如果没有子菜单，直接返回 false
+  if (!item.children) return false;
+
+  // 检查子菜单中是否有被选中的项目
+  return item.children.some(child => {
+    // 检查当前路径是否与子菜单路径匹配
+    return menuStore.topSelectedKeys.includes(child.key);
+  });
+};
+
 // 监听菜单状态变化，更新导航栏高亮
 watch(() => menuStore.topSelectedKeys, (newKeys) => {
   updateNavItemsActiveState(newKeys);
-}, { deep: true, immediate: true });
+}, {deep: true, immediate: true});
 
 // 导航项点击处理
 const handleNavItemClick = (item) => {

@@ -1,9 +1,9 @@
 // src/router/index.ts
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import HomePage from '@/pages/home/HomePage.vue';
-import { message } from "ant-design-vue";
-import { useUserStore } from "@/stores/user";
+import {message} from "ant-design-vue";
+import {useUserStore} from "@/stores/user";
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -55,6 +55,95 @@ const routes: Array<RouteRecordRaw> = [
                     title: '编辑图片 - 智能云图库',
                     requiresAuth: true
                 },
+            },
+            {
+                path: '/admin',
+                meta: {
+                    requiresAuth: true,
+                    requiresAdmin: true
+                },
+                children: [
+                    {
+                        path: 'dashboard',
+                        name: 'AdminDashboard',
+                        component: () => import('@/pages/admin/DashboardPage.vue'),
+                        meta: {
+                            title: '管理仪表盘 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
+                    // {
+                    //     path: 'images',
+                    //     name: 'AdminImages',
+                    //     component: () => import('@/pages/admin/images/ImagesManagement.vue'),
+                    //     meta: {
+                    //         title: '图片管理 - 智能云图库',
+                    //         requiresAuth: true,
+                    //         requiresAdmin: true
+                    //     },
+                    // },
+                    // {
+                    //     path: 'categories',
+                    //     name: 'AdminCategories',
+                    //     component: () => import('@/pages/admin/categories/CategoriesManagement.vue'),
+                    //     meta: {
+                    //         title: '分类管理 - 智能云图库',
+                    //         requiresAuth: true,
+                    //         requiresAdmin: true
+                    //     },
+                    // },
+                    // {
+                    //     path: 'tags',
+                    //     name: 'AdminTags',
+                    //     component: () => import('@/pages/admin/tags/TagsManagement.vue'),
+                    //     meta: {
+                    //         title: '标签管理 - 智能云图库',
+                    //         requiresAuth: true,
+                    //         requiresAdmin: true
+                    //     },
+                    // },
+                    // {
+                    //     path: 'users',
+                    //     name: 'AdminUsers',
+                    //     component: () => import('@/pages/admin/users/UsersManagement.vue'),
+                    //     meta: {
+                    //         title: '用户管理 - 智能云图库',
+                    //         requiresAuth: true,
+                    //         requiresAdmin: true
+                    //     },
+                    // },
+                    // {
+                    //     path: 'comments',
+                    //     name: 'AdminComments',
+                    //     component: () => import('@/pages/admin/comments/CommentsManagement.vue'),
+                    //     meta: {
+                    //         title: '评论管理 - 智能云图库',
+                    //         requiresAuth: true,
+                    //         requiresAdmin: true
+                    //     },
+                    // },
+                    // {
+                    //     path: 'settings',
+                    //     name: 'AdminSettings',
+                    //     component: () => import('@/pages/admin/settings/SystemSettings.vue'),
+                    //     meta: {
+                    //         title: '系统设置 - 智能云图库',
+                    //         requiresAuth: true,
+                    //         requiresAdmin: true
+                    //     },
+                    // },
+                    // {
+                    //     path: 'security',
+                    //     name: 'AdminSecurity',
+                    //     component: () => import('@/pages/admin/security/SecurityCenter.vue'),
+                    //     meta: {
+                    //         title: '安全中心 - 智能云图库',
+                    //         requiresAuth: true,
+                    //         requiresAdmin: true
+                    //     },
+                    // }
+                ]
             }
         ]
     }
