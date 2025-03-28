@@ -73,6 +73,16 @@ const routes: Array<RouteRecordRaw> = [
                             requiresAdmin: true
                         },
                     },
+                    {
+                        path: 'users',
+                        name: 'AdminUsers',
+                        component: () => import('@/pages/admin/UsersManagement.vue'),
+                        meta: {
+                            title: '用户管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
                     // {
                     //     path: 'images',
                     //     name: 'AdminImages',

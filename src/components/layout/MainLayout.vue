@@ -1,7 +1,11 @@
 <template>
   <a-layout class="app-layout">
-    <SideBar :collapsed="sidebarCollapsed" @update:collapsed="sidebarCollapsed = $event" />
-    <a-layout class="main-content" :style="contentStyle">
+    <SideBar :collapsed="sidebarCollapsed" @update:collapsed="updateSidebarCollapsed" />
+    <a-layout
+        class="main-content"
+        :class="{'sidebar-collapsed': sidebarCollapsed}"
+        :style="contentStyle"
+    >
       <HeaderBar />
       <a-layout-content class="content-container">
         <router-view />
@@ -19,6 +23,11 @@ import FooterBar from '@/components/layout/FooterBar.vue';
 
 // 侧边栏折叠状态
 const sidebarCollapsed = ref(false);
+
+// 更新侧边栏状态的函数
+const updateSidebarCollapsed = (value) => {
+  sidebarCollapsed.value = value;
+};
 
 // 根据侧边栏状态计算主内容区域样式
 const contentStyle = computed(() => ({
@@ -43,15 +52,10 @@ const contentStyle = computed(() => ({
 
 .content-container {
   padding: 24px;
+  margin-top: 64px; /* 为固定头部留出空间 */
   background: var(--bg-light, #f5f7fa);
   overflow-y: auto;
-  flex: 1; /* 改为flex: 1，让内容区域自动填充剩余空间 */
+  flex: 1;
   box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    margin-left: 0 !important;
-  }
 }
 </style>

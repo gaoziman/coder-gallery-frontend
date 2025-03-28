@@ -203,7 +203,7 @@ onMounted(() => {
   left: 0;
   top: 0;
   bottom: 0;
-  z-index: 25;
+  z-index: 1000; /* 确保低于header但高于其他内容 */
   background: white;
   transition: width 0.3s cubic-bezier(0.2, 0, 0, 1) 0s;
 }

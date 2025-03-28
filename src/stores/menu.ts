@@ -14,12 +14,12 @@ export const useMenuStore = defineStore('menu', () => {
         '/space': { top: '', side: 'my-space' },
         // 管理员路径，修改为数组形式，允许同时选中多个菜单项
         '/admin/dashboard': { top: ['content-management', 'dashboard'], side: '' },
+        '/admin/users': { top: ['content-management', 'users'], side: '' },
         '/admin/images': { top: ['content-management', 'images'], side: '' },
         '/admin/spaces': { top: ['content-management', 'spaces'], side: '' },
         '/admin/categories': { top: ['content-management', 'categories'], side: '' },
         '/admin/tags': { top: ['content-management', 'tags'], side: '' },
         '/admin/comments': { top: ['content-management', 'comments'], side: '' },
-        '/admin/users': { top: ['system-settings', 'users'], side: '' },
         '/admin/settings': { top: ['system-settings', 'settings'], side: '' },
         '/admin/security': { top: ['system-settings', 'security'], side: '' },
         '/favorites': { top: '', side: 'favorites' },

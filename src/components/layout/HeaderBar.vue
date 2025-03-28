@@ -175,6 +175,7 @@ const navItems = ref([
     active: false,
     children: [
       {key: 'dashboard', path: '/admin/dashboard', title: '仪表盘', icon: DashboardOutlined},
+      {key: 'users', path: '/admin/users', title: '用户管理', icon: UserOutlined},
       {key: 'images', path: '/admin/images', title: '图片管理', icon: PictureOutlined},
       {key: 'spaces', path: '/admin/spaces', title: '空间管理', icon: AppstoreOutlined},
       {key: 'categories', path: '/admin/categories', title: '分类管理', icon: AppstoreOutlined},
@@ -188,7 +189,6 @@ const navItems = ref([
     icon: SettingOutlined,
     active: false,
     children: [
-      {key: 'users', path: '/admin/users', title: '用户管理', icon: UserOutlined},
       {key: 'settings', path: '/admin/settings', title: '系统设置', icon: SettingOutlined},
       {key: 'security', path: '/admin/security', title: '安全中心', icon: SafetyCertificateOutlined}
     ]
@@ -349,25 +349,51 @@ onMounted(() => {
 .header {
   background-color: #ffffff;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.03);
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 99;
+  right: 0;
+  z-index: 1001; /* 提高z-index，确保高于侧边栏 */
   padding: 0;
   height: 64px;
   line-height: 64px;
   margin: 0;
+  /* 修改这里，根据侧边栏宽度调整左侧位置 */
+  left: 240px; /* 默认侧边栏宽度 */
+  width: calc(100% - 240px); /* 计算宽度，减去侧边栏宽度 */
+  transition: left 0.3s, width 0.3s; /* 添加过渡效果 */
 }
 
+/* 添加侧边栏折叠状态的样式 */
+.sidebar-collapsed .header {
+  left: 80px; /* 折叠后的侧边栏宽度 */
+  width: calc(100% - 80px);
+}
+/* 修改header-content样式 */
 .header-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* 这确保子元素分布在两端 */
   align-items: center;
   height: 100%;
+  width: 100%; /* 确保宽度为100% */
+  padding: 0; /* 移除内边距，让内容延伸到边缘 */
 }
 
+/* 修改nav-links样式，保证它不会挤压右侧内容 */
 .nav-links {
   display: flex;
   height: 100%;
+  flex-shrink: 0; /* 防止被压缩 */
+  margin-left: 24px; /* 左侧留出空间 */
+}
+
+/* 修改user-actions样式，确保它始终靠右 */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-right: 24px; /* 只保留右侧内边距 */
+  margin-left: auto; /* 这会将元素推到右侧 */
+  flex-shrink: 0; /* 防止被压缩 */
 }
 
 .dropdown-menu {
