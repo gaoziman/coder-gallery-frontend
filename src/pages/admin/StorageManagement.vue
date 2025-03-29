@@ -571,7 +571,7 @@ const storageStats = reactive({
 const cosConfig = reactive({
   bucketName: 'cloud-gallery-1251000004',
   region: 'ap-shanghai',
-  secretId: 'AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  secretId: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
   secretKey: '****************************',
   cdnDomain: 'img.example.com',
   uploadPath: 'images/',
