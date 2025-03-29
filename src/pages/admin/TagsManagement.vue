@@ -268,7 +268,10 @@
         title="标签详细信息"
         :footer="null"
         width="600px"
-        class="custom-modal"
+        class="custom-modal tag-detail-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeTagDetailModal"
     >
       <div class="tag-detail-header">
         <a-tag :color="currentTag.color" class="tag-detail-name">{{ currentTag.name }}</a-tag>
@@ -319,7 +322,10 @@
         okText="保存"
         cancelText="取消"
         width="600px"
-        class="custom-modal"
+        class="custom-modal edit-tag-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeEditModal"
     >
       <a-form :model="editForm" :rules="rules" ref="editFormRef" layout="vertical">
         <a-row :gutter="16">
@@ -390,7 +396,10 @@
         okText="添加"
         cancelText="取消"
         width="600px"
-        class="custom-modal"
+        class="custom-modal add-tag-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeAddModal"
     >
       <a-form :model="addForm" :rules="rules" ref="addFormRef" layout="vertical">
         <a-row :gutter="16">
@@ -461,7 +470,10 @@
         okText="保存"
         cancelText="取消"
         width="600px"
-        class="custom-modal"
+        class="custom-modal batch-edit-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeBatchEditModal"
     >
       <a-alert type="info" style="margin-bottom: 16px">
         <template #message>
@@ -520,7 +532,10 @@
         title="关联文章列表"
         :footer="null"
         width="800px"
-        class="custom-modal"
+        class="custom-modal articles-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeRelatedArticlesModal"
     >
       <a-alert type="info" style="margin-bottom: 16px">
         <template #message>
@@ -949,6 +964,25 @@ const getArticleStatusText = (status) => {
   return textMap[status] || '未知状态';
 };
 
+
+// 关闭编辑标签模态框
+const closeEditModal = () => {
+  editModalVisible.value = false;
+  document.body.classList.remove('modal-open');
+};
+
+// 关闭添加标签模态框
+const closeAddModal = () => {
+  addModalVisible.value = false;
+  document.body.classList.remove('modal-open');
+};
+
+// 关闭批量编辑模态框
+const closeBatchEditModal = () => {
+  batchEditModalVisible.value = false;
+  document.body.classList.remove('modal-open');
+};
+
 // 表格数据处理函数
 const handleTableChange = (pag, filters, sorter) => {
   pagination.current = pag.current;
@@ -982,6 +1016,23 @@ const handleTableChange = (pag, filters, sorter) => {
 
     tagData.value = filteredData;
   }
+};
+
+// 关闭标签详情模态框
+const closeTagDetailModal = () => {
+  viewModalVisible.value = false;
+  document.body.classList.remove('modal-open');
+};
+
+// 查看标签详情
+const viewTagDetails = (tag) => {
+  currentTag.value = { ...tag };
+  // 获取关联标签
+  relatedTags.value = tagData.value
+      .filter(item => item.id !== tag.id && item.category === tag.category)
+      .slice(0, 5);
+  viewModalVisible.value = true;
+  document.body.classList.add('modal-open');
 };
 
 // 表格多选处理
@@ -1066,15 +1117,6 @@ const handleRefresh = () => {
   message.success('数据已刷新');
 };
 
-// 查看标签详情
-const viewTagDetails = (tag) => {
-  currentTag.value = { ...tag };
-  // 获取关联标签
-  relatedTags.value = tagData.value
-      .filter(item => item.id !== tag.id && item.category === tag.category)
-      .slice(0, 5);
-  viewModalVisible.value = true;
-};
 
 // 切换到其他标签详情
 const switchToTag = (tag) => {
@@ -1093,8 +1135,11 @@ const editTag = (tag) => {
     }
   });
   viewModalVisible.value = false;
+  document.body.classList.remove('modal-open');
   editModalVisible.value = true;
+  document.body.classList.add('modal-open');
 };
+
 
 // 处理编辑提交
 const handleEditSubmit = () => {
@@ -1116,6 +1161,7 @@ const handleEditSubmit = () => {
 
           submitLoading.value = false;
           editModalVisible.value = false;
+          document.body.classList.remove('modal-open'); // 确保移除 modal-open 类
           message.success('标签信息已更新');
         }, 500);
       })
@@ -1132,7 +1178,9 @@ const openAddTagModal = () => {
   });
 
   addModalVisible.value = true;
+  document.body.classList.add('modal-open');
 };
+
 
 // 处理添加提交
 const handleAddSubmit = () => {
@@ -1162,6 +1210,7 @@ const handleAddSubmit = () => {
 
           submitLoading.value = false;
           addModalVisible.value = false;
+          document.body.classList.remove('modal-open'); // 确保移除 modal-open 类
           message.success('标签已添加');
         }, 500);
       })
@@ -1169,6 +1218,7 @@ const handleAddSubmit = () => {
         console.error('表单验证失败', error);
       });
 };
+
 
 // 删除标签
 const deleteTag = (tag) => {
@@ -1229,6 +1279,7 @@ const openBatchEditModal = () => {
 
   currentTag.value = { name: selectedTagNames, articleCount: selectedRowKeys.value.length };
   batchEditModalVisible.value = true;
+  document.body.classList.add('modal-open');
 };
 
 // 处理批量编辑提交
@@ -1263,6 +1314,7 @@ const handleBatchEditSubmit = () => {
 
     submitLoading.value = false;
     batchEditModalVisible.value = false;
+    document.body.classList.remove('modal-open'); // 确保移除 modal-open 类
     message.success(`已成功更新${selectedRowKeys.value.length}个标签`);
   }, 500);
 };
@@ -1271,6 +1323,7 @@ const handleBatchEditSubmit = () => {
 const viewRelatedArticles = (tag) => {
   currentTag.value = { ...tag };
   articleLoading.value = true;
+  document.body.classList.add('modal-open');
 
   // 模拟API获取关联文章
   setTimeout(() => {
@@ -1316,6 +1369,12 @@ const viewRelatedArticles = (tag) => {
     articleLoading.value = false;
     relatedArticlesModalVisible.value = true;
   }, 600);
+};
+
+// 关闭关联文章模态框
+const closeRelatedArticlesModal = () => {
+  relatedArticlesModalVisible.value = false;
+  document.body.classList.remove('modal-open');
 };
 
 // 预览文章
@@ -2003,6 +2062,34 @@ onMounted(() => {
     padding: 0 16px;
     cursor: pointer;
     white-space: nowrap;
+  }
+
+  /* 模态框样式优化 */
+  :deep(.tag-detail-modal .ant-modal-content),
+  :deep(.articles-modal .ant-modal-content),
+  :deep(.custom-modal .ant-modal-content) {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  :deep(.custom-modal .ant-modal-mask) {
+    backdrop-filter: blur(5px);
+  }
+
+  /* 当模态框打开时禁用页面滚动 */
+  body.modal-open {
+    overflow: hidden;
+  }
+
+  /* 模态框的全屏覆盖 */
+  :deep(.custom-modal .ant-modal-wrap) {
+    z-index: 2000;
+  }
+
+  :deep(.custom-modal .ant-modal) {
+    top: 20px;
+    padding-bottom: 20px;
   }
 
   /* 响应式调整 */

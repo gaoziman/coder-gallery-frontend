@@ -176,6 +176,10 @@
         title="分类详细信息"
         :footer="null"
         width="600px"
+        class="custom-modal view-category-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeViewModal"
     >
       <a-descriptions bordered :column="1">
         <a-descriptions-item label="分类ID">{{ currentCategory.id }}</a-descriptions-item>
@@ -188,12 +192,6 @@
               <component :is="currentCategory.icon || 'AppstoreOutlined'" style="color: white; font-size: 22px;" />
             </div>
           </div>
-        </a-descriptions-item>
-        <a-descriptions-item label="SEO标题">{{ currentCategory.seoTitle || '无' }}</a-descriptions-item>
-        <a-descriptions-item label="SEO关键词">{{ currentCategory.seoKeywords || '无' }}</a-descriptions-item>
-        <a-descriptions-item label="SEO描述">{{ currentCategory.seoDescription || '无' }}</a-descriptions-item>
-        <a-descriptions-item label="状态">
-          <a-badge :status="getStatusType(currentCategory.status)" :text="getStatusText(currentCategory.status)" />
         </a-descriptions-item>
         <a-descriptions-item label="排序值">{{ currentCategory.sort }}</a-descriptions-item>
         <a-descriptions-item label="创建时间">{{ formatDateTime(currentCategory.createTime) }}</a-descriptions-item>
@@ -217,6 +215,10 @@
         okText="保存"
         cancelText="取消"
         width="700px"
+        class="custom-modal edit-category-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeEditModal"
     >
       <a-form :model="editForm" :rules="rules" ref="editFormRef" layout="vertical">
         <a-row :gutter="16">
@@ -297,20 +299,6 @@
             <a-radio-button value="archived">已归档</a-radio-button>
           </a-radio-group>
         </a-form-item>
-
-        <a-collapse>
-          <a-collapse-panel key="1" header="SEO设置">
-            <a-form-item label="SEO标题" name="seoTitle">
-              <a-input v-model:value="editForm.seoTitle" placeholder="请输入SEO标题" />
-            </a-form-item>
-            <a-form-item label="SEO关键词" name="seoKeywords">
-              <a-input v-model:value="editForm.seoKeywords" placeholder="多个关键词用英文逗号分隔" />
-            </a-form-item>
-            <a-form-item label="SEO描述" name="seoDescription">
-              <a-textarea v-model:value="editForm.seoDescription" placeholder="请输入SEO描述" :rows="3" />
-            </a-form-item>
-          </a-collapse-panel>
-        </a-collapse>
       </a-form>
     </a-modal>
 
@@ -323,6 +311,10 @@
         okText="添加"
         cancelText="取消"
         width="700px"
+        class="custom-modal add-category-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeAddModal"
     >
       <a-form :model="addForm" :rules="rules" ref="addFormRef" layout="vertical">
         <a-row :gutter="16">
@@ -402,20 +394,6 @@
             <a-radio-button value="archived">已归档</a-radio-button>
           </a-radio-group>
         </a-form-item>
-
-        <a-collapse>
-          <a-collapse-panel key="1" header="SEO设置">
-            <a-form-item label="SEO标题" name="seoTitle">
-              <a-input v-model:value="addForm.seoTitle" placeholder="请输入SEO标题" />
-            </a-form-item>
-            <a-form-item label="SEO关键词" name="seoKeywords">
-              <a-input v-model:value="addForm.seoKeywords" placeholder="多个关键词用英文逗号分隔" />
-            </a-form-item>
-            <a-form-item label="SEO描述" name="seoDescription">
-              <a-textarea v-model:value="addForm.seoDescription" placeholder="请输入SEO描述" :rows="3" />
-            </a-form-item>
-          </a-collapse-panel>
-        </a-collapse>
       </a-form>
     </a-modal>
 
@@ -425,6 +403,10 @@
         title="关联文章列表"
         :footer="null"
         width="800px"
+        class="custom-modal articles-modal"
+        :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+        :z-index="2000"
+        @cancel="closeRelatedArticlesModal"
     >
       <a-alert
           type="info"
@@ -1149,6 +1131,7 @@ function filterTableByCategory(categoryId) {
 function viewCategoryDetails(record) {
   currentCategory.value = { ...record };
   viewModalVisible.value = true;
+  document.body.classList.add('modal-open');
 }
 
 // 编辑分类信息
@@ -1164,6 +1147,7 @@ function editCategory(record) {
   updateParentCategoryOptions();
 
   editModalVisible.value = true;
+  document.body.classList.add('modal-open');
 }
 
 // 处理编辑提交
@@ -1199,25 +1183,13 @@ function handleEditSubmit() {
 
           submitLoading.value = false;
           editModalVisible.value = false;
+          document.body.classList.remove('modal-open'); // 确保移除 modal-open 类
           message.success('分类信息已更新');
         }, 500);
       })
       .catch(error => {
         console.error('表单验证失败', error);
       });
-}
-
-// 打开添加分类弹窗
-function openAddCategoryModal() {
-  // 重置添加表单
-  Object.keys(addForm).forEach(key => {
-    addForm[key] = key === 'status' ? 'published' : (key === 'icon' ? 'AppstoreOutlined' : (key === 'iconBg' ? '#6554C0' : (key === 'sort' ? 0 : '')));
-  });
-
-  // 更新父分类选项
-  updateParentCategoryOptions();
-
-  addModalVisible.value = true;
 }
 
 // 处理添加分类提交
@@ -1264,12 +1236,53 @@ function handleAddSubmit() {
 
           submitLoading.value = false;
           addModalVisible.value = false;
+          document.body.classList.remove('modal-open'); // 确保移除 modal-open 类
           message.success('分类已添加');
         }, 500);
       })
       .catch(error => {
         console.error('表单验证失败', error);
       });
+}
+
+// 打开添加分类弹窗
+function openAddCategoryModal() {
+  // 重置添加表单
+  Object.keys(addForm).forEach(key => {
+    addForm[key] = key === 'status' ? 'published' : (key === 'icon' ? 'AppstoreOutlined' : (key === 'iconBg' ? '#6554C0' : (key === 'sort' ? 0 : '')));
+  });
+
+  // 更新父分类选项
+  updateParentCategoryOptions();
+
+  addModalVisible.value = true;
+  document.body.classList.add('modal-open');
+}
+
+
+
+// 关闭查看分类详情弹窗
+function closeViewModal() {
+  viewModalVisible.value = false;
+  document.body.classList.remove('modal-open');
+}
+
+// 关闭编辑分类弹窗
+function closeEditModal() {
+  editModalVisible.value = false;
+  document.body.classList.remove('modal-open');
+}
+
+// 关闭添加分类弹窗
+function closeAddModal() {
+  addModalVisible.value = false;
+  document.body.classList.remove('modal-open');
+}
+
+// 关闭关联文章弹窗
+function closeRelatedArticlesModal() {
+  relatedArticlesModalVisible.value = false;
+  document.body.classList.remove('modal-open');
 }
 
 // 删除分类
@@ -1776,6 +1789,36 @@ a-button[type="link"]:hover {
 /* 表格行悬停效果 */
 .category-table :deep(.ant-table-tbody > tr:hover > td) {
   background-color: #f9f7ff;
+}
+
+/* 模态框样式优化 */
+:deep(.custom-modal .ant-modal-content),
+:deep(.view-category-modal .ant-modal-content),
+:deep(.edit-category-modal .ant-modal-content),
+:deep(.add-category-modal .ant-modal-content),
+:deep(.articles-modal .ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+:deep(.custom-modal .ant-modal-mask) {
+  backdrop-filter: blur(5px);
+}
+
+/* 当模态框打开时禁用页面滚动 */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* 模态框的全屏覆盖 */
+:deep(.custom-modal .ant-modal-wrap) {
+  z-index: 2000;
+}
+
+:deep(.custom-modal .ant-modal) {
+  top: 20px;
+  padding-bottom: 20px;
 }
 
 /* 媒体查询适配平板和手机 */

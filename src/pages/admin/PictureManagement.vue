@@ -297,6 +297,10 @@
           width="800px"
           centered
           class="preview-modal"
+          :mask-style="{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }"
+          :z-index="2000"
+          :style="{ top: 0 }"
+          @cancel="closePreview"
       >
         <div class="preview-modal-content">
           <div class="preview-image-container">
@@ -967,6 +971,14 @@ const handleBatchTag = () => {
 const previewImage = (image) => {
   currentImage.value = image;
   previewVisible.value = true;
+  // 添加类以禁用背景滚动
+  document.body.classList.add('preview-modal-open');
+};
+
+// 在关闭预览模态框时移除类
+const closePreview = () => {
+  previewVisible.value = false;
+  document.body.classList.remove('preview-modal-open');
 };
 
 // 编辑图片
@@ -1432,6 +1444,28 @@ const getImageFormat = (filename) => {
 :deep(.ant-spin-container::after) {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(2px);
+}
+
+
+/* 预览弹窗样式优化 */
+.preview-modal :deep(.ant-modal) {
+  top: 0;
+  padding-bottom: 0;
+}
+
+.preview-modal :deep(.ant-modal-content) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.preview-modal :deep(.ant-modal-mask) {
+  backdrop-filter: blur(5px);
+}
+
+/* 当预览模态框打开时禁用页面滚动 */
+body.preview-modal-open {
+  overflow: hidden;
 }
 
 
