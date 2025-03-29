@@ -1,4 +1,3 @@
-// src/router/index.ts
 import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import HomePage from '@/pages/home/HomePage.vue';
@@ -143,6 +142,15 @@ const routes: Array<RouteRecordRaw> = [
                             requiresAdmin: true
                         },
                     },
+                    {
+                        path: '/profile',
+                        name: 'Profile',
+                        component: () => import('@/pages/user/UserProfile.vue'),
+                        meta: {
+                            title: '个人资料 - 智能云图库',
+                            requiresAuth: true
+                        },
+                    }
                 ]
             }
         ]

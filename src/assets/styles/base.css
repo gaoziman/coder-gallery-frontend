@@ -1030,17 +1030,154 @@ a.ant-typography:hover {
     }
 }
 
-/* 禁用浏览器默认的focus样式 */
-.ant-checkbox:focus {
-    outline: none !important;
+/* 修复顶部导航标签及按钮的悬停样式 - 添加到base.css */
+
+/* 标签页悬停和选中状态的修复 */
+.ant-tabs-tab:hover,
+.ant-tabs-tab:hover .ant-tabs-tab-btn,
+.ant-tabs-nav .ant-tabs-tab-btn:hover,
+.ant-tabs-nav .ant-tabs-tab-btn:active,
+html body .ant-tabs-tab:hover,
+html body .ant-tabs-tab:hover .ant-tabs-tab-btn {
+    color: #6554C0 !important;
 }
 
-.ant-checkbox-input:focus {
-    outline: none !important;
+/* 标签页下划线颜色修复 */
+.ant-tabs-ink-bar,
+.ant-tabs-top > .ant-tabs-nav .ant-tabs-ink-bar,
+.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-ink-bar {
+    background-color: #6554C0 !important;
 }
 
-/* 修复表格头部单元格中的复选框 */
-.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+/* 增强标签页选择器优先级 */
+#app .ant-tabs > .ant-tabs-nav .ant-tabs-tab:hover,
+#app .ant-tabs > div > .ant-tabs-nav .ant-tabs-tab:hover,
+#app .ant-tabs > .ant-tabs-nav .ant-tabs-tab-active:hover,
+#app .ant-tabs > div > .ant-tabs-nav .ant-tabs-tab-active:hover {
+    color: #6554C0 !important;
+}
+
+/* 强制修复图片页面中的标签样式 */
+.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab:hover,
+.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab-active,
+.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-tab:hover,
+.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-tab-active,
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn,
+.ant-tabs-tab-btn:hover,
+.ant-tabs-tab:hover .ant-tabs-tab-btn {
+    color: #6554C0 !important;
+}
+
+/* 修复单选按钮组样式 */
+.ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover {
+    color: #6554C0 !important;
     border-color: #6554C0 !important;
-    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 强制覆盖标签页ink-bar样式 */
+.ant-tabs .ant-tabs-ink-bar {
+    background: #6554C0 !important;
+}
+
+/* 修复设置页面左侧导航 */
+.ant-tabs-left > .ant-tabs-nav .ant-tabs-tab:hover,
+.ant-tabs-left > div > .ant-tabs-nav .ant-tabs-tab:hover {
+    color: #6554C0 !important;
+    background-color: rgba(101, 84, 192, 0.05) !important;
+}
+
+/* 解决特殊场景下的标签页悬停问题 */
+.ant-tabs-nav .ant-tabs-tab:hover,
+.ant-tabs-nav .ant-tabs-tab:hover .ant-tabs-tab-btn,
+.ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active:hover,
+.ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active:hover .ant-tabs-tab-btn {
+    color: #6554C0 !important;
+}
+
+/* 全局修复所有ant-tabs相关悬停样式 */
+div[class*='ant-tabs'] .ant-tabs-tab:hover .ant-tabs-tab-btn,
+div[class*='ant-tabs'] .ant-tabs-tab:hover {
+    color: #6554C0 !important;
+}
+
+/* 修复筛选器全部图片/公开/私密标签 */
+.filter-row .ant-radio-button-wrapper:hover,
+.filter-row .ant-radio-group .ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover {
+    color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+/* 防止浏览器默认获取焦点样式覆盖 */
+.ant-tabs-tab:focus,
+.ant-tabs-tab:focus-visible,
+.ant-tabs-tab-btn:focus,
+.ant-tabs-tab-btn:focus-visible,
+.ant-tabs-tab-remove:focus,
+.ant-tabs-tab-remove:focus-visible {
+    color: #6554C0 !important;
+}
+
+/* 特别处理标签页组件的活动和悬停状态 */
+.ant-tabs-tab.ant-tabs-tab-active,
+.ant-tabs-tab.ant-tabs-tab-active:hover {
+    color: #6554C0 !important;
+}
+
+/* 修复标签切换按钮的悬停样式 - 添加到base.css */
+
+/* 单选按钮组样式修复 - 特别针对"全部图片/公开/私密"切换按钮 */
+.ant-radio-group .ant-radio-button-wrapper:hover,
+.ant-radio-group .ant-radio-button-wrapper:focus {
+    color: #6554C0 !important;
+    border-color: #6554C0 !important;
+    background-color: #f5f5f5 !important; /* 保留浅灰色背景 */
+}
+
+/* 确保未选中的按钮在悬停时颜色也是紫色 */
+.ant-radio-group .ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover {
+    color: #6554C0 !important;
+    border-color: #6554C0 !important;
+}
+
+/* 选中状态的按钮背景色 */
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+    background: #6554C0 !important;
+    border-color: #6554C0 !important;
+    box-shadow: -1px 0 0 0 #6554C0 !important;
+}
+
+/* 选中状态按钮的文字颜色 */
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+    color: white !important;
+}
+
+/* 选中按钮左侧边框修复 */
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)::before {
+    background-color: #6554C0 !important;
+}
+
+/* 特别处理按钮组第一个和最后一个按钮的边角 */
+.ant-radio-group .ant-radio-button-wrapper:first-child:hover,
+.ant-radio-group .ant-radio-button-wrapper:last-child:hover {
+    border-color: #6554C0 !important;
+}
+
+/* 解决按钮悬停时蓝色背景问题 */
+.ant-radio-group .ant-radio-button-wrapper:hover {
+    background-color: rgba(101, 84, 192, 0.05) !important; /* 非常浅的紫色背景 */
+}
+
+/* 当前截图中显示的问题 - 针对性修复 */
+.ant-radio-group-solid .ant-radio-button-wrapper:hover {
+    color: #6554C0 !important;
+    border-color: #6554C0 !important;
+    background: transparent !important; /* 移除蓝色背景 */
+}
+
+/* 强制覆盖Ant Design默认样式 */
+html body .ant-radio-button-wrapper:hover,
+html body .ant-radio-button-wrapper:focus {
+    color: #6554C0 !important;
+    border-color: #6554C0 !important;
+    background: rgba(101, 84, 192, 0.05) !important;
 }
