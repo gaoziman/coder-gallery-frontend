@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
+// 定义路径映射的接口类型
+interface MenuPathItem {
+    top: string | string[] | '';
+    side: string | string[] | '';
+}
+
+// 定义路径映射字典的类型
+interface PathKeyMapType {
+    [path: string]: MenuPathItem;
+}
+
 export const useMenuStore = defineStore('menu', () => {
     // 状态定义保持不变
     const activeMenuType = ref('side');
@@ -8,7 +19,7 @@ export const useMenuStore = defineStore('menu', () => {
     const sideSelectedKeys = ref(['public-gallery']);
 
     // 修改路径映射，确保子菜单路径能正确映射到父菜单
-    const pathKeyMap = ref({
+    const pathKeyMap = ref<PathKeyMapType>({
         '/': { top: 'home', side: 'public-gallery' },
         '/create-image': { top: 'create-image', side: '' },
         '/space': { top: '', side: 'my-space' },
