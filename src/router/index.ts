@@ -123,26 +123,16 @@ const routes: Array<RouteRecordRaw> = [
                             requiresAdmin: true
                         },
                     },
-                    // {
-                    //     path: 'users',
-                    //     name: 'AdminUsers',
-                    //     component: () => import('@/pages/admin/users/UsersManagement.vue'),
-                    //     meta: {
-                    //         title: '用户管理 - 智能云图库',
-                    //         requiresAuth: true,
-                    //         requiresAdmin: true
-                    //     },
-                    // },
-                    // {
-                    //     path: 'comments',
-                    //     name: 'AdminComments',
-                    //     component: () => import('@/pages/admin/comments/CommentsManagement.vue'),
-                    //     meta: {
-                    //         title: '评论管理 - 智能云图库',
-                    //         requiresAuth: true,
-                    //         requiresAdmin: true
-                    //     },
-                    // },
+                    {
+                        path: 'comments',
+                        name: 'CommentsManagement',
+                        component: () => import('@/pages/admin/CommentsManagement.vue'),
+                        meta: {
+                            title: '评论管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
                     // {
                     //     path: 'settings',
                     //     name: 'AdminSettings',
