@@ -155,7 +155,7 @@ import {
   SafetyCertificateOutlined,
   SettingOutlined,
   LoginOutlined,
-  LogoutOutlined,
+  LogoutOutlined, CloudOutlined, CrownOutlined, FolderOpenOutlined,
 } from '@ant-design/icons-vue';
 
 // 获取路由和状态管理
@@ -177,8 +177,8 @@ const navItems = ref([
       {key: 'dashboard', path: '/admin/dashboard', title: '仪表盘', icon: DashboardOutlined},
       {key: 'users', path: '/admin/users', title: '用户管理', icon: UserOutlined},
       {key: 'images', path: '/admin/images', title: '图片管理', icon: PictureOutlined},
-      {key: 'spaces', path: '/admin/spaces', title: '空间管理', icon: AppstoreOutlined},
-      {key: 'categories', path: '/admin/categories', title: '分类管理', icon: AppstoreOutlined},
+      {key: 'spaces', path: '/admin/spaces', title: '空间管理', icon: CrownOutlined},
+      {key: 'categories', path: '/admin/categories', title: '分类管理', icon: FolderOpenOutlined},
       {key: 'tags', path: '/admin/tags', title: '标签管理', icon: TagOutlined},
       {key: 'comments', path: '/admin/comments', title: '评论管理', icon: CommentOutlined}
     ]
@@ -189,8 +189,7 @@ const navItems = ref([
     icon: SettingOutlined,
     active: false,
     children: [
-      {key: 'settings', path: '/admin/settings', title: '系统设置', icon: SettingOutlined},
-      {key: 'security', path: '/admin/security', title: '安全中心', icon: SafetyCertificateOutlined}
+      {key: 'settings', path: '/admin/storage', title: '存储管理', icon: CloudOutlined},
     ]
   },
 ]);

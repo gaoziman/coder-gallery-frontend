@@ -133,26 +133,16 @@ const routes: Array<RouteRecordRaw> = [
                             requiresAdmin: true
                         },
                     },
-                    // {
-                    //     path: 'settings',
-                    //     name: 'AdminSettings',
-                    //     component: () => import('@/pages/admin/settings/SystemSettings.vue'),
-                    //     meta: {
-                    //         title: '系统设置 - 智能云图库',
-                    //         requiresAuth: true,
-                    //         requiresAdmin: true
-                    //     },
-                    // },
-                    // {
-                    //     path: 'security',
-                    //     name: 'AdminSecurity',
-                    //     component: () => import('@/pages/admin/security/SecurityCenter.vue'),
-                    //     meta: {
-                    //         title: '安全中心 - 智能云图库',
-                    //         requiresAuth: true,
-                    //         requiresAdmin: true
-                    //     },
-                    // }
+                    {
+                        path: 'storage',
+                        name: 'StorageManagement',
+                        component: () => import('@/pages/admin/StorageManagement.vue'),
+                        meta: {
+                            title: '存储管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
                 ]
             }
         ]
