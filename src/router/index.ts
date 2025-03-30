@@ -14,7 +14,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'Home',
                 component: HomePage,
                 meta: {
-                    title: '智能云图库 - 发现精彩图片世界',
+                    title: '发现精彩图片世界 - 智能云图库',
                     requiresAuth: false
                 },
             },
@@ -23,7 +23,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'MySpacePage',
                 component: () => import('@/pages/space/MySpacePage.vue'),
                 meta: {
-                    title: '智能云图库 - 我的空间',
+                    title: '我的空间 - 智能云图库',
                     requiresAuth: true
                 },
             },
@@ -32,7 +32,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'FavoritePage',
                 component: () => import('@/pages/other/FavoritePage.vue'),
                 meta: {
-                    title: '智能云图库 - 我的收藏',
+                    title: '我的收藏 - 智能云图库',
                     requiresAuth: true
                 },
             },
@@ -41,7 +41,25 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'ExplorePage',
                 component: () => import('@/pages/explore/ExplorePage.vue'),
                 meta: {
-                    title: '智能云图库 - 探索发现',
+                    title: '探索发现 - 智能云图库',
+                    requiresAuth: true
+                },
+            },
+            {
+                path: '/recommendation',
+                name: 'RecommendationPage',
+                component: () => import('@/pages/other/RecommendationPage.vue'),
+                meta: {
+                    title: '智能推荐 - 智能云图库',
+                    requiresAuth: true
+                },
+            },
+            {
+                path: '/history',
+                name: 'HistoryPage',
+                component: () => import('@/pages/other/HistoryPage.vue'),
+                meta: {
+                    title: '浏览历史 - 智能云图库',
                     requiresAuth: true
                 },
             },

@@ -145,10 +145,10 @@ const menuGroups = [
         path: '/favorites'
       },
       {
-        key: 'saved',
+        key: 'recommendation',
         icon: BookOutlined,
-        label: '已保存',
-        path: '/saved'
+        label: '智能推荐',
+        path: '/recommendation'
       },
       {
         key: 'history',
