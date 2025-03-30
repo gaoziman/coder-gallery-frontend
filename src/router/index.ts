@@ -23,7 +23,25 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'MySpacePage',
                 component: () => import('@/pages/space/MySpacePage.vue'),
                 meta: {
-                    title: '我的空间',
+                    title: '智能云图库 - 我的空间',
+                    requiresAuth: true
+                },
+            },
+            {
+                path: '/favorites',
+                name: 'FavoritePage',
+                component: () => import('@/pages/other/FavoritePage.vue'),
+                meta: {
+                    title: '智能云图库 - 我的收藏',
+                    requiresAuth: true
+                },
+            },
+            {
+                path: '/explore',
+                name: 'ExplorePage',
+                component: () => import('@/pages/explore/ExplorePage.vue'),
+                meta: {
+                    title: '智能云图库 - 探索发现',
                     requiresAuth: true
                 },
             },
@@ -45,7 +63,6 @@ const routes: Array<RouteRecordRaw> = [
                     requiresAuth: false
                 },
             },
-            // 添加图片编辑页路由
             {
                 path: '/edit-image/:id',
                 name: 'EditImage',
