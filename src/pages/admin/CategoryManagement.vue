@@ -51,11 +51,11 @@
         </a-form-item>
         <a-form-item>
           <a-space>
-            <a-button type="primary" html-type="submit" class="search-button">
+            <a-button type="primary" html-type="submit">
               <search-outlined/>
               查询
             </a-button>
-            <a-button @click="resetForm" class="reset-button">
+            <a-button @click="resetForm">
               <reload-outlined/>
               重置
             </a-button>
@@ -67,15 +67,15 @@
     <!-- 操作按钮区域 -->
     <div class="operation-bar">
       <a-space>
-        <a-button type="primary" class="primary-button" @click="openAddCategoryModal">
+        <a-button type="primary" @click="openAddCategoryModal">
           <plus-outlined/>
           添加分类
         </a-button>
-        <a-button class="secondary-button" @click="handleRefresh">
+        <a-button  @click="handleRefresh">
           <reload-outlined/>
           刷新
         </a-button>
-        <a-button danger class="danger-button" :disabled="!hasSelected" @click="handleBatchDelete">
+        <a-button danger  :disabled="!hasSelected" @click="handleBatchDelete">
           <delete-outlined/>
           批量删除
         </a-button>
@@ -83,7 +83,7 @@
 
       <a-space>
         <a-dropdown>
-          <a-button class="secondary-button">
+          <a-button>
             <export-outlined />
             导出
             <down-outlined />
@@ -274,7 +274,6 @@
                       <div
                           v-for="color in colorOptions"
                           :key="color"
-                          class="color-option"
                           :style="{ backgroundColor: color }"
                           @click="editForm.iconBg = color"
                       ></div>
@@ -321,18 +320,6 @@
           <a-col :span="12">
             <a-form-item label="分类名称" name="name">
               <a-input v-model:value="addForm.name" placeholder="请输入分类名称" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="所属父级" name="parentId">
-              <a-tree-select
-                  v-model:value="addForm.parentId"
-                  :tree-data="parentCategoryOptions"
-                  placeholder="请选择父级分类"
-                  tree-default-expand-all
-                  allow-clear
-                  :replace-fields="{ title: 'name', key: 'id', value: 'id' }"
-              />
             </a-form-item>
           </a-col>
         </a-row>
@@ -1431,21 +1418,6 @@ function exportPDF() {
   font-size: 22px;
 }
 
-.bg-purple {
-  background: linear-gradient(135deg, #6554C0 0%, #8A7CE0 100%);
-}
-
-.bg-blue {
-  background: linear-gradient(135deg, #4E7CF6 0%, #7B97F6 100%);
-}
-
-.bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFD666 100%);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #95DE64 100%);
-}
 
 .stat-info {
   flex: 1;
@@ -1499,56 +1471,10 @@ function exportPDF() {
   justify-content: space-between;
 }
 
-.primary-button {
-  background-color: #6554C0;
-  border-color: #6554C0;
-}
-
-.primary-button:hover, .primary-button:focus {
-  background-color: #7C68EE;
-  border-color: #7C68EE;
-}
-
-.search-button {
-  background-color: #6554C0;
-  border-color: #6554C0;
-}
-
-.search-button:hover, .search-button:focus {
-  background-color: #7C68EE;
-  border-color: #7C68EE;
-}
 
 /* 内容区样式 */
 .content-row {
   margin-bottom: 24px;
-}
-
-/* 树形卡片样式 */
-.tree-card {
-  height: 100%;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tree-search {
-  margin-bottom: 16px;
-}
-
-.category-tree {
-  margin-top: 8px;
-}
-
-.tree-node-title {
-  margin-right: 8px;
 }
 
 /* 分类表格样式 */
@@ -1653,109 +1579,6 @@ function exportPDF() {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 16px;
-}
-
-/* 2. 修改二级按钮样式，添加紫色边框和文字*/
-.secondary-button {
-  color: #6554C0;
-  border-color: #6554C0;
-}
-
-.secondary-button:hover, .secondary-button:focus {
-  color: #7C68EE;
-  border-color: #7C68EE;
-  background: #f9f7ff;
-}
-
-a-button[type="link"] {
-  color: #6554C0;
-}
-
-a-button[type="link"]:hover {
-  color: #7C68EE;
-}
-
-.category-tree :deep(.ant-tree-node-selected) {
-  background-color: #f0ebff !important;
-}
-
-.category-tree :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
-  background-color: #f0ebff !important;
-}
-
-.category-table :deep(.ant-table-row-selected > td) {
-  background: #f9f7ff !important;
-}
-
-.category-table :deep(.ant-table-column-sorter-up.active),
-.category-table :deep(.ant-table-column-sorter-down.active) {
-  color: #6554C0;
-}
-
-.category-table :deep(.ant-pagination-item-active) {
-  border-color: #6554C0;
-}
-
-.category-table :deep(.ant-pagination-item-active a) {
-  color: #6554C0;
-}
-
-.category-table :deep(.ant-pagination-item:hover) {
-  border-color: #7C68EE;
-}
-
-.category-table :deep(.ant-pagination-item:hover a) {
-  color: #7C68EE;
-}
-
-.category-table :deep(.ant-pagination-next:hover .ant-pagination-item-link),
-.category-table :deep(.ant-pagination-prev:hover .ant-pagination-item-link) {
-  color: #6554C0;
-  border-color: #6554C0;
-}
-
-.modal-footer .ant-btn-primary {
-  background-color: #6554C0;
-  border-color: #6554C0;
-}
-
-.modal-footer .ant-btn-primary:hover,
-.modal-footer .ant-btn-primary:focus {
-  background-color: #7C68EE;
-  border-color: #7C68EE;
-}
-
-.category-table :deep(.ant-btn-link) {
-  color: #6554C0;
-}
-
-.category-table :deep(.ant-btn-link:hover) {
-  color: #7C68EE;
-}
-
-.category-tree :deep(.ant-tree-switcher) {
-  color: #6554C0;
-}
-
-.search-form :deep(.ant-input:focus),
-.search-form :deep(.ant-input-focused),
-.search-form :deep(.ant-select-focused .ant-select-selector),
-.search-form :deep(.ant-picker-focused) {
-  border-color: #6554C0;
-  box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
-}
-
-:deep(.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)) {
-  color: #6554C0;
-  border-color: #6554C0;
-}
-
-:deep(.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)::before) {
-  background-color: #6554C0;
-}
-
-:deep(.ant-radio-button-wrapper:hover) {
-  color: #7C68EE;
 }
 
 /* 添加操作按钮样式优化 */

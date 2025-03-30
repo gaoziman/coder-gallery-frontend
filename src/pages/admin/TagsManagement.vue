@@ -64,14 +64,14 @@
         </a-form-item>
         <a-form-item>
           <div>
-            <button type="submit" class="custom-button primary">
+            <a-button type="primary">
               <search-outlined/>
               查询
-            </button>
-            <button type="button" class="custom-button secondary" style="margin-left: 8px;" @click="resetForm">
+            </a-button>
+            <a-button style="margin-left: 8px;" @click="resetForm">
               <reload-outlined/>
               重置
-            </button>
+            </a-button>
           </div>
         </a-form-item>
       </a-form>
@@ -80,35 +80,37 @@
     <!-- 操作按钮区域 -->
     <div class="operation-bar">
       <div class="left-buttons">
-        <button class="custom-button primary" @click="openAddTagModal">
+        <a-button class="custom-button primary" @click="openAddTagModal">
           <plus-outlined/>
           添加标签
-        </button>
-        <button class="custom-button secondary" style="margin-left: 8px;" @click="handleRefresh">
+        </a-button>
+        <a-button class="custom-button secondary" style="margin-left: 8px;" @click="handleRefresh">
           <reload-outlined/>
           刷新
-        </button>
-        <button class="custom-button danger" style="margin-left: 8px;" :disabled="!hasSelected" @click="handleBatchDelete">
+        </a-button>
+        <a-button class="custom-button danger" style="margin-left: 8px;" :disabled="!hasSelected"
+                  @click="handleBatchDelete">
           <delete-outlined/>
           批量删除
-        </button>
-        <button class="custom-button secondary" style="margin-left: 8px;" @click="openBatchEditModal" :disabled="!hasSelected">
+        </a-button>
+        <a-button class="custom-button secondary" style="margin-left: 8px;" @click="openBatchEditModal"
+                  :disabled="!hasSelected">
           <edit-outlined/>
           批量编辑
-        </button>
+        </a-button>
       </div>
 
       <div class="right-buttons">
-        <button class="custom-button secondary" @click="toggleViewMode">
-          <component :is="viewMode === 'table' ? 'AppstoreOutlined' : 'BarsOutlined'" />
+        <a-button class="custom-button secondary" @click="toggleViewMode">
+          <component :is="viewMode === 'table' ? 'AppstoreOutlined' : 'BarsOutlined'"/>
           {{ viewMode === 'table' ? '切换到卡片视图' : '切换到表格视图' }}
-        </button>
+        </a-button>
         <a-dropdown>
-          <button class="custom-button secondary" style="margin-left: 8px;">
-            <export-outlined />
+          <a-button class="custom-button secondary" style="margin-left: 8px;">
+            <export-outlined/>
             导出
-            <down-outlined />
-          </button>
+            <down-outlined/>
+          </a-button>
           <template #overlay>
             <a-menu>
               <a-menu-item key="1" @click="exportExcel">导出Excel</a-menu-item>
@@ -123,7 +125,8 @@
     <a-card class="tag-cloud-card" :body-style="{ padding: '24px' }">
       <template #title>
         <div class="card-title">
-          <tags-outlined /> 标签云
+          <tags-outlined/>
+          标签云
         </div>
       </template>
       <div class="tag-cloud">
@@ -165,36 +168,40 @@
           <!-- 热度列 -->
           <template v-if="column.dataIndex === 'popularity'">
             <div class="popularity-indicator">
-              <fire-outlined class="fire-icon" v-for="i in getPopularityLevel(record.popularity)" :key="i" />
-              <fire-outlined class="fire-icon inactive" v-for="i in 3 - getPopularityLevel(record.popularity)" :key="i + 3" />
+              <fire-outlined class="fire-icon" v-for="i in getPopularityLevel(record.popularity)" :key="i"/>
+              <fire-outlined class="fire-icon inactive" v-for="i in 3 - getPopularityLevel(record.popularity)"
+                             :key="i + 3"/>
             </div>
           </template>
 
           <!-- 关联数量列 -->
           <template v-if="column.dataIndex === 'articleCount'">
-            <button class="link-button" @click="viewRelatedArticles(record)">
+            <a-button class="link-button" @click="viewRelatedArticles(record)">
               {{ record.articleCount }} 篇文章
-            </button>
+            </a-button>
           </template>
 
           <!-- 操作列 -->
           <template v-if="column.dataIndex === 'action'">
             <div class="table-actions">
-              <button class="action-button" @click="viewTagDetails(record)">
-                <eye-outlined />
-              </button>
-              <button class="action-button" @click="editTag(record)">
-                <edit-outlined />
-              </button>
+              <a-button type="link" @click="viewTagDetails(record)">
+                <eye-outlined/>
+                查看
+              </a-button>
+              <a-button type="link" @click="editTag(record)">
+                <edit-outlined/>
+                编辑
+              </a-button>
               <a-popconfirm
                   title="确定要删除此标签吗？"
                   ok-text="确定"
                   cancel-text="取消"
                   @confirm="deleteTag(record)"
               >
-                <button class="action-button delete">
-                  <delete-outlined />
-                </button>
+                <a-button type="link">
+                  <delete-outlined/>
+                  删除
+                </a-button>
               </a-popconfirm>
             </div>
           </template>
@@ -213,35 +220,39 @@
           <p class="tag-description">{{ tag.description || '暂无描述' }}</p>
           <div class="tag-meta">
             <div class="tag-stat">
-              <file-outlined /> {{ tag.articleCount }} 篇文章
+              <file-outlined/>
+              {{ tag.articleCount }} 篇文章
             </div>
             <div class="tag-stat">
-              <fire-outlined /> 热度:
+              <fire-outlined/>
+              热度:
               <span class="popularity-indicator">
-                <fire-outlined class="fire-icon" v-for="i in getPopularityLevel(tag.popularity)" :key="i" />
-                <fire-outlined class="fire-icon inactive" v-for="i in 3 - getPopularityLevel(tag.popularity)" :key="i + 3" />
+                <fire-outlined class="fire-icon" v-for="i in getPopularityLevel(tag.popularity)" :key="i"/>
+                <fire-outlined class="fire-icon inactive" v-for="i in 3 - getPopularityLevel(tag.popularity)"
+                               :key="i + 3"/>
               </span>
             </div>
             <div class="tag-stat">
-              <calendar-outlined /> {{ formatDate(tag.createTime) }}
+              <calendar-outlined/>
+              {{ formatDate(tag.createTime) }}
             </div>
           </div>
           <div class="tag-actions">
-            <button class="action-button" @click="viewTagDetails(tag)">
-              <eye-outlined />
-            </button>
-            <button class="action-button" @click="editTag(tag)">
-              <edit-outlined />
-            </button>
+            <a-button type="link" @click="viewTagDetails(tag)">
+              <eye-outlined/>
+            </a-button>
+            <a-button type="link" @click="editTag(tag)">
+              <edit-outlined/>
+            </a-button>
             <a-popconfirm
                 title="确定要删除此标签吗？"
                 ok-text="确定"
                 cancel-text="取消"
                 @confirm="deleteTag(tag)"
             >
-              <button class="action-button delete">
-                <delete-outlined />
-              </button>
+              <a-button type="link">
+                <delete-outlined/>
+              </a-button>
             </a-popconfirm>
           </div>
         </div>
@@ -284,8 +295,9 @@
         <a-descriptions-item label="所属分类">{{ getCategoryName(currentTag.category) }}</a-descriptions-item>
         <a-descriptions-item label="热度">
           <div class="popularity-indicator">
-            <fire-outlined class="fire-icon" v-for="i in getPopularityLevel(currentTag.popularity)" :key="i" />
-            <fire-outlined class="fire-icon inactive" v-for="i in 3 - getPopularityLevel(currentTag.popularity)" :key="i + 3" />
+            <fire-outlined class="fire-icon" v-for="i in getPopularityLevel(currentTag.popularity)" :key="i"/>
+            <fire-outlined class="fire-icon inactive" v-for="i in 3 - getPopularityLevel(currentTag.popularity)"
+                           :key="i + 3"/>
           </div>
         </a-descriptions-item>
         <a-descriptions-item label="关联文章数">{{ currentTag.articleCount }} 篇</a-descriptions-item>
@@ -294,22 +306,23 @@
         <a-descriptions-item label="SEO关键词">{{ currentTag.seoKeywords || '暂无' }}</a-descriptions-item>
       </a-descriptions>
 
-      <a-divider />
+      <a-divider/>
 
       <div class="tag-detail-related">
         <h3>关联的其他标签</h3>
         <div class="related-tags">
-          <a-tag v-for="tag in relatedTags" :key="tag.id" :color="tag.color" style="margin: 4px" @click="switchToTag(tag)">
+          <a-tag v-for="tag in relatedTags" :key="tag.id" :color="tag.color" style="margin: 4px"
+                 @click="switchToTag(tag)">
             {{ tag.name }} ({{ tag.articleCount }})
           </a-tag>
-          <a-empty v-if="relatedTags.length === 0" description="暂无关联标签" />
+          <a-empty v-if="relatedTags.length === 0" description="暂无关联标签"/>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="custom-button secondary" @click="viewModalVisible = false">关闭</button>
-        <button class="custom-button primary" @click="editTag(currentTag)">编辑此标签</button>
-        <button class="custom-button primary" @click="viewRelatedArticles(currentTag)">查看关联文章</button>
+        <a-button type="primary"   @click="viewModalVisible = false">关闭</a-button>
+        <a-button type="primary"  @click="editTag(currentTag)">编辑此标签</a-button>
+        <a-button type="primary"  @click="viewRelatedArticles(currentTag)">查看关联文章</a-button>
       </div>
     </a-modal>
 
@@ -331,7 +344,7 @@
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="标签名称" name="name">
-              <a-input v-model:value="editForm.name" placeholder="请输入标签名称" />
+              <a-input v-model:value="editForm.name" placeholder="请输入标签名称"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -347,7 +360,7 @@
         </a-row>
 
         <a-form-item label="标签描述" name="description">
-          <a-textarea v-model:value="editForm.description" placeholder="请输入标签描述" :rows="3" />
+          <a-textarea v-model:value="editForm.description" placeholder="请输入标签描述" :rows="3"/>
         </a-form-item>
 
         <a-row :gutter="16">
@@ -377,7 +390,7 @@
         </a-row>
 
         <a-form-item label="SEO关键词" name="seoKeywords">
-          <a-input v-model:value="editForm.seoKeywords" placeholder="多个关键词用英文逗号分隔" />
+          <a-input v-model:value="editForm.seoKeywords" placeholder="多个关键词用英文逗号分隔"/>
         </a-form-item>
       </a-form>
 
@@ -405,7 +418,7 @@
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="标签名称" name="name">
-              <a-input v-model:value="addForm.name" placeholder="请输入标签名称" />
+              <a-input v-model:value="addForm.name" placeholder="请输入标签名称"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -421,7 +434,7 @@
         </a-row>
 
         <a-form-item label="标签描述" name="description">
-          <a-textarea v-model:value="addForm.description" placeholder="请输入标签描述" :rows="3" />
+          <a-textarea v-model:value="addForm.description" placeholder="请输入标签描述" :rows="3"/>
         </a-form-item>
 
         <a-row :gutter="16">
@@ -451,7 +464,7 @@
         </a-row>
 
         <a-form-item label="SEO关键词" name="seoKeywords">
-          <a-input v-model:value="addForm.seoKeywords" placeholder="多个关键词用英文逗号分隔" />
+          <a-input v-model:value="addForm.seoKeywords" placeholder="多个关键词用英文逗号分隔"/>
         </a-form-item>
       </a-form>
 
@@ -505,7 +518,7 @@
                 class="color-option clear-option"
                 @click="batchEditForm.color = undefined"
             >
-              <close-outlined />
+              <close-outlined/>
             </div>
           </div>
         </a-form-item>
@@ -539,7 +552,9 @@
     >
       <a-alert type="info" style="margin-bottom: 16px">
         <template #message>
-          标签 <span style="font-weight: bold;">{{ currentTag.name }}</span> 下的文章列表 (共 {{ currentTag.articleCount }} 篇)
+          标签 <span style="font-weight: bold;">{{ currentTag.name }}</span> 下的文章列表 (共 {{
+            currentTag.articleCount
+          }} 篇)
         </template>
       </a-alert>
 
@@ -561,10 +576,10 @@
             </a-tag>
           </template>
           <template v-if="column.dataIndex === 'action'">
-            <button class="action-button" @click="openArticlePreview(record)">
-              <eye-outlined />
+            <a-button class="action-button" @click="openArticlePreview(record)">
+              <eye-outlined/>
               预览
-            </button>
+            </a-button>
           </template>
         </template>
       </a-table>
@@ -599,7 +614,7 @@ import {
   CalendarOutlined,
   CloseOutlined
 } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
 
 // 表格列定义
@@ -608,30 +623,23 @@ const columns = [
     title: 'ID',
     dataIndex: 'id',
     key: 'id',
+    align: 'center',
     width: 60,
   },
   {
     title: '标签',
     dataIndex: 'tag',
+    width: 120,
     key: 'tag',
+    align: 'center',
   },
   {
     title: '描述',
     dataIndex: 'description',
     key: 'description',
+    align: 'center',
+    width: 150,
     ellipsis: true,
-  },
-  {
-    title: '分类',
-    dataIndex: 'category',
-    key: 'category',
-    width: 100,
-    filters: [
-      { text: '技术', value: 'tech' },
-      { text: '设计', value: 'design' },
-      { text: '生活', value: 'life' },
-      { text: '其他', value: 'other' },
-    ],
   },
   {
     title: '热度',
@@ -640,22 +648,16 @@ const columns = [
     width: 120,
     sorter: true,
     filters: [
-      { text: '高', value: 'high' },
-      { text: '中', value: 'medium' },
-      { text: '低', value: 'low' },
+      {text: '高', value: 'high'},
+      {text: '中', value: 'medium'},
+      {text: '低', value: 'low'},
     ],
-  },
-  {
-    title: '文章数量',
-    dataIndex: 'articleCount',
-    key: 'articleCount',
-    width: 100,
-    sorter: true,
   },
   {
     title: '创建时间',
     dataIndex: 'createTime',
     key: 'createTime',
+    align: 'center',
     sorter: true,
     width: 180,
     render: (text) => formatDateTime(text),
@@ -664,8 +666,8 @@ const columns = [
     title: '操作',
     dataIndex: 'action',
     key: 'action',
+    align: 'center',
     width: 200,
-    fixed: 'right',
   },
 ];
 
@@ -835,17 +837,17 @@ const batchEditForm = reactive({
 // 表单验证规则
 const rules = {
   name: [
-    { required: true, message: '请输入标签名称', trigger: 'blur' },
-    { min: 2, max: 20, message: '标签名称长度应为2-20个字符', trigger: 'blur' }
+    {required: true, message: '请输入标签名称', trigger: 'blur'},
+    {min: 2, max: 20, message: '标签名称长度应为2-20个字符', trigger: 'blur'}
   ],
   category: [
-    { required: true, message: '请选择分类', trigger: 'change' }
+    {required: true, message: '请选择分类', trigger: 'change'}
   ],
   color: [
-    { required: true, message: '请选择颜色', trigger: 'change' }
+    {required: true, message: '请选择颜色', trigger: 'change'}
   ],
   popularity: [
-    { required: true, message: '请选择热度', trigger: 'change' }
+    {required: true, message: '请选择热度', trigger: 'change'}
   ]
 };
 
@@ -1026,7 +1028,7 @@ const closeTagDetailModal = () => {
 
 // 查看标签详情
 const viewTagDetails = (tag) => {
-  currentTag.value = { ...tag };
+  currentTag.value = {...tag};
   // 获取关联标签
   relatedTags.value = tagData.value
       .filter(item => item.id !== tag.id && item.category === tag.category)
@@ -1128,7 +1130,7 @@ const switchToTag = (tag) => {
 
 // 编辑标签
 const editTag = (tag) => {
-  currentTag.value = { ...tag };
+  currentTag.value = {...tag};
   Object.keys(editForm).forEach(key => {
     if (key in tag) {
       editForm[key] = tag[key];
@@ -1277,7 +1279,7 @@ const openBatchEditModal = () => {
       .map(item => item.name)
       .join('、');
 
-  currentTag.value = { name: selectedTagNames, articleCount: selectedRowKeys.value.length };
+  currentTag.value = {name: selectedTagNames, articleCount: selectedRowKeys.value.length};
   batchEditModalVisible.value = true;
   document.body.classList.add('modal-open');
 };
@@ -1321,7 +1323,7 @@ const handleBatchEditSubmit = () => {
 
 // 查看关联文章
 const viewRelatedArticles = (tag) => {
-  currentTag.value = { ...tag };
+  currentTag.value = {...tag};
   articleLoading.value = true;
   document.body.classList.add('modal-open');
 
@@ -1409,36 +1411,36 @@ onMounted(() => {
 </script>
 
 <style scoped>
-  /* 全局容器样式 */
-  .tag-management-container {
+/* 全局容器样式 */
+.tag-management-container {
   padding: 16px;
   background-color: #f8f9fc;
 }
 
-  /* 数据统计卡片样式 */
-  .stat-cards {
-    margin-bottom: 24px;
+/* 数据统计卡片样式 */
+.stat-cards {
+  margin-bottom: 24px;
 }
 
-  .stat-card {
-    border-radius: 12px;
+.stat-card {
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
   overflow: hidden;
   border: none;
 }
 
-  .stat-card:hover {
+.stat-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-  .card-content {
+.card-content {
   display: flex;
   align-items: center;
 }
 
-  .icon-container {
+.icon-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1450,89 +1452,74 @@ onMounted(() => {
   font-size: 22px;
 }
 
-  .bg-purple {
-  background: linear-gradient(135deg, #6554C0 0%, #8A7CE0 100%);
-}
 
-  .bg-blue {
-  background: linear-gradient(135deg, #4E7CF6 0%, #7B97F6 100%);
-}
-
-  .bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFD666 100%);
-}
-
-  .bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #95DE64 100%);
-}
-
-  .stat-info {
+.stat-info {
   flex: 1;
 }
 
-  .stat-title {
-    font-size: 14px;
+.stat-title {
+  font-size: 14px;
   color: #8C8C8C;
   margin-bottom: 5px;
 }
 
-  .stat-value {
-    font-size: 28px;
+.stat-value {
+  font-size: 28px;
   font-weight: 600;
   color: #262626;
   line-height: 1.2;
   margin-bottom: 5px;
 }
 
-  .stat-change {
-    font-size: 12px;
+.stat-change {
+  font-size: 12px;
   display: flex;
   align-items: center;
 }
 
-  .increase {
+.increase {
   color: #52C41A;
 }
 
-  .decrease {
+.decrease {
   color: #F5222D;
 }
 
-  /* 搜索表单卡片样式 */
-  .search-form-card {
-    margin-bottom: 24px;
+/* 搜索表单卡片样式 */
+.search-form-card {
+  margin-bottom: 24px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   border: none;
 }
 
-  .search-form {
+.search-form {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
 }
 
-  /* 操作按钮区域样式 */
-  .operation-bar {
-    margin-bottom: 24px;
+/* 操作按钮区域样式 */
+.operation-bar {
+  margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
 }
 
-  /* 标签云卡片样式 */
-  .tag-cloud-card {
-    margin-bottom: 24px;
+/* 标签云卡片样式 */
+.tag-cloud-card {
+  margin-bottom: 24px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   border: none;
 }
 
-  .card-title {
-    font-size: 16px;
+.card-title {
+  font-size: 16px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -1540,7 +1527,7 @@ onMounted(() => {
   color: #333;
 }
 
-  .tag-cloud {
+.tag-cloud {
   padding: 16px 0;
   display: flex;
   flex-wrap: wrap;
@@ -1548,38 +1535,17 @@ onMounted(() => {
   gap: 8px;
 }
 
-  /* 标签表格样式 */
-  :deep(.ant-table) {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
 
-  :deep(.ant-table-thead > tr > th) {
-    background-color: #f8f9fc;
-  font-weight: 500;
-  color: #333;
-}
-
-  :deep(.ant-table-tbody > tr:hover > td) {
-    background-color: #f0ebff;
-}
-
-  :deep(.ant-table-tbody > tr.ant-table-row-selected > td) {
-    background-color: #f0ebff !important;
-}
-
-  /* 卡片视图样式 */
-  .card-view {
+/* 卡片视图样式 */
+.card-view {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 30px;
 }
 
-  .tag-card {
-    border-radius: 12px;
+.tag-card {
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
   height: 100%;
@@ -1589,12 +1555,12 @@ onMounted(() => {
   position: relative;
 }
 
-  .tag-card:hover {
+.tag-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
-  .tag-card-header {
+.tag-card-header {
   display: flex;
   align-items: center;
   padding: 16px;
@@ -1602,8 +1568,8 @@ onMounted(() => {
   background-color: #f9f9f9;
 }
 
-  .tag-title {
-    font-size: 16px;
+.tag-title {
+  font-size: 16px;
   font-weight: 500;
   margin: 0;
   flex: 1;
@@ -1613,11 +1579,11 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-  .tag-card-content {
+.tag-card-content {
   padding: 16px;
 }
 
-  .tag-description {
+.tag-description {
   color: #666;
   margin-bottom: 16px;
   height: 60px;
@@ -1630,21 +1596,21 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-  .tag-meta {
-    margin-top: 16px;
+.tag-meta {
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-  .tag-stat {
+.tag-stat {
   display: flex;
   align-items: center;
   color: #999;
   font-size: 12px;
 }
 
-  .tag-actions {
+.tag-actions {
   display: flex;
   justify-content: space-around;
   margin-top: 16px;
@@ -1652,294 +1618,65 @@ onMounted(() => {
   padding-top: 12px;
 }
 
-  /* 自定义标签样式 */
-  .custom-tag {
-    border-radius: 16px;
-  padding: 2px 10px;
-  font-size: 12px;
-  margin-left: 8px;
-  color: white;
-  display: inline-block;
-}
 
-  .tag-tech {
-    background-color: #4E7CF6;
-}
-
-  .tag-design {
-    background-color: #6554C0;
-}
-
-  .tag-life {
-    background-color: #13C2C2;
-}
-
-  .tag-other {
-    background-color: #FAAD14;
-}
-
-  /* 热度指示器自定义样式 */
-  .popularity-indicator {
+/* 热度指示器自定义样式 */
+.popularity-indicator {
   display: flex;
   align-items: center;
 }
 
-  .fire-icon {
+.fire-icon {
   color: #FF4D4F;
   margin-right: 2px;
 }
 
-  .fire-icon.inactive {
+.fire-icon.inactive {
   color: #E8E8E8;
 }
 
-  /* 自定义按钮样式 */
-  .custom-button {
-    border-radius: 8px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-weight: 500;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-  padding: 0 16px;
-  cursor: pointer;
-}
 
-  .custom-button.primary {
-  background: linear-gradient(to right, #6554C0, #7C68EE);
-  color: white;
-}
-
-  .custom-button.primary:hover {
-  background: linear-gradient(to right, #7C68EE, #8A7CF6);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(101, 84, 192, 0.3);
-}
-
-  .custom-button.secondary {
-    background-color: white;
-  color: #6554C0;
-  border: 1px solid #6554C0;
-}
-
-  .custom-button.secondary:hover {
-    background-color: #f0ebff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(101, 84, 192, 0.1);
-}
-
-  .custom-button.danger {
-    background-color: white;
-  color: #FF4D4F;
-  border: 1px solid #FF4D4F;
-}
-
-  .custom-button.danger:hover {
-    background-color: #fff1f0;
-  color: #ff7875;
-  border-color: #ff7875;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(255, 77, 79, 0.1);
-}
-
-  .custom-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-  .action-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #666;
-  display: flex;
-  align-items: center;
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: all 0.2s;
-  font-size: 14px;
-}
-
-  .action-button:hover {
-    background-color: #f0f0f0;
-  color: #6554C0;
-}
-
-  .action-button.delete:hover {
-  color: #FF4D4F;
-}
-
-  .table-actions {
-  display: flex;
-  gap: 8px;
-}
-
-  .link-button {
-  background: none;
-  border: none;
-  padding: 0;
-  color: #6554C0;
-  cursor: pointer;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-}
-
-  .link-button:hover {
-  color: #7C68EE;
-  text-decoration: underline;
-}
-
-  /* 分页器自定义样式 */
-  .card-pagination {
-    margin-top: 24px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-  :deep(.ant-pagination-item-active) {
-    border-color: #6554C0;
-}
-
-  :deep(.ant-pagination-item-active a) {
-  color: #6554C0;
-}
-
-  :deep(.ant-pagination-item:hover) {
-    border-color: #6554C0;
-}
-
-  :deep(.ant-pagination-item:hover a) {
-  color: #6554C0;
-}
-
-  :deep(.ant-pagination-next:hover .ant-pagination-item-link),
-  :deep(.ant-pagination-prev:hover .ant-pagination-item-link) {
-  color: #6554C0;
-  border-color: #6554C0;
-}
-
-  /* 表单控件自定义样式 */
-  :deep(.ant-input) {
-    border-radius: 8px;
-  border: 1px solid #e8e8e8;
-  padding: 8px 12px;
-  transition: all 0.3s;
-}
-
-  :deep(.ant-input:focus),
-  :deep(.ant-input-focused) {
-    border-color: #6554C0;
-  box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
-}
-
-  :deep(.ant-select-selector) {
-    border-radius: 8px !important;
-  border: 1px solid #e8e8e8 !important;
-  padding: 0 12px !important;
-}
-
-  :deep(.ant-select-focused .ant-select-selector) {
-    border-color: #6554C0 !important;
-  box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
-}
-
-  :deep(.ant-picker) {
-    border-radius: 8px;
-  border: 1px solid #e8e8e8;
-}
-
-  :deep(.ant-picker-focused) {
-    border-color: #6554C0;
-  box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
-}
-
-  /* 标签详情样式 */
-  .tag-detail-header {
+/* 标签详情样式 */
+.tag-detail-header {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 16px 0;
 }
 
-  .tag-detail-name {
-    font-size: 16px;
+.tag-detail-name {
+  font-size: 16px;
   padding: 4px 12px;
   border-radius: 16px;
 }
 
-  .tag-detail-related {
-    margin-top: 24px;
+.tag-detail-related {
+  margin-top: 24px;
 }
 
-  .tag-detail-related h3 {
-    font-size: 16px;
+.tag-detail-related h3 {
+  font-size: 16px;
   font-weight: 500;
   margin-bottom: 12px;
   color: #333;
 }
 
-  .related-tags {
+.related-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
 
-  /* 弹窗自定义样式 */
-  :deep(.ant-modal-content) {
-    border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
 
-  :deep(.ant-modal-header) {
-    background-color: #f9f9f9;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 16px 24px;
-}
-
-  :deep(.ant-modal-title) {
-    font-weight: 600;
-  font-size: 18px;
-  color: #333;
-}
-
-  :deep(.ant-modal-body) {
-  padding: 24px;
-}
-
-  :deep(.ant-modal-footer) {
-    border-top: 1px solid #f0f0f0;
-  padding: 16px 24px;
-}
-
-  /* 自定义描述列表样式 */
-  :deep(.ant-descriptions-bordered) {
-    border-radius: 8px;
-  overflow: hidden;
-}
-
-  :deep(.ant-descriptions-item-label) {
-    background-color: #f9f9f9;
-  font-weight: 500;
-}
-
-  /* 颜色选择器样式 */
-  .color-selector {
+/* 颜色选择器样式 */
+.color-selector {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }
 
-  .color-option {
+.color-option {
   width: 28px;
   height: 28px;
   border-radius: 4px;
@@ -1948,25 +1685,25 @@ onMounted(() => {
   border: 1px solid #f0f0f0;
 }
 
-  .color-option:hover {
+.color-option:hover {
   transform: scale(1.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-  .color-option.active {
+.color-option.active {
   border: 2px solid #6554C0;
   transform: scale(1.1);
 }
 
-  .clear-option {
+.clear-option {
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: #f5f5f5;
 }
 
-  .color-preview {
-    margin-top: 16px;
+.color-preview {
+  margin-top: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1975,143 +1712,99 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-  /* 自定义Alert样式 */
-  :deep(.ant-alert) {
-    border-radius: 8px;
-  margin-bottom: 16px;
-}
 
-  /* 文章表格样式 */
-  .article-table {
-    border-radius: 8px;
+/* 文章表格样式 */
+.article-table {
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-  /* 弹窗底部按钮样式 */
-  .modal-footer {
+/* 弹窗底部按钮样式 */
+.modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
 }
 
-  /* 响应式样式调整 */
-  @media (max-width: 768px) {
+
+/* 模态框样式优化 */
+:deep(.tag-detail-modal .ant-modal-content),
+:deep(.articles-modal .ant-modal-content),
+:deep(.custom-modal .ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+:deep(.custom-modal .ant-modal-mask) {
+  backdrop-filter: blur(5px);
+}
+
+/* 当模态框打开时禁用页面滚动 */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* 模态框的全屏覆盖 */
+:deep(.custom-modal .ant-modal-wrap) {
+  z-index: 2000;
+}
+
+:deep(.custom-modal .ant-modal) {
+  top: 20px;
+  padding-bottom: 20px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
   .operation-bar {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-  .operation-bar > div {
-  margin-bottom: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-  .search-form {
-  flex-direction: column;
-}
-
-  .search-form .ant-form-item {
-  margin-right: 0;
-  width: 100%;
-}
-
-  .card-view {
-  grid-template-columns: 1fr;
-}
-}
-
-  /* 操作按钮区域样式 */
-  .operation-bar {
-    margin-bottom: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .left-buttons, .right-buttons {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .left-buttons {
-    flex-grow: 1;
+    width: 100%;
+    margin-bottom: 12px;
   }
 
   .right-buttons {
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
-
-  /* 按钮样式保持不变 */
-  .custom-button {
-    border-radius: 8px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-weight: 500;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s;
-    padding: 0 16px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  /* 模态框样式优化 */
-  :deep(.tag-detail-modal .ant-modal-content),
-  :deep(.articles-modal .ant-modal-content),
-  :deep(.custom-modal .ant-modal-content) {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-  }
-
-  :deep(.custom-modal .ant-modal-mask) {
-    backdrop-filter: blur(5px);
-  }
-
-  /* 当模态框打开时禁用页面滚动 */
-  body.modal-open {
-    overflow: hidden;
-  }
-
-  /* 模态框的全屏覆盖 */
-  :deep(.custom-modal .ant-modal-wrap) {
-    z-index: 2000;
-  }
-
-  :deep(.custom-modal .ant-modal) {
-    top: 20px;
-    padding-bottom: 20px;
-  }
-
-  /* 响应式调整 */
-  @media (max-width: 768px) {
-    .operation-bar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .left-buttons, .right-buttons {
-      width: 100%;
-      margin-bottom: 12px;
-    }
-
-    .right-buttons {
-      justify-content: flex-start;
-    }
-  }
-
-  @media (min-width: 769px) and (max-width: 1200px) {
-  .card-view {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .card-view {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+/* 响应式样式调整 */
+@media (max-width: 768px) {
+  .operation-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .operation-bar > div {
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-form {
+    flex-direction: column;
+  }
+
+  .search-form .ant-form-item {
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .card-view {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

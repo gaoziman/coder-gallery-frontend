@@ -532,69 +532,6 @@ onMounted(() => {
   gap: 24px;
 }
 
-@media (min-width: 992px) {
-  .explore-content {
-    grid-template-columns: 300px 1fr;
-    gap: 32px;
-  }
-
-  .trends-card {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .featured-section {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .creators-section {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
-  .daily-inspiration {
-    grid-column: 2;
-    grid-row: 2;
-  }
-
-  .topics-section {
-    grid-column: 1 / span 2;
-    grid-row: 4;
-  }
-}
-
-@media (min-width: 1400px) {
-  .explore-content {
-    grid-template-columns: 320px 1fr 320px;
-  }
-
-  .trends-card {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .featured-section {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .creators-section {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-  }
-
-  .daily-inspiration {
-    grid-column: 2;
-    grid-row: 2;
-  }
-
-  .topics-section {
-    grid-column: 1 / span 3;
-    grid-row: 3;
-  }
-}
-
 /* 区域标题通用样式 */
 .section-header {
   display: flex;
@@ -1244,6 +1181,69 @@ onMounted(() => {
   to {
     transform: scale(2.5);
     opacity: 0;
+  }
+}
+
+@media (min-width: 992px) {
+  .explore-content {
+    grid-template-columns: 300px 1fr;
+    gap: 32px;
+  }
+
+  .trends-card {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .featured-section {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .creators-section {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .daily-inspiration {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .topics-section {
+    grid-column: 1 / span 2;
+    grid-row: 4;
+  }
+}
+
+@media (min-width: 1400px) {
+  .explore-content {
+    grid-template-columns: 320px 1fr 320px;
+  }
+
+  .trends-card {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .featured-section {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .creators-section {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .daily-inspiration {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .topics-section {
+    grid-column: 1 / span 3;
+    grid-row: 3;
   }
 }
 </style>

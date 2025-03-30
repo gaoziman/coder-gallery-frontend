@@ -120,6 +120,7 @@
           <a-space>
             <a-button type="link" size="small" @click="editSpace(record)">
               <edit-outlined />
+              编辑
             </a-button>
             <a-popconfirm
                 title="确定要删除此空间吗？"
@@ -129,6 +130,7 @@
             >
               <a-button type="link" size="small" danger>
                 <delete-outlined />
+                删除
               </a-button>
             </a-popconfirm>
           </a-space>
@@ -239,18 +241,22 @@ const columns = [
     title: 'ID',
     dataIndex: 'id',
     key: 'id',
-    width: 210,
+    align: 'center',
+    width: 100,
     ellipsis: true,
   },
   {
     title: '空间名称',
     dataIndex: 'spaceName',
     key: 'spaceName',
+    align: 'center', // 与图片中一致，居中对齐
+    width: 120,
   },
   {
     title: '空间级别',
     dataIndex: 'spaceLevel',
     key: 'spaceLevel',
+    align: 'center',
     width: 120,
     filters: [
       { text: '普通版', value: 'normal' },
@@ -263,7 +269,8 @@ const columns = [
     title: '使用情况',
     dataIndex: 'usage',
     key: 'usage',
-    width: 180,
+    align: 'center', // 改为左对齐，与图片中的实际效果一致
+    width: 240, // 增加宽度确保内容有足够空间显示
     sorter: (a, b) => {
       const percentA = parseFloat(a.usedSize) / parseFloat(a.totalSize);
       const percentB = parseFloat(b.usedSize) / parseFloat(b.totalSize);
@@ -274,29 +281,24 @@ const columns = [
     title: '用户ID',
     dataIndex: 'userId',
     key: 'userId',
-    width: 200,
+    align: 'center',
+    width: 180, // 增加宽度以确保完整显示
     ellipsis: true,
   },
   {
     title: '创建时间',
     dataIndex: 'createTime',
     key: 'createTime',
+    align: 'center',
     width: 180,
     sorter: (a, b) => a.createTime - b.createTime,
-    render: (text) => formatDateTime(text),
-  },
-  {
-    title: '编辑时间',
-    dataIndex: 'updateTime',
-    key: 'updateTime',
-    width: 180,
-    sorter: (a, b) => a.updateTime - b.updateTime,
     render: (text) => formatDateTime(text),
   },
   {
     title: '操作',
     dataIndex: 'action',
     key: 'action',
+    align: 'center',
     width: 150,
     fixed: 'right',
   },
@@ -438,6 +440,48 @@ function fetchSpaceData() {
         updateTime: new Date('2025-02-17 11:51:28').getTime(),
         description: '工作文档存储空间',
         enableAI: false,
+      },
+      {
+        id: '1877381251910950913',
+        spaceName: '滑稽',
+        spaceLevel: 'normal',
+        usedSize: '1.09 MB',
+        totalSize: '100.00 MB',
+        fileCount: 3,
+        fileLimit: 100,
+        userId: '18736470650394828XX',
+        createTime: new Date('2025-01-09 23:45:45').getTime(),
+        updateTime: new Date('2025-01-09 23:45:45').getTime(),
+        description: '趣味图片收藏',
+        enableAI: true,
+      },
+      {
+        id: '1876262285872250882',
+        spaceName: '柠檬',
+        spaceLevel: 'normal',
+        usedSize: '760.93 KB',
+        totalSize: '100.00 MB',
+        fileCount: 1,
+        fileLimit: 100,
+        userId: '18736470650394828XX',
+        createTime: new Date('2025-01-06 21:39:23').getTime(),
+        updateTime: new Date('2025-01-06 13:39:23').getTime(),
+        description: '个人项目素材库',
+        enableAI: false,
+      },
+      {
+        id: '1875019038692790273',
+        spaceName: '月亮',
+        spaceLevel: 'normal',
+        usedSize: '1.76 MB',
+        totalSize: '100.00 MB',
+        fileCount: 2,
+        fileLimit: 100,
+        userId: '18714811610233159XX',
+        createTime: new Date('2025-01-03 11:19:10').getTime(),
+        updateTime: new Date('2025-01-03 11:19:09').getTime(),
+        description: '夜景摄影作品集',
+        enableAI: true,
       },
       {
         id: '1877381251910950913',
@@ -840,23 +884,6 @@ function deleteSpace(record) {
   color: white;
   font-size: 22px;
 }
-
-.bg-blue {
-  background: linear-gradient(135deg, #6554C0 0%, #8A7CE0 100%);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #95DE64 100%);
-}
-
-.bg-purple {
-  background: linear-gradient(135deg, #4E7CF6 0%, #7B97F6 100%);
-}
-
-.bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFD666 100%);
-}
-
 .stat-info {
   flex: 1;
 }
@@ -910,49 +937,5 @@ function deleteSpace(record) {
 .search-button:hover, .search-button:focus {
   background-color: #7C68EE;
   border-color: #7C68EE;
-}
-
-/* 表格样式 */
-.space-table {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
-}
-
-/* 空间名称单元格样式 */
-.space-name-cell {
-  display: flex;
-  align-items: center;
-}
-
-.folder-icon {
-  color: #6554C0;
-  margin-right: 8px;
-  font-size: 18px;
-}
-
-/* 空间使用情况样式 */
-.space-usage {
-  width: 180px;
-}
-
-.space-usage-info {
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.space-usage-count {
-  font-size: 12px;
-  color: #8C8C8C;
-  margin-top: 4px;
-}
-
-/* 复选框描述样式 */
-.checkbox-description {
-  font-size: 12px;
-  color: #8C8C8C;
-  margin-top: 4px;
-  margin-left: 24px;
 }
 </style>

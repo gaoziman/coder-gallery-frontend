@@ -79,15 +79,15 @@
     <!-- 操作按钮区域 -->
     <div class="operation-bar">
       <a-space>
-        <a-button type="primary" class="primary-button" @click="openAddUserModal">
+        <a-button type="primary" @click="openAddUserModal">
           <plus-outlined/>
           添加用户
         </a-button>
-        <a-button class="secondary-button" @click="handleRefresh">
+        <a-button @click="handleRefresh">
           <reload-outlined/>
           重置
         </a-button>
-        <a-button danger class="danger-button" :disabled="!hasSelected" @click="handleBatchDelete">
+        <a-button danger  :disabled="!hasSelected" @click="handleBatchDelete">
           <delete-outlined/>
           批量删除
         </a-button>
@@ -103,7 +103,6 @@
         :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
         @change="handleTableChange"
         row-key="id"
-        class="user-table"
     >
       <template #bodyCell="{ column, record }">
         <!-- 用户头像列 -->
@@ -342,60 +341,64 @@ import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
 
 // 表格列定义
+// 表格列定义
 const columns = [
   {
     title: 'ID',
     dataIndex: 'id',
-    key: 'id',
-    width: 80,
+    align: 'center',
+    width: 70,
+    fixed: 'left'
   },
   {
     title: '账户名',
     dataIndex: 'account',
-    key: 'account',
+    align: 'center',
+    width: 120
   },
   {
     title: '用户名',
     dataIndex: 'username',
-    key: 'username',
+    align: 'center',
+    width: 120
   },
   {
     title: '手机号',
     dataIndex: 'phone',
-    key: 'phone',
+    align: 'center',
+    width: 120
   },
   {
     title: '头像',
     dataIndex: 'avatar',
-    key: 'avatar',
-    width: 80,
+    align: 'center',
+    width: 80
   },
   {
     title: '角色',
     dataIndex: 'role',
-    key: 'role',
-    width: 100,
+    align: 'center',
+    width: 100
   },
   {
     title: '状态',
     dataIndex: 'status',
-    key: 'status',
-    width: 100,
+    align: 'center',
+    width: 100
   },
   {
     title: '注册时间',
     dataIndex: 'registerTime',
-    key: 'registerTime',
-    sorter: true,
-    render: (text) => formatDateTime(text),
+    align: 'center',
+    width: 140
   },
   {
     title: '操作',
     dataIndex: 'action',
-    key: 'action',
-    width: 240,
-    fixed: 'right',
-  },
+    align: 'center',
+    width: 160,
+    className: 'action-column'
+  }
 ];
 
 // 顶部卡片数据
@@ -947,22 +950,6 @@ function getBase64(file, callback) {
   font-size: 22px;
 }
 
-.bg-purple {
-  background: linear-gradient(135deg, #6554C0 0%, #8A7CE0 100%);
-}
-
-.bg-blue {
-  background: linear-gradient(135deg, #4E7CF6 0%, #7B97F6 100%);
-}
-
-.bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFD666 100%);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #95DE64 100%);
-}
-
 .stat-info {
   flex: 1;
 }
@@ -1015,16 +1002,6 @@ function getBase64(file, callback) {
   justify-content: space-between;
 }
 
-.primary-button {
-  background-color: #6554C0;
-  border-color: #6554C0;
-}
-
-.primary-button:hover, .primary-button:focus {
-  background-color: #7C68EE;
-  border-color: #7C68EE;
-}
-
 .search-button {
   background-color: #6554C0;
   border-color: #6554C0;
@@ -1033,14 +1010,6 @@ function getBase64(file, callback) {
 .search-button:hover, .search-button:focus {
   background-color: #7C68EE;
   border-color: #7C68EE;
-}
-
-/* 表格样式 */
-.user-table {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
 }
 
 /* 重置密码提示样式 */

@@ -68,11 +68,15 @@
           <a-form-item>
             <a-space>
               <a-button type="primary" @click="handleSearch" class="search-btn">
-                <template #icon><search-outlined /></template>
+                <template #icon>
+                  <search-outlined/>
+                </template>
                 查询
               </a-button>
               <a-button @click="handleReset">
-                <template #icon><reload-outlined /></template>
+                <template #icon>
+                  <reload-outlined/>
+                </template>
                 重置
               </a-button>
             </a-space>
@@ -141,64 +145,98 @@
       <!-- 网格视图和列表视图容器 -->
       <a-spin :spinning="loading" tip="加载中..." size="large" class="custom-theme-spin">
         <transition name="fade" mode="out-in">
-          <div v-if="viewMode === 'grid'" class="grid-view">
-            <a-row :gutter="[16, 16]">
-              <a-col :xs="24" :sm="12" :md="8" :lg="6" v-for="image in images" :key="image.id">
-                <a-card :bordered="false" hoverable class="image-card">
-                  <div class="image-card-selection">
+          <!-- 网格视图 - 重构版本 -->
+          <div v-if="viewMode === 'grid'" style="padding: 16px 0;">
+            <div style="display: flex; flex-wrap: wrap; margin: -12px;">
+              <div
+                  v-for="image in images"
+                  :key="image.id"
+                  style="width: calc(25% - 24px); padding: 12px; box-sizing: border-box;"
+                  :style="{
+        '@media (max-width: 1200px)': { width: 'calc(33.33% - 24px)' },
+        '@media (max-width: 768px)': { width: 'calc(50% - 24px)' },
+        '@media (max-width: 576px)': { width: '100%' }
+      }"
+              >
+                <!-- 单个图片卡片 - 使用内联样式 -->
+                <div
+                    style="position: relative; display: flex; flex-direction: column; height: 100%; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; transition: all 0.3s;">
+                  <!-- 复选框选择 -->
+                  <div
+                      style="position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.8); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <a-checkbox
                         :checked="selectedRowKeys.includes(image.id)"
                         @change="e => toggleSelection(image.id, e.target.checked)"
                     />
                   </div>
-                  <div class="image-preview">
-                    <img :src="image.url" :alt="image.name" class="preview-img"/>
-                    <div class="image-overlay">
-                      <div class="image-actions">
-                        <a-space>
-                          <a-button class="action-btn" type="primary" shape="circle" @click="previewImage(image)">
-                            <template #icon>
-                              <eye-outlined/>
-                            </template>
-                          </a-button>
-                          <a-button class="action-btn" type="primary" shape="circle" @click="editImage(image)">
-                            <template #icon>
-                              <edit-outlined/>
-                            </template>
-                          </a-button>
-                          <a-button class="action-btn" type="primary" shape="circle" @click="showDeleteConfirm(image)">
-                            <template #icon>
-                              <delete-outlined/>
-                            </template>
-                          </a-button>
-                        </a-space>
+
+                  <!-- 图片预览区域 -->
+                  <div style="position: relative; height: 200px; overflow: hidden; border-radius: 8px 8px 0 0;">
+                    <img
+                        :src="image.url"
+                        :alt="image.name"
+                        style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;"
+                    />
+                    <!-- 悬停遮罩 -->
+                    <div
+                        :id="`overlay-${image.id}`"
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; z-index: 5;"
+                        @mouseenter="document.getElementById(`overlay-${image.id}`).style.opacity = 1"
+                        @mouseleave="document.getElementById(`overlay-${image.id}`).style.opacity = 0"
+                    >
+                      <div style="display: flex; justify-content: center; gap: 8px;">
+                        <a-button class="action-btn" type="primary" shape="circle" @click="previewImage(image)">
+                          <template #icon>
+                            <eye-outlined/>
+                          </template>
+                        </a-button>
+                        <a-button class="action-btn" type="primary" shape="circle" @click="editImage(image)">
+                          <template #icon>
+                            <edit-outlined/>
+                          </template>
+                        </a-button>
+                        <a-button class="action-btn" type="primary" shape="circle" @click="showDeleteConfirm(image)">
+                          <template #icon>
+                            <delete-outlined/>
+                          </template>
+                        </a-button>
                       </div>
                     </div>
                   </div>
-                  <div class="image-info">
-                    <a-typography-title :level="5" class="image-title" :content="image.name" ellipsis />
-                    <a-typography-text type="secondary" class="image-meta">
+
+                  <!-- 图片信息区域 -->
+                  <div
+                      style="padding: 12px; display: flex; flex-direction: column; flex-grow: 1; background-color: white;">
+                    <h5 style="margin: 0 0 8px; font-size: 16px; line-height: 1.4; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      {{ image.name }}</h5>
+
+                    <div style="display: block; margin-bottom: 8px; font-size: 12px; color: #8c8c8c;">
                       {{ image.size }} · {{ formatDate(image.createTime) }}
-                    </a-typography-text>
-                    <div class="image-tags">
+                    </div>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px;">
                       <a-tag v-for="tag in image.tags.slice(0, 2)" :key="tag" color="purple">{{ tag }}</a-tag>
                       <a-tag v-if="image.tags.length > 2" color="blue">+{{ image.tags.length - 2 }}</a-tag>
                     </div>
-                    <a-row justify="space-between" class="image-stats">
-                      <a-col>
+
+                    <div
+                        style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 8px; align-items: center;">
+                      <div>
                         <eye-outlined/>
                         {{ image.views }}
-                      </a-col>
-                      <a-col>
+                      </div>
+                      <div>
                         <star-outlined/>
                         {{ image.favorites }}
-                      </a-col>
-                    </a-row>
+                      </div>
+                    </div>
                   </div>
-                </a-card>
-              </a-col>
-            </a-row>
-            <a-row justify="end" class="mt-4">
+                </div>
+              </div>
+            </div>
+
+            <!-- 分页控件 -->
+            <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
               <a-pagination
                   v-model:current="pagination.current"
                   :total="pagination.total"
@@ -209,7 +247,7 @@
                   @change="handlePaginationChange"
                   @showSizeChange="handleSizeChange"
               />
-            </a-row>
+            </div>
           </div>
 
           <!-- 列表视图 -->
@@ -217,16 +255,10 @@
             <a-table
                 :columns="columns"
                 :data-source="images"
-                :row-selection="{
-                selectedRowKeys,
-                onChange: onSelectChange
-              }"
                 :pagination="pagination"
+                :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
                 @change="handleTableChange"
-                :bordered="false"
-                size="middle"
                 :row-key="record => record.id"
-                :scroll="{ x: 1500 }"
             >
               <!-- 图片预览列 -->
               <template #bodyCell="{ column, record }">
@@ -497,53 +529,62 @@ const columns = [
     dataIndex: 'id',
     width: 70,
     fixed: 'left',
+    align: 'center',
   },
   {
     title: '预览图',
     dataIndex: 'preview',
     width: 100,
     fixed: 'left',
+    align: 'center',
   },
   {
     title: '图片名称',
     dataIndex: 'name',
     width: 200,
     sorter: true,
+    align: 'center',
   },
   {
     title: '图片简介',
     dataIndex: 'description',
-    width: 250,
+    width: 300,
     ellipsis: true,
+    align: 'center',
   },
   {
     title: '文件大小',
     dataIndex: 'size',
     width: 120,
     sorter: true,
+    align: 'center',
   },
   {
     title: '宽度',
     dataIndex: 'width',
     width: 100,
     sorter: true,
+    align: 'center',
   },
   {
     title: '高度',
     dataIndex: 'height',
     width: 100,
     sorter: true,
+    align: 'center',
   },
   {
     title: '宽高比',
     dataIndex: 'ratio',
     width: 100,
     sorter: true,
+    align: 'center',
   },
   {
     title: '分类',
     dataIndex: 'category',
     width: 120,
+    align: 'center',
     filters: [
       {text: '风景/自然', value: '风景/自然'},
       {text: '建筑/城市', value: '建筑/城市'},
@@ -554,37 +595,43 @@ const columns = [
     title: '标签',
     dataIndex: 'tags',
     width: 200,
+    align: 'center',
   },
   {
     title: '浏览量',
     dataIndex: 'views',
     width: 100,
     sorter: true,
+    align: 'center',
   },
   {
     title: '收藏量',
     dataIndex: 'favorites',
     width: 100,
     sorter: true,
+    align: 'center',
   },
   {
     title: '上传用户',
     dataIndex: 'uploader',
     width: 120,
+    align: 'center',
   },
   {
     title: '创建时间',
     dataIndex: 'createTime',
     width: 150,
+    align: 'center',
     sorter: true,
     render: (text) => formatDate(text),
   },
   {
     title: '操作',
     dataIndex: 'action',
-    width: 200,
-    fixed: 'right',
-  },
+    align: 'center',
+    width: 160,
+    className: 'action-column'
+  }
 ];
 
 // 模拟图片数据
@@ -1071,6 +1118,79 @@ const getImageFormat = (filename) => {
   padding: 20px;
   background-color: #f8f8fc;
   min-height: 100vh;
+  --grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  --grid-gap: 16px !important;
+}
+
+/* 强制网格视图的布局结构 */
+.image-management-container .grid-view {
+  display: grid !important;
+  grid-template-columns: var(--grid-template-columns) !important;
+  gap: var(--grid-gap) !important;
+  margin-bottom: 24px !important;
+}
+
+/* 修复图片卡片样式 */
+.image-management-container .image-card {
+  position: relative !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  transition: all 0.3s !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 修复图片预览区域 */
+.image-management-container .image-preview {
+  position: relative !important;
+  height: 200px !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+/* 修复图片叠加层 */
+.image-management-container .image-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s !important;
+  z-index: 5 !important;
+}
+
+/* 确保悬停效果正常工作 */
+.image-management-container .image-preview:hover .image-overlay {
+  opacity: 1 !important;
+}
+
+/* 修复预览图片样式 */
+.image-management-container .preview-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 0.3s ease !important;
+}
+
+/* 修复图片信息区域 */
+.image-management-container .image-info {
+  padding: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-grow: 1 !important;
+}
+
+/* 修复图片操作按钮区域 */
+.image-management-container .image-actions {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 8px !important;
 }
 
 /* 统计卡片样式 */
@@ -1114,62 +1234,12 @@ const getImageFormat = (filename) => {
   color: #F5222D;
 }
 
-
-
-/* 网格视图样式 */
-.image-card {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.3s;
-  height: 100%;
+.image-preview:hover .preview-img {
+  transform: scale(1.05) !important;
 }
 
-.image-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15) !important;
-}
-
-.image-card-selection {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.image-info {
-  padding: 12px;
-}
-
-.image-title {
-  margin: 0 0 8px !important;
-}
-
-.image-meta {
-  display: block;
-  margin-bottom: 8px;
-}
-
-.image-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 8px;
-}
-
-.image-stats {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #666;
+.image-preview:hover .image-overlay {
+  opacity: 1 !important;
 }
 
 /* 列表视图样式 */
@@ -1224,128 +1294,11 @@ const getImageFormat = (filename) => {
   margin-top: 16px;
 }
 
-
 /* 工具类 */
 .mb-6 {
   margin-bottom: 24px;
 }
 
-.mt-4 {
-  margin-top: 16px;
-}
-
-
-/* Ant Design 组件样式覆盖 */
-:deep(.ant-card) {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-:deep(.ant-btn-primary) {
-  background-color: #6554C0;
-  border-color: #6554C0;
-  border-radius: 6px;
-}
-
-:deep(.ant-btn-primary:hover),
-:deep(.ant-btn-primary:focus) {
-  background-color: #8A7CE0;
-  border-color: #8A7CE0;
-}
-
-:deep(.ant-pagination-item-active) {
-  border-color: #6554C0;
-}
-
-:deep(.ant-pagination-item-active a) {
-  color: #6554C0;
-}
-
-:deep(.ant-checkbox-checked .ant-checkbox-inner) {
-  background-color: #6554C0;
-  border-color: #6554C0;
-}
-
-:deep(.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector) {
-  border-color: #6554C0;
-  box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
-}
-
-:deep(.ant-tag-purple) {
-  color: #6554C0;
-  background: rgba(101, 84, 192, 0.1);
-  border-color: rgba(101, 84, 192, 0.2);
-}
-
-/* 修改图片悬停操作按钮的样式 */
-.image-actions {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-/* 操作按钮默认样式 - 白色背景 */
-.action-btn {
-  background-color: white !important;
-  border: none !important;
-  color: #333 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  transition: all 0.2s ease;
-}
-
-/* 操作按钮悬停样式 */
-.action-btn:hover {
-  transform: translateY(-2px);
-  background-color: white !important;
-  color: #6554C0 !important;
-}
-
-/* 操作按钮激活样式 - 点击时变为紫色背景 */
-.action-btn:active {
-  background-color: #6554C0 !important;
-  color: white !important;
-  transform: translateY(1px);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* 调整图片卡片操作区域样式 */
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-  z-index: 5;
-}
-
-.image-preview:hover .image-overlay {
-  opacity: 1;
-}
-
-/* 调整图片卡片整体样式 */
-.image-preview {
-  position: relative;
-  height: 200px;
-  overflow: hidden;
-}
-
-.preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.image-preview:hover .preview-img {
-  transform: scale(1.05);
-}
 
 /* 预览模态框操作按钮样式 */
 .preview-actions {
@@ -1358,92 +1311,6 @@ const getImageFormat = (filename) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-/* 危险操作按钮特殊样式 */
-.action-btn.danger:active {
-  background-color: #ff4d4f !important;
-}
-
-/* 表格中的操作按钮样式 */
-.table-action-btn {
-  color: #333 !important;
-  transition: all 0.2s ease;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.table-action-btn:hover {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-  color: #6554C0 !important;
-}
-
-.table-action-btn:active {
-  background-color: #6554C0 !important;
-  color: white !important;
-}
-
-/* 表格中的危险操作按钮样式 */
-.table-action-btn.danger:hover {
-  color: #ff4d4f !important;
-}
-
-.table-action-btn.danger:active {
-  background-color: #ff4d4f !important;
-  color: white !important;
-}
-
-/* 自定义Tab切换样式 */
-.custom-tab-container {
-  display: flex;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e8e8e8;
-  width: fit-content;
-}
-
-.custom-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-  background-color: white;
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.custom-tab:hover:not(.active) {
-  color: #6554C0;
-  background-color: rgba(101, 84, 192, 0.05);
-}
-
-.custom-tab.active {
-  background-color: #6554C0;
-  color: white;
-}
-
-/* 自定义Ant Design Spin样式 */
-:deep(.custom-theme-spin .ant-spin-dot-item) {
-  background-color: #6554C0;
-}
-
-:deep(.custom-theme-spin .ant-spin-text) {
-  color: #6554C0;
-  font-size: 14px;
-  margin-top: 8px;
-}
-
-:deep(.ant-spin-blur) {
-  opacity: 0.7;
-}
-
-:deep(.ant-spin-container::after) {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(2px);
 }
 
 
@@ -1468,58 +1335,67 @@ body.preview-modal-open {
   overflow: hidden;
 }
 
-
 /* 搜索区域样式重写 */
 .search-form-card {
   margin-bottom: 20px;
 }
 
+/* 搜索表单样式修复 */
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+/* 修复表单项间距 */
+.search-form :deep(.ant-form-item) {
+  margin-bottom: 0;
+  margin-right: 0;
+}
+
+
 /* 响应式布局调整 */
 @media (max-width: 1200px) {
-  .search-btn-wrapper {
-    padding-top: 8px;
+  .search-form {
+    gap: 12px;
+  }
+
+  .grid-view {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .search-btn-wrapper {
-    justify-content: flex-start;
-    padding-top: 16px;
-  }
-}
-
-/* 移动端优化 */
-@media (max-width: 768px) {
-  .search-button-col {
-    justify-content: flex-start;
-    padding-right: 0;
-    margin-top: 16px;
+  .image-management-container {
+    padding: 16px;
   }
 
-  .search-button-col .ant-space {
-    justify-content: flex-start;
+  .grid-view {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
-}
 
-/* 响应式样式调整 */
-@media (max-width: 768px) {
   .custom-tab-container {
     width: 100%;
   }
 
-  .image-card {
-    margin-bottom: 16px;
+  .search-form {
+    flex-direction: column;
   }
 
-  .preview-modal :deep(.ant-modal-content) {
-    width: 95%;
-    margin: 0 auto;
+  .search-form :deep(.ant-form-item) {
+    margin-bottom: 12px;
+    width: 100%;
   }
 }
 
 @media (max-width: 576px) {
   .image-management-container {
     padding: 10px;
+  }
+
+  .grid-view {
+    grid-template-columns: 1fr;
   }
 
   .stat-card {

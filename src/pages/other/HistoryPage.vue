@@ -1,4 +1,3 @@
-<!-- BrowsingHistoryPage.vue -->
 <template>
   <div class="browsing-history-page">
     <!-- 页面标题和状态 -->
@@ -63,7 +62,6 @@
 
           <a-button
               type="primary"
-              class="clear-history-btn"
               @click="showClearHistoryModal"
               @mousedown="addRippleEffect">
             <template #icon><delete-outlined /></template>
@@ -143,12 +141,10 @@
       <div v-if="isFilterActive" class="active-filter-alert">
         <a-alert type="info" show-icon>
           <template #message>
-            <div class="active-filter-info">
               <span>当前已应用 <b>{{ activeFilterCount }}</b> 个筛选条件</span>
               <a-button type="link" size="small" @click="resetFilters">
                 清除全部
               </a-button>
-            </div>
           </template>
         </a-alert>
       </div>
@@ -1246,35 +1242,45 @@ onMounted(() => {
 <style scoped>
 /* 页面基础样式 */
 .browsing-history-page {
-  padding-top: 16px;
+  padding: 20px;
 }
 
-/* 页面标题与统计数据 */
-.page-header {
-  margin-bottom: 24px;
-}
-
-.header-content {
+/* 顶部统计信息区域布局调整 */
+.page-header .header-content {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
+  width: 100%;
 }
 
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
   margin: 0;
 }
 
+
+/* 将统计数据移到右侧 */
 .history-stats {
   display: flex;
-  gap: 24px;
+  gap: 36px;
+  margin-left: auto; /* 推到右侧 */
 }
 
 .stat-item {
   text-align: center;
+  min-width: 100px;
+}
+
+/* 调整统计数据显示效果 */
+.stat-item :deep(.ant-statistic-title) {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.stat-item :deep(.ant-statistic-content) {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 /* 工具栏卡片 */

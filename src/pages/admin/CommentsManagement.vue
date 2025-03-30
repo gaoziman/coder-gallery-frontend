@@ -57,11 +57,11 @@
         </a-form-item>
         <a-form-item>
           <a-space>
-            <a-button type="primary" html-type="submit" class="search-button">
+            <a-button type="primary" html-type="submit">
               <search-outlined/>
               查询
             </a-button>
-            <a-button @click="resetForm" class="reset-button">
+            <a-button @click="resetForm" >
               <reload-outlined/>
               重置
             </a-button>
@@ -73,19 +73,19 @@
     <!-- 操作按钮区域 -->
     <div class="operation-bar">
       <a-space>
-        <a-button type="primary" class="primary-button" @click="handleApproveSelected" :disabled="!hasSelected">
+        <a-button type="primary" @click="handleApproveSelected" :disabled="!hasSelected">
           <check-outlined/>
           批量审核通过
         </a-button>
-        <a-button danger class="danger-button" :disabled="!hasSelected" @click="handleRejectSelected">
+        <a-button danger  :disabled="!hasSelected" @click="handleRejectSelected">
           <stop-outlined/>
           批量拒绝
         </a-button>
-        <a-button danger class="danger-button" :disabled="!hasSelected" @click="handleBatchDelete">
+        <a-button danger :disabled="!hasSelected" @click="handleBatchDelete">
           <delete-outlined/>
           批量删除
         </a-button>
-        <a-button class="secondary-button" @click="handleRefresh">
+        <a-button  @click="handleRefresh">
           <reload-outlined/>
           刷新
         </a-button>
@@ -158,7 +158,7 @@
         <template v-if="column.dataIndex === 'action'">
           <div class="action-buttons-cell">
             <a-space>
-              <a-button type="link" size="small" class="operation-btn view-btn" @click="viewCommentDetails(record)">
+              <a-button type="link" size="small"  @click="viewCommentDetails(record)">
                 <template #icon><eye-outlined /></template>
                 查看
               </a-button>
@@ -328,23 +328,28 @@ const columns = [
     dataIndex: 'id',
     key: 'id',
     width: 70,
+    align: 'center',
   },
   {
     title: '评论者',
     dataIndex: 'avatar',
     key: 'avatar',
     width: 150,
+    align: 'center',
   },
   {
     title: '评论内容',
     dataIndex: 'content',
     key: 'content',
+    width: 200,
+    align: 'center',
   },
   {
     title: '所属图片',
     dataIndex: 'picture',
     key: 'picture',
     width: 180,
+    align: 'center',
   },
   {
     title: '评论时间',
@@ -353,26 +358,29 @@ const columns = [
     width: 150,
     sorter: true,
     render: (text) => formatDateTime(text),
+    align: 'center',
   },
   {
     title: '点赞数',
     dataIndex: 'likes',
     key: 'likes',
-    width: 80,
+    width: 120,
     sorter: true,
+    align: 'center',
   },
   {
     title: '状态',
     dataIndex: 'status',
     key: 'status',
     width: 100,
+    align: 'center',
   },
   {
     title: '操作',
     dataIndex: 'action',
     key: 'action',
     width: 220,
-    fixed: 'right',
+    align: 'center',
   },
 ];
 
@@ -798,22 +806,6 @@ function closeViewModal() {
   font-size: 22px;
 }
 
-.bg-purple {
-  background: linear-gradient(135deg, #6554C0 0%, #8A7CE0 100%);
-}
-
-.bg-blue {
-  background: linear-gradient(135deg, #4E7CF6 0%, #7B97F6 100%);
-}
-
-.bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFD666 100%);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #95DE64 100%);
-}
-
 .stat-info {
   flex: 1;
 }
@@ -1079,13 +1071,6 @@ function closeViewModal() {
   padding: 0 8px;
 }
 
-.view-btn {
-  color: #6554C0 !important;
-}
-
-.view-btn:hover {
-  color: #7C68EE !important;
-}
 
 .approve-btn {
   color: #42a884 !important;
@@ -1111,54 +1096,6 @@ function closeViewModal() {
   color: #FF4D4F !important;
 }
 
-/* 次要按钮样式 */
-.secondary-button {
-  color: #6554C0;
-  border-color: #6554C0;
-}
-
-.secondary-button:hover, .secondary-button:focus {
-  color: #7C68EE;
-  border-color: #7C68EE;
-}
-
-/* 重置按钮样式 */
-.reset-button {
-  color: #6554C0;
-  border-color: #d9d9d9;
-}
-
-.reset-button:hover, .reset-button:focus {
-  color: #7C68EE;
-  border-color: #7C68EE;
-}
-
-/* 危险按钮样式 */
-.danger-button {
-  background-color: white;
-  border-color: #F5222D;
-  color: #F5222D;
-}
-
-.danger-button:hover, .danger-button:focus {
-  background-color: #FFF1F0;
-  border-color: #FF4D4F;
-  color: #FF4D4F;
-}
-
-/* 修复弹窗导航高亮问题 */
-.ant-modal-wrap {
-  z-index: 1000;
-}
-
-.ant-modal {
-  z-index: 1001;
-}
-
-/* 确保弹窗内的元素不会影响主导航 */
-.ant-modal-content {
-  isolation: isolate;
-}
 
 /* 确保弹窗内的链接样式不会影响全局导航 */
 .comment-detail a,

@@ -291,7 +291,7 @@
               </template>
               <a-list-item-meta @click="navigateToDetail(item)">
                 <template #avatar>
-                  <img :src="item.src" class="list-item-image" />
+                  <img :src="item.src" class="list-item-image"  alt=""/>
                 </template>
                 <template #title>
                   <div class="list-item-title">{{ item.title }}</div>
@@ -440,12 +440,10 @@
             <a-tag>{{ record.count }}</a-tag>
           </template>
           <template v-if="column.key === 'action'">
-            <div class="collection-actions">
               <a-button
                   v-if="record.editing"
                   type="link"
                   @click="saveCollectionEdit(index)"
-                  class="confirm-collection-btn"
               >
                 <check-outlined />
               </a-button>
@@ -453,9 +451,8 @@
                   v-else
                   type="link"
                   @click="startCollectionEdit(index)"
-                  class="edit-collection-btn"
               >
-                <edit-outlined />
+                查看<edit-outlined />
               </a-button>
               <a-popconfirm
                   title="确定要删除这个收藏夹吗？"
@@ -464,10 +461,9 @@
                   @confirm="removeCollection(index)"
               >
                 <a-button type="link" danger>
-                  <delete-outlined />
+                  删除<delete-outlined />
                 </a-button>
               </a-popconfirm>
-            </div>
           </template>
         </template>
       </a-table>
@@ -590,10 +586,12 @@ const collectionColumns = [
     title: '项目数量',
     dataIndex: 'count',
     key: 'count',
+    align: 'center',
   },
   {
     title: '操作',
     key: 'action',
+    align: 'center',
   }
 ];
 
@@ -1405,22 +1403,16 @@ onMounted(() => {
   padding-top: 16px;
 }
 
-/* 页面标题与统计数据 */
-.page-header {
-  margin-bottom: 24px;
-}
-
-.header-content {
+/* 顶部统计信息区域布局调整 */
+.page-header .header-content {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
+  width: 100%;
 }
 
 .page-title {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
   margin: 0;
 }
 

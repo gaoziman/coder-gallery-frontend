@@ -33,7 +33,7 @@ export const useMenuStore = defineStore('menu', () => {
         '/admin/comments': { top: ['content-management', 'comments'], side: '' },
         '/admin/storage': { top: ['system-settings', 'storage'], side: '' },
         '/favorites': { top: '', side: 'favorites' },
-        '/recommendation': { top: '', side: 'saved' },
+        '/recommendation': { top: '', side: 'recommendation' },
         '/history': { top: '', side: 'history' },
         '/team': { top: '', side: 'team' },
         '/team/create': { top: '', side: 'team' }, // 添加创建团队路径

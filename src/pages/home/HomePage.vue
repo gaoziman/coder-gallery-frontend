@@ -30,7 +30,9 @@
                     class="create-filter-btn"
                     @click="showCreateFilterModal"
                     @mousedown="addRippleEffect">
-            <template #icon><plus-outlined /></template>
+            <template #icon>
+              <plus-outlined/>
+            </template>
             创建筛选器
           </a-button>
 
@@ -46,7 +48,7 @@
         <a-dropdown :trigger="['click']">
           <a-button class="sort-dropdown">
             筛选排序：最新发布
-            <down-outlined />
+            <down-outlined/>
           </a-button>
           <template #overlay>
             <a-menu @click="handleSortMenuClick">
@@ -142,13 +144,17 @@
         >
           <div class="image-card" @click="navigateToDetail(image)">
             <div class="image-cover-container">
-              <img :src="image.src" :alt="image.title" class="gallery-image" />
+              <img :src="image.src" :alt="image.title" class="gallery-image"/>
               <div class="image-actions-overlay">
                 <a-button type="text" class="image-action-btn" @click.stop="viewImage(image)">
-                  <template #icon><eye-outlined /></template>
+                  <template #icon>
+                    <eye-outlined/>
+                  </template>
                 </a-button>
                 <a-button type="text" class="image-action-btn" @click.stop="downloadImage(image)">
-                  <template #icon><download-outlined /></template>
+                  <template #icon>
+                    <download-outlined/>
+                  </template>
                 </a-button>
                 <a-button
                     v-if="isOwner(image)"
@@ -156,7 +162,9 @@
                     class="image-action-btn delete-btn"
                     @click.stop="confirmDelete(image)"
                 >
-                  <template #icon><delete-outlined /></template>
+                  <template #icon>
+                    <delete-outlined/>
+                  </template>
                 </a-button>
                 <a-button
                     v-else
@@ -166,8 +174,8 @@
                     @click.stop="toggleLike(image)"
                 >
                   <template #icon>
-                    <heart-filled v-if="image.liked" />
-                    <heart-outlined v-else />
+                    <heart-filled v-if="image.liked"/>
+                    <heart-outlined v-else/>
                   </template>
                 </a-button>
               </div>
@@ -175,7 +183,7 @@
             <div class="image-info">
               <div class="image-title">{{ image.title }}</div>
               <div class="image-author">
-                <a-avatar :src="image.author.avatar" :size="24" />
+                <a-avatar :src="image.author.avatar" :size="24"/>
                 <span class="author-name">{{ image.author.name }}</span>
               </div>
               <div class="image-tags">
@@ -199,7 +207,9 @@
     <div class="load-more">
       <a-button type="primary" class="load-more-btn" @click="loadMore">
         加载更多
-        <template #icon><down-outlined /></template>
+        <template #icon>
+          <down-outlined/>
+        </template>
       </a-button>
     </div>
 
@@ -221,10 +231,12 @@ import {
   DownloadOutlined,
   EyeOutlined,
   DeleteOutlined
-} from '@ant-design/icons-vue';;
+} from '@ant-design/icons-vue';
+
+;
 import CreateFilterModal from "@/pages/home/CreateFilterModal.vue";
 import FilterList from "@/pages/home/FilterList.vue";
-import { useFilterStore } from '@/stores/filterStore';
+import {useFilterStore} from '@/stores/filterStore';
 import 'animate.css';
 import {message, Modal} from "ant-design-vue";
 import {useIntersectionObserver} from "@vueuse/core";
@@ -253,7 +265,6 @@ const getSortLabel = (key: string) => {
 };
 
 
-
 // 排序方式
 const handleSortMenuClick = (e: any) => {
   filterStore.setSort(e.key);
@@ -262,40 +273,40 @@ const handleSortMenuClick = (e: any) => {
 
 // 分类数据
 const categories = reactive([
-  { name: '全部', active: true },
-  { name: '个人', active: false },
-  { name: '星球', active: false },
-  { name: '面试题', active: false },
-  { name: '表情包', active: false },
-  { name: '素材', active: false },
-  { name: '学习', active: false },
-  { name: 'Bugs', active: false },
-  { name: '海报', active: false },
-  { name: '壁纸', active: false },
-  { name: '动漫', active: false },
+  {name: '全部', active: true},
+  {name: '个人', active: false},
+  {name: '星球', active: false},
+  {name: '面试题', active: false},
+  {name: '表情包', active: false},
+  {name: '素材', active: false},
+  {name: '学习', active: false},
+  {name: 'Bugs', active: false},
+  {name: '海报', active: false},
+  {name: '壁纸', active: false},
+  {name: '动漫', active: false},
 ]);
 
 
 // 导航到图片详情页
-const navigateToDetail = (image :any) => {
+const navigateToDetail = (image: any) => {
   // 假设image对象有id属性，如果没有可以使用其他唯一标识
   const imageId = image.id || index;
   router.push({
     name: 'PictureDetail',
-    params: { id: imageId },
+    params: {id: imageId},
     // 可以通过state传递一些数据，避免重新加载
-    state: { imageData: image }
+    state: {imageData: image}
   });
 };
 
 // 处理图片浏览
-const viewImage = (image :any) => {
+const viewImage = (image: any) => {
   // 这里可以实现预览功能，或者直接导航到详情页
   navigateToDetail(image);
 };
 
 // 处理图片下载
-const downloadImage = (image :any) => {
+const downloadImage = (image: any) => {
   message.success('图片下载中...');
   // 实际下载逻辑
   const a = document.createElement('a');
@@ -307,14 +318,14 @@ const downloadImage = (image :any) => {
 };
 
 // 检查是否是图片所有者
-const isOwner = (image :any) => {
+const isOwner = (image: any) => {
   // 这里需要根据实际登录用户ID和图片作者ID比较
   // 示例中简单返回false，表示当前用户不是所有图片的所有者
   return false;
 };
 
 // 确认删除图片
-const confirmDelete = (image :any) => {
+const confirmDelete = (image: any) => {
   Modal.confirm({
     title: '确认删除',
     content: '确定要删除这张图片吗？删除后将无法恢复。',
@@ -329,7 +340,7 @@ const confirmDelete = (image :any) => {
 };
 
 // 点赞或取消点赞
-const toggleLike = (image :any) => {
+const toggleLike = (image: any) => {
   image.liked = !image.liked;
   message.success(image.liked ? '已添加到喜欢' : '已取消喜欢');
 };
@@ -348,7 +359,7 @@ const handleToggleTag = (index: number) => {
 
 
 // 处理保存筛选器
-const handleSaveFilter = (filter :any) => {
+const handleSaveFilter = (filter: any) => {
   const result = filterStore.saveFilter(filter);
   if (result.success) {
     message.success(result.message);
@@ -368,7 +379,7 @@ const handleApplyFilter = (filter) => {
     setTimeout(() => {
       const galleryEl = document.querySelector('.masonry-gallery');
       if (galleryEl) {
-        galleryEl.scrollIntoView({ behavior: 'smooth' });
+        galleryEl.scrollIntoView({behavior: 'smooth'});
       }
     }, 300);
   }
@@ -382,25 +393,25 @@ const toggleCategoryActive = (index: number) => {
 
 // 标签数据
 const tags = reactive([
-  { name: '热门', hot: true, count: '120+' },
-  { name: '头像', hot: false },
-  { name: '高清', hot: false },
-  { name: '艺术', hot: false },
-  { name: '校园', hot: false },
-  { name: '风景', hot: false },
-  { name: '简历', hot: false },
-  { name: '创意', hot: false },
-  { name: 'Spring', hot: false },
-  { name: 'SpringBoot', hot: false },
-  { name: '美女', hot: false },
-  { name: '海边', hot: false },
-  { name: 'Mac壁纸', hot: false },
+  {name: '热门', hot: true, count: '120+'},
+  {name: '头像', hot: false},
+  {name: '高清', hot: false},
+  {name: '艺术', hot: false},
+  {name: '校园', hot: false},
+  {name: '风景', hot: false},
+  {name: '简历', hot: false},
+  {name: '创意', hot: false},
+  {name: 'Spring', hot: false},
+  {name: 'SpringBoot', hot: false},
+  {name: '美女', hot: false},
+  {name: '海边', hot: false},
+  {name: 'Mac壁纸', hot: false},
 ]);
 
 // 切换标签选中状态
 const toggleTagActive = (index: number) => {
   filterStore.toggleTagActive(index);
-    fetchGalleryImages();
+  fetchGalleryImages();
 };
 
 // 图库数据
@@ -414,8 +425,8 @@ const galleryImages = reactive([
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
     },
     tags: [
-      { name: '海报', color: 'purple' },
-      { name: 'Mac壁纸', color: '' },
+      {name: '海报', color: 'purple'},
+      {name: 'Mac壁纸', color: ''},
     ],
     liked: false,
   },
@@ -428,8 +439,8 @@ const galleryImages = reactive([
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
     },
     tags: [
-      { name: '风景', color: 'blue' },
-      { name: '高清', color: '' },
+      {name: '风景', color: 'blue'},
+      {name: '高清', color: ''},
     ],
     liked: false,
   },
@@ -442,8 +453,8 @@ const galleryImages = reactive([
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
     },
     tags: [
-      { name: '素材', color: 'green' },
-      { name: '创意', color: '' },
+      {name: '素材', color: 'green'},
+      {name: '创意', color: ''},
     ],
     liked: false,
   },
@@ -456,8 +467,8 @@ const galleryImages = reactive([
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
     },
     tags: [
-      { name: '动漫', color: 'pink' },
-      { name: '壁纸', color: '' },
+      {name: '动漫', color: 'pink'},
+      {name: '壁纸', color: ''},
     ],
     liked: false,
   },
@@ -470,8 +481,8 @@ const galleryImages = reactive([
       avatar: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
     },
     tags: [
-      { name: 'SpringBoot', color: 'blue' },
-      { name: '代码', color: '' },
+      {name: 'SpringBoot', color: 'blue'},
+      {name: '代码', color: ''},
     ],
     liked: false,
   },
@@ -484,8 +495,8 @@ const galleryImages = reactive([
       avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
     },
     tags: [
-      { name: '校园', color: 'cyan' },
-      { name: '四季', color: '' },
+      {name: '校园', color: 'cyan'},
+      {name: '四季', color: ''},
     ],
     liked: false,
   },
@@ -498,13 +509,12 @@ const galleryImages = reactive([
       avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
     },
     tags: [
-      { name: '艺术', color: 'red' },
-      { name: '创意', color: '' },
+      {name: '艺术', color: 'red'},
+      {name: '创意', color: ''},
     ],
     liked: false,
   },
 ]);
-
 
 
 // 加载更多
@@ -524,7 +534,7 @@ const showCreateFilterModal = () => {
 };
 
 // 保存筛选器
-const saveFilter = (filter :any) => {
+const saveFilter = (filter: any) => {
   // 检查是否已有相同名称的筛选器
   const exists = savedFilters.value.some(f => f.name === filter.name);
   if (exists) {
@@ -543,7 +553,7 @@ const saveFilter = (filter :any) => {
 
 
 // 处理删除筛选器
-const handleDeleteFilter = (filterId :any) => {
+const handleDeleteFilter = (filterId: any) => {
   const result = filterStore.deleteFilter(filterId);
   if (result.success) {
     message.success(result.message);
@@ -642,33 +652,33 @@ onMounted(() => {
 
   // 初始化筛选Store，传入初始分类和标签数据
   const initialCategories = [
-    { name: '全部', active: true },
-    { name: '个人', active: false },
-    { name: '星球', active: false },
-    { name: '面试题', active: false },
-    { name: '表情包', active: false },
-    { name: '素材', active: false },
-    { name: '学习', active: false },
-    { name: 'Bugs', active: false },
-    { name: '海报', active: false },
-    { name: '壁纸', active: false },
-    { name: '动漫', active: false },
+    {name: '全部', active: true},
+    {name: '个人', active: false},
+    {name: '星球', active: false},
+    {name: '面试题', active: false},
+    {name: '表情包', active: false},
+    {name: '素材', active: false},
+    {name: '学习', active: false},
+    {name: 'Bugs', active: false},
+    {name: '海报', active: false},
+    {name: '壁纸', active: false},
+    {name: '动漫', active: false},
   ];
 
   const initialTags = [
-    { name: '热门', hot: true, count: '120+' },
-    { name: '头像', hot: false },
-    { name: '高清', hot: false },
-    { name: '艺术', hot: false },
-    { name: '校园', hot: false },
-    { name: '风景', hot: false },
-    { name: '简历', hot: false },
-    { name: '创意', hot: false },
-    { name: 'Spring', hot: false },
-    { name: 'SpringBoot', hot: false },
-    { name: '美女', hot: false },
-    { name: '海边', hot: false },
-    { name: 'Mac壁纸', hot: false },
+    {name: '热门', hot: true, count: '120+'},
+    {name: '头像', hot: false},
+    {name: '高清', hot: false},
+    {name: '艺术', hot: false},
+    {name: '校园', hot: false},
+    {name: '风景', hot: false},
+    {name: '简历', hot: false},
+    {name: '创意', hot: false},
+    {name: 'Spring', hot: false},
+    {name: 'SpringBoot', hot: false},
+    {name: '美女', hot: false},
+    {name: '海边', hot: false},
+    {name: 'Mac壁纸', hot: false},
   ];
 
   filterStore.initialize(initialCategories, initialTags);
@@ -685,9 +695,9 @@ onMounted(() => {
     console.log('找到瀑布流卡片数量:', cards.length);
     cards.forEach((card, index) => {
       // 添加可见性检查
-      const { stop } = useIntersectionObserver(
+      const {stop} = useIntersectionObserver(
           card,
-          ([{ isIntersecting }]) => {
+          ([{isIntersecting}]) => {
             if (isIntersecting) {
               setTimeout(() => {
                 card.classList.add('animate__animated', 'animate__fadeInUp');
@@ -695,7 +705,7 @@ onMounted(() => {
               stop();
             }
           },
-          { threshold: 0.2 }
+          {threshold: 0.2}
       );
     });
   }, 800); // 给DOM渲染足够的时间
@@ -741,7 +751,7 @@ watch(
         fetchGalleryImages();
       }
     },
-    { deep: true }
+    {deep: true}
 );
 </script>
 
@@ -750,7 +760,6 @@ watch(
 .home-page {
   padding-top: 16px;
 }
-
 
 /* 移除标签的默认内边距和边框 */
 .category-tag:deep(.ant-tag),
@@ -773,6 +782,7 @@ watch(
 .sort-dropdown .anticon {
   margin-left: 6px;
 }
+
 .search-container {
   padding: 16px 0 24px;
   display: flex;
@@ -874,6 +884,7 @@ watch(
   width: 48px;
   background: var(--primary-color);
 }
+
 /* 分类浏览区域样式优化 */
 .category-section {
   margin-bottom: 20px;
@@ -1150,6 +1161,7 @@ watch(
   text-align: center;
   padding: 60px 0;
 }
+
 .category-filter-applied {
   border: 1px dashed #6366f1;
 }
@@ -1186,19 +1198,6 @@ watch(
   transform: scale(1.05);
 }
 
-/* 添加脉动动画给"热门"标签 */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-  }
-}
-
 .tag-hot {
   animation: pulse 2s infinite;
 }
@@ -1215,11 +1214,21 @@ watch(
 
 /* 喜欢按钮动画 */
 @keyframes heart-beat {
-  0% { transform: scale(1); }
-  25% { transform: scale(1.2); }
-  50% { transform: scale(1); }
-  75% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .liked {
@@ -1273,7 +1282,7 @@ watch(
   width: 100%;
 }
 
-/* 新的卡片样式，模仿图片1的设计 */
+/* 新的卡片样式 */
 .image-card {
   border-radius: 12px;
   overflow: hidden;
@@ -1413,4 +1422,16 @@ watch(
   color: #ff4d4f;
 }
 
+/* 添加脉动动画给"热门"标签 */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
 </style>

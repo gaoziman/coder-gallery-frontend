@@ -30,15 +30,15 @@
         </div>
 
         <div class="action-buttons">
-          <a-button type="primary" class="action-btn">
+          <a-button type="primary">
             <UploadOutlined />
             上传新图片
           </a-button>
-          <a-button class="action-btn">
+          <a-button>
             <LineChartOutlined />
             查看数据统计
           </a-button>
-          <a-button class="action-btn">
+          <a-button>
             <SettingOutlined />
             系统设置
           </a-button>

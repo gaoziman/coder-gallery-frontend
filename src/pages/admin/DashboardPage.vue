@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import WelcomePanel from '@/components/dashboard/WelcomePanel.vue';
 import StatisticsCards from '@/components/dashboard/StatisticsCards.vue';
 import UserGrowthTrend from '@/components/dashboard/UserGrowthTrend.vue';
@@ -42,7 +42,6 @@ import HotCategory from '@/components/dashboard/HotCategory.vue';
 // 页面加载时可以在这里获取仪表盘所需的数据
 onMounted(() => {
   // 这里可以调用API获取仪表盘数据
-  console.log('仪表盘页面已加载');
   fetchDashboardData();
 });
 

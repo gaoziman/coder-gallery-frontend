@@ -1,34 +1,276 @@
-/* assets/styles/base.css */
+/* 修复表格全选复选框选中时样式溢出问题 */
+.ant-table-wrapper .ant-checkbox-wrapper {
+    font-size: 0; /* 消除文本节点造成的额外空间 */
+    line-height: 1; /* 重置行高 */
+    display: inline-flex; /* 使用inline-flex保持紧凑 */
+    align-items: center; /* 垂直居中 */
+    justify-content: center; /* 水平居中 */
+}
+
+.ant-table-wrapper .ant-checkbox {
+    top: 0; /* 移除默认的top偏移 */
+    margin-right: 0; /* 移除右边距 */
+    font-size: 0; /* 消除文本节点造成的额外空间 */
+    line-height: 0; /* 消除行高导致的额外空间 */
+}
+
+.ant-table-wrapper .ant-checkbox-inner {
+    margin: 0 !important; /* 移除所有外边距 */
+}
+
+.ant-table-wrapper .ant-checkbox-checked::after {
+    display: none !important; /* 移除选中后的边框动画效果 */
+}
+
+.ant-table-wrapper .ant-table-selection-column {
+    text-align: center; /* 确保复选框居中 */
+    padding-left: 8px !important; /* 统一左侧内边距 */
+    padding-right: 8px !important; /* 统一右侧内边距 */
+}
+
+/* 修复表头复选框和表格复选框对齐问题 */
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper,
+.ant-table-tbody > tr > td.ant-table-selection-column .ant-checkbox-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 确保选中状态下不会改变大小或位置 */
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    transform: none !important; /* 防止变换 */
+    transition: background-color 0.3s, border-color 0.3s !important; /* 只保留颜色过渡效果 */
+}
+
+/* 调整复选框的大小以保持一致性 */
+.ant-table-wrapper .ant-checkbox-inner {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important; /* 确保最小宽度 */
+    min-height: 16px !important; /* 确保最小高度 */
+}
+
+/* 消除表头复选框的特殊动画效果 */
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-checked::after {
+    animation: none !important; /* 移除动画 */
+    display: none !important; /* 完全隐藏 */
+}
+
+/* 调整勾选图标位置使其居中 */
+.ant-table-wrapper .ant-checkbox-inner::after {
+    top: 50% !important;
+    left: 21.5% !important;
+    margin-top: -6.14285714px !important;
+}/* 表格复选框焦点和点击状态 */
+.ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+    outline: none !important;
+}
+
+/* 表格复选框点击瞬间的样式 */
+.ant-checkbox-wrapper .ant-checkbox-inner::after {
+    border-color: white !important;
+}
+
+/* 处理 Chrome 浏览器的 focus-visible 状态 */
+.ant-checkbox-wrapper .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 处理全选复选框 */
+.ant-table-thead .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner,
+.ant-table-thead .ant-checkbox-wrapper .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 选中行样式增强 */
+.ant-table-tbody > tr.ant-table-row-selected > td {
+    background-color: var(--primary-color-bg) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+    background-color: rgba(101, 84, 192, 0.15) !important;
+}
+
+/* 确保选中状态的复选框以及其内部的对勾符号保持紫色 */
+.ant-checkbox-checked::after {
+    border: 1px solid var(--primary-color) !important;
+}
+
+/* 专门针对表格中复选框的交互样式 */
+.ant-table-wrapper .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+}
+
+/* 修复表格行选中和悬停状态混合时的样式 */
+.ant-table-tbody > tr.ant-table-row-selected:hover {
+    background: rgba(101, 84, 192, 0.15) !important;
+}
+
+/* 确保表头复选框样式一致 */
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 半选状态下的复选框样式 */
+.ant-table-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: white !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}/* 表格复选框样式覆盖 */
+.ant-table-wrapper .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+    background-color: var(--primary-color-bg) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* 表格选中行和悬停行样式 */
+.ant-table-tbody > tr.ant-table-row-selected > td {
+    background-color: var(--primary-color-bg) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+    background-color: rgba(101, 84, 192, 0.15) !important;
+}
+
+/* 表格复选框选择器样式 */
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 表格中复选框选中样式 */
+.ant-table-wrapper .ant-checkbox-checked::after {
+    border-color: var(--primary-color) !important;
+}
+
+/* 修复表头中复选框样式 */
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* 确保表格行中的复选框勾选标记可见 */
+.ant-table-tbody .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 表格行交互状态 */
+.ant-table-tbody > tr:hover > td {
+    background-color: var(--primary-lighter) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected > td.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 确保选中行和悬停在选中行的样式正确 */
+.ant-table-tbody > tr.ant-table-row-selected:hover {
+    background-color: rgba(101, 84, 192, 0.15) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+    background-color: rgba(101, 84, 192, 0.15) !important;
+}
+
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner,
+.ant-table-tbody > tr > td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner {
+    margin-right: 8px !important;
+}
+
+/* 表格复选框半选状态 */
+.ant-table-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color);
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 表格列表头部分选样式 */
+.ant-table-wrapper .ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 修复表格复选框勾选动画 */
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: white !important;
+    transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s !important;
+}/* assets/styles/base.css */
 
 /* 全局变量定义 */
 :root {
-    /* 主色调 - 从原型图中提取 */
-    --primary-color: #4F46E5;  /* 主色 - 靛蓝色 */
-    --primary-hover: #4338CA;  /* 主色悬停状态 */
-    --primary-active: #3730A3;  /* 主色激活状态 */
-    --primary-light: #6366F1;  /* 主色亮色变体 */
-    --primary-color-bg: rgba(79, 70, 229, 0.1);  /* 主色背景 */
-    --primary-color-border: rgba(79, 70, 229, 0.3);  /* 主色边框 */
+    /* 主色调 - 紫色系 */
+    --primary-color: #6554C0;           /* 主色 - 靛蓝色 */
+    --primary-hover: #7C68EE;           /* 主色悬停状态 */
+    --primary-active: #5346A0;          /* 主色激活状态 */
+    --primary-light: #8A7CE0;           /* 主色亮色变体 */
+    --primary-lighter: #f0ebff;         /* 主色更亮变体 - 用于背景 */
+    --primary-color-bg: rgba(101, 84, 192, 0.1);  /* 主色背景 */
+    --primary-color-border: rgba(101, 84, 192, 0.3);  /* 主色边框 */
 
     /* 背景色 */
-    --bg-color: #f9fafb;  /* 页面背景色 */
-    --bg-white: #ffffff;  /* 白色背景 */
-    --bg-gray-light: #f3f4f6;  /* 浅灰色背景 */
+    --bg-color: #f9fafb;                /* 页面背景色 */
+    --bg-white: #ffffff;                /* 白色背景 */
+    --bg-gray-light: #f3f4f6;           /* 浅灰色背景 */
 
     /* 文本颜色 */
-    --text-primary: #111827;  /* 主要文本 */
-    --text-secondary: #6b7280;  /* 次要文本 */
-    --text-disabled: #9ca3af;  /* 禁用文本 */
+    --text-primary: #111827;            /* 主要文本 */
+    --text-secondary: #6b7280;          /* 次要文本 */
+    --text-disabled: #9ca3af;           /* 禁用文本 */
 
     /* 边框颜色 */
-    --border-color: #e5e7eb;  /* 主边框色 */
-    --border-color-light: #f3f4f6;  /* 浅色边框 */
+    --border-color: #e5e7eb;            /* 主边框色 */
+    --border-color-light: #f3f4f6;      /* 浅色边框 */
 
     /* 其他颜色 */
-    --success-color: #10b981;  /* 成功色 */
-    --warning-color: #f59e0b;  /* 警告色 */
-    --error-color: #ef4444;  /* 错误色 */
-    --info-color: #3b82f6;  /* 信息色 */
+    --success-color: #52C41A;           /* 成功色 */
+    --warning-color: #FAAD14;           /* 警告色 */
+    --error-color: #F5222D;             /* 错误色 */
+    --info-color: #3b82f6;              /* 信息色 */
 
     /* 阴影 */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -50,26 +292,131 @@ body {
     line-height: 1.5;
 }
 
-/* 覆盖 Ant Design 组件样式 */
+/* ================= BUTTON 按钮 ================= */
+/* 普通按钮 */
+.ant-btn {
+    border-radius: 6px;
+    transition: all var(--transition-normal);
+}
 
-/* 主色调 */
+.ant-btn:hover,
+.ant-btn:focus {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 主要按钮 */
 .ant-btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
 }
 
 .ant-btn-primary:hover,
 .ant-btn-primary:focus {
-    background-color: var(--primary-hover);
-    border-color: var(--primary-hover);
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+    color: white !important;
 }
 
 .ant-btn-primary:active {
-    background-color: var(--primary-active);
-    border-color: var(--primary-active);
+    background-color: var(--primary-active) !important;
+    border-color: var(--primary-active) !important;
 }
 
-/* 链接颜色 */
+/* 虚线按钮 */
+.ant-btn-dashed:hover,
+.ant-btn-dashed:focus {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 链接按钮 */
+.ant-btn-link {
+    color: var(--primary-color) !important;
+}
+
+.ant-btn-link:hover,
+.ant-btn-link:focus {
+    color: var(--primary-hover) !important;
+    background-color: transparent !important;
+}
+
+/* 文本按钮 */
+.ant-btn-text:hover,
+.ant-btn-text:focus {
+    color: var(--primary-color) !important;
+    background-color: var(--primary-color-bg) !important;
+}
+
+/* 危险按钮 */
+.ant-btn-dangerous {
+    color: var(--error-color) !important;
+    border-color: var(--error-color) !important;
+}
+
+.ant-btn-dangerous.ant-btn-primary {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+.ant-btn-dangerous:hover,
+.ant-btn-dangerous:focus {
+    color: #ff4d4f !important;
+    border-color: #ff4d4f !important;
+    background-color: #fff1f0 !important;
+}
+
+.ant-btn-dangerous.ant-btn-primary:hover,
+.ant-btn-dangerous.ant-btn-primary:focus {
+    background-color: #ff4d4f !important;
+    border-color: #ff4d4f !important;
+}
+
+/* 按钮组 */
+.ant-btn-group > .ant-btn:hover,
+.ant-btn-group > .ant-btn:focus {
+    border-color: var(--primary-color) !important;
+}
+
+/* 按钮加载状态 */
+.ant-btn.ant-btn-loading {
+    opacity: 0.7;
+}
+
+/* 按钮禁用状态 */
+.ant-btn:disabled,
+.ant-btn[disabled] {
+    color: var(--text-disabled) !important;
+    border-color: var(--border-color) !important;
+    background-color: #f5f5f5 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+}
+
+.ant-btn-primary:disabled,
+.ant-btn-primary[disabled] {
+    background-color: #d9d9d9 !important;
+    color: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 幽灵按钮 */
+.ant-btn-background-ghost {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-btn-background-ghost:hover,
+.ant-btn-background-ghost:focus {
+    color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+}
+
+.ant-btn-background-ghost.ant-btn-primary {
+    color: var(--primary-color) !important;
+}
+
+/* ================= TYPOGRAPHY 排版 ================= */
 .ant-typography a,
 a.ant-typography,
 .ant-typography a:hover,
@@ -77,33 +424,104 @@ a.ant-typography:hover {
     color: var(--primary-color);
 }
 
-/* 表单控件 */
-.ant-form-item-label > label.ant-form-item-required:not(.ant-form-item-required-mark-optional)::before {
-    color: var(--error-color);
+.ant-typography-expand,
+.ant-typography-edit,
+.ant-typography-copy {
+    color: var(--primary-color);
 }
 
-.ant-form-item-has-error .ant-input,
-.ant-form-item-has-error .ant-input-affix-wrapper,
-.ant-form-item-has-error .ant-input:hover,
-.ant-form-item-has-error .ant-input-affix-wrapper:hover {
-    border-color: var(--error-color);
+.ant-typography-expand:hover,
+.ant-typography-edit:hover,
+.ant-typography-copy:hover {
+    color: var(--primary-hover);
 }
 
-/* 菜单 */
+.ant-typography-copy-success .anticon {
+    color: var(--success-color);
+}
+
+/* ================= DIVIDER 分割线 ================= */
+.ant-divider-horizontal.ant-divider-with-text::before,
+.ant-divider-horizontal.ant-divider-with-text::after {
+    border-color: var(--border-color);
+}
+
+.ant-divider-vertical {
+    border-color: var(--border-color);
+}
+
+/* ================= LAYOUT 布局 ================= */
+.ant-layout-header {
+    background: var(--bg-white);
+    box-shadow: var(--shadow-sm);
+}
+
+.ant-layout-footer {
+    background: var(--bg-white);
+}
+
+.ant-layout-sider {
+    background: var(--bg-white);
+    box-shadow: var(--shadow);
+}
+
+.ant-layout-content {
+    background: var(--bg-color);
+}
+
+/* ================= SPACE 间距 ================= */
+.ant-space-item {
+    margin-right: 8px;
+}
+
+/* ================= AFFIX 固钉 ================= */
+.ant-affix {
+    z-index: 10;
+}
+
+/* ================= BREADCRUMB 面包屑 ================= */
+.ant-breadcrumb a {
+    color: var(--primary-color);
+}
+
+.ant-breadcrumb a:hover {
+    color: var(--primary-hover);
+}
+
+.ant-breadcrumb-separator {
+    color: var(--text-secondary);
+}
+
+/* ================= DROPDOWN 下拉菜单 ================= */
+.ant-dropdown-menu-item:hover,
+.ant-dropdown-menu-submenu-title:hover {
+    background-color: var(--primary-color-bg);
+}
+
+.ant-dropdown-menu-item-selected {
+    background-color: var(--primary-color-bg);
+    color: var(--primary-color);
+}
+
+.ant-dropdown-menu-item-selected:hover {
+    background-color: var(--primary-color-bg);
+}
+
+/* ================= MENU 菜单 ================= */
+.ant-menu-item:hover,
+.ant-menu-item-active,
+.ant-menu:not(.ant-menu-inline) .ant-menu-submenu-open,
+.ant-menu-submenu-active,
+.ant-menu-submenu-title:hover {
+    color: var(--primary-color);
+}
+
 .ant-menu-item-selected {
     color: var(--primary-color);
 }
 
 .ant-menu-item-selected a,
 .ant-menu-item-selected a:hover {
-    color: var(--primary-color);
-}
-
-.ant-menu-item:hover,
-.ant-menu-item-active,
-.ant-menu:not(.ant-menu-inline) .ant-menu-submenu-open,
-.ant-menu-submenu-active,
-.ant-menu-submenu-title:hover {
     color: var(--primary-color);
 }
 
@@ -125,57 +543,575 @@ a.ant-typography:hover {
     border-bottom-color: var(--primary-color);
 }
 
-/* 下拉菜单 */
-.ant-dropdown-menu-item:hover,
-.ant-dropdown-menu-submenu-title:hover {
-    background-color: var(--primary-color-bg);
+.ant-menu-vertical .ant-menu-item::after,
+.ant-menu-vertical-left .ant-menu-item::after,
+.ant-menu-vertical-right .ant-menu-item::after,
+.ant-menu-inline .ant-menu-item::after {
+    border-right: 3px solid var(--primary-color);
 }
 
-/* 分页 */
-.ant-pagination-item:hover a,
-.ant-pagination-item-active a {
-    color: var(--primary-color);
+.ant-menu-dark.ant-menu-dark:not(.ant-menu-horizontal) .ant-menu-item-selected {
+    background-color: var(--primary-color);
 }
 
-.ant-pagination-item-active {
-    border-color: var(--primary-color);
-}
-
-.ant-pagination-item:hover {
-    border-color: var(--primary-color);
-}
-
-.ant-pagination-prev:hover .ant-pagination-item-link,
-.ant-pagination-next:hover .ant-pagination-item-link {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-/* 选择器 */
-.ant-select-focused .ant-select-selector,
-.ant-select-selector:hover,
-.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+/* ================= PAGINATION 分页 ================= */
+/* 分页组件样式增强 - 确保选中项使用紫色主题 */
+.ant-pagination-item-active,
+.ant-pagination-item-active:focus,
+.ant-pagination-item-active:hover,
+html body .ant-pagination .ant-pagination-item-active,
+html body .ant-pagination .ant-pagination-item-active:focus,
+html body .ant-pagination .ant-pagination-item-active:hover {
+    background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
 }
 
-/* 多选/单选/复选框 */
-.ant-radio-checked .ant-radio-inner,
+/* 确保文字颜色为白色，增强可读性 */
+.ant-pagination-item-active a,
+.ant-pagination-item-active:focus a,
+.ant-pagination-item-active:hover a,
+html body .ant-pagination .ant-pagination-item-active a,
+html body .ant-pagination .ant-pagination-item-active:focus a,
+html body .ant-pagination .ant-pagination-item-active:hover a {
+    color: #ffffff !important;
+}
+
+/* 确保当前页数字按钮的边框颜色正确 */
+.ant-pagination-item-active,
+html body .ant-pagination-item-active {
+    border-color: var(--primary-color) !important;
+}
+
+/* 修复页面跳转和页数选择器样式 */
+.ant-pagination-options-quick-jumper input:focus,
+.ant-pagination-options-quick-jumper input:hover,
+.ant-select-focused .ant-select-selector,
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 分页器箭头悬停样式 */
+.ant-pagination-prev:hover .ant-pagination-item-link,
+.ant-pagination-next:hover .ant-pagination-item-link,
+.ant-pagination-prev:focus .ant-pagination-item-link,
+.ant-pagination-next:focus .ant-pagination-item-link {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 修复下拉选择器中的样式 */
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: var(--primary-color-bg) !important;
+    color: var(--primary-color) !important;
+}
+
+/* ================= STEPS 步骤条 ================= */
+.ant-steps-item-process .ant-steps-item-icon {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.ant-steps-item-finish .ant-steps-item-icon {
+    border-color: var(--primary-color);
+}
+
+.ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon {
+    color: var(--primary-color);
+}
+
+.ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title::after {
+    background-color: var(--primary-color);
+}
+
+.ant-steps-navigation .ant-steps-item::before {
+    background-color: var(--primary-color);
+}
+
+/* ================= FORM 表单 ================= */
+/* 表单标签 */
+.ant-form-item-label > label.ant-form-item-required:not(.ant-form-item-required-mark-optional)::before {
+    color: var(--error-color);
+}
+
+/* 表单控件错误状态 */
+.ant-form-item-has-error .ant-input,
+.ant-form-item-has-error .ant-input-affix-wrapper,
+.ant-form-item-has-error .ant-input:hover,
+.ant-form-item-has-error .ant-input-affix-wrapper:hover {
+    border-color: var(--error-color);
+}
+
+.ant-form-item-has-error .ant-input:focus,
+.ant-form-item-has-error .ant-input-affix-wrapper:focus,
+.ant-form-item-has-error .ant-input-focused,
+.ant-form-item-has-error .ant-input-affix-wrapper-focused {
+    border-color: var(--error-color);
+    box-shadow: 0 0 0 2px rgba(245, 34, 45, 0.2);
+}
+
+.ant-form-item-has-error .ant-select:not(.ant-select-disabled):not(.ant-select-customize-input) .ant-select-selector {
+    border-color: var(--error-color) !important;
+}
+
+.ant-form-item-has-error .ant-select:not(.ant-select-disabled):not(.ant-select-customize-input).ant-select-focused .ant-select-selector {
+    border-color: var(--error-color) !important;
+    box-shadow: 0 0 0 2px rgba(245, 34, 45, 0.2) !important;
+}
+
+/* 表单底部信息 */
+.ant-form-item-explain-error {
+    color: var(--error-color);
+}
+
+.ant-form-item-extra {
+    color: var(--text-secondary);
+}
+
+/* ================= INPUT 输入框 ================= */
+.ant-input:hover {
+    border-color: var(--primary-hover) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+.ant-input-prefix,
+.ant-input-suffix {
+    color: var(--text-secondary);
+}
+
+.ant-input-affix-wrapper:hover {
+    border-color: var(--primary-hover) !important;
+}
+
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+.ant-input-number:hover {
+    border-color: var(--primary-hover) !important;
+}
+
+.ant-input-number:focus,
+.ant-input-number-focused {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+.ant-input-number-handler:hover .ant-input-number-handler-up-inner,
+.ant-input-number-handler:hover .ant-input-number-handler-down-inner {
+    color: var(--primary-hover) !important;
+}
+
+.ant-input-search .ant-input:hover + .ant-input-group-addon .ant-input-search-button:not(.ant-btn-primary),
+.ant-input-search .ant-input:focus + .ant-input-group-addon .ant-input-search-button:not(.ant-btn-primary) {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-input-search-button {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-input-search-button:hover,
+.ant-input-search-button:focus {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+}
+
+/* 日期选择器和时间选择器输入框 */
+.ant-picker:hover {
+    border-color: var(--primary-hover) !important;
+}
+
+.ant-picker-focused,
+.ant-picker:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 修复输入框组合 */
+.ant-input-group-addon .ant-btn:hover,
+.ant-input-search .ant-input-group-addon .ant-btn:hover {
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+/* 确保所有输入元素在悬停时应用紫色边框 */
+input.ant-input:hover,
+textarea.ant-input:hover,
+.ant-input-affix-wrapper:hover,
+.ant-input-number:hover,
+.ant-picker:hover,
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+.ant-cascader-picker:hover .ant-cascader-input,
+.ant-mention-wrapper.ant-mention-active:not(.ant-mention-disabled) .ant-mention-editor,
+.ant-mention-wrapper .ant-mention-editor:hover,
+.ant-form-item-has-feedback .ant-input:hover,
+.ant-form-item-has-feedback .ant-input-affix-wrapper:hover,
+.ant-radio-input:hover,
+.ant-checkbox-input:hover,
+.ant-input-password:hover,
+.ant-select-multiple .ant-select-selector:hover,
+.ant-input-group-wrapper:hover .ant-input,
+.ant-form-item-has-error .ant-input:hover {
+    border-color: var(--primary-hover) !important;
+}
+
+/* 确保所有输入元素在聚焦时应用紫色边框和阴影 */
+input.ant-input:focus,
+textarea.ant-input:focus,
+.ant-input-affix-wrapper:focus,
+.ant-input-number:focus,
+.ant-picker:focus,
+.ant-select-focused:not(.ant-select-disabled).ant-select .ant-select-selector,
+.ant-cascader-picker-focused .ant-cascader-input,
+.ant-mention-wrapper.ant-mention-active:not(.ant-mention-disabled) .ant-mention-editor,
+.ant-form-item-has-feedback .ant-input:focus,
+.ant-form-item-has-feedback .ant-input-affix-wrapper:focus,
+.ant-radio-input:focus,
+.ant-checkbox-input:focus,
+.ant-input-password:focus,
+.ant-select-multiple .ant-select-selector:focus,
+.ant-input-number-focused,
+.ant-picker-focused,
+.ant-cascader-picker-focused,
+.ant-input-focused,
+.ant-input-affix-wrapper-focused,
+.ant-input-group-wrapper .ant-input:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+    outline: 0 !important;
+}
+
+/* 修复日期时间选择器的其他部分 */
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner {
+    background: var(--primary-color) !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-picker-dropdown .ant-picker-ranges .ant-picker-preset > .ant-tag-blue {
+    color: var(--primary-color) !important;
+    background: var(--primary-color-bg) !important;
+    border-color: var(--primary-color-border) !important;
+}
+
+.ant-picker-dropdown .ant-picker-now-btn {
+    color: var(--primary-color) !important;
+}
+
+.ant-picker-dropdown .ant-picker-today-btn {
+    color: var(--primary-color) !important;
+}
+
+.ant-picker-dropdown .ant-picker-header-view button:hover {
+    color: var(--primary-color) !important;
+}
+
+/* 确保搜索框中的按钮也正确应用样式 */
+.ant-input-search .ant-input-group-addon .ant-input-search-button {
+    border-color: var(--primary-color) !important;
+    background-color: var(--primary-color) !important;
+}
+
+.ant-input-search .ant-input-group-addon .ant-input-search-button:hover {
+    border-color: var(--primary-hover) !important;
+    background-color: var(--primary-hover) !important;
+}
+
+/* 确保所有表单项错误状态正确应用样式 */
+.ant-form-item-has-error .ant-input,
+.ant-form-item-has-error .ant-input:hover,
+.ant-form-item-has-error .ant-input:focus,
+.ant-form-item-has-error .ant-input-focused {
+    border-color: var(--error-color) !important;
+}
+
+.ant-form-item-has-error .ant-input:focus,
+.ant-form-item-has-error .ant-input-focused {
+    box-shadow: 0 0 0 2px rgba(245, 34, 45, 0.2) !important;
+}
+
+/* 修复特定浏览器中的输入框样式问题 */
+@-moz-document url-prefix() {
+    .ant-input:hover {
+        border-color: var(--primary-hover) !important;
+    }
+
+    .ant-input:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+    }
+}
+
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    .ant-input:hover {
+        border-color: var(--primary-hover) !important;
+    }
+
+    .ant-input:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+    }
+}
+
+/* ================= CHECKBOX 复选框 ================= */
+.ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-checkbox:hover .ant-checkbox-inner,
+.ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
 .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
 }
 
+.ant-checkbox-checked::after {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* 确保复选框内部样式正确 */
+.ant-checkbox-inner {
+    width: 16px !important;
+    height: 16px !important;
+    border-radius: 2px !important;
+    border: 1px solid #d9d9d9 !important;
+}
+
+.ant-checkbox-inner::after {
+    position: absolute !important;
+    top: 50% !important;
+    left: 21.5% !important;
+    display: table !important;
+    width: 5.71428571px !important;
+    height: 9.14285714px !important;
+    margin-top: -6.14285714px !important;
+    border: 2px solid #fff !important;
+    border-top: 0 !important;
+    border-left: 0 !important;
+    transform: rotate(45deg) scale(1) !important;
+    opacity: 1 !important;
+    transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s !important;
+    content: ' ' !important;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    border-width: 0 2px 2px 0 !important;
+    border-style: solid !important;
+    transform: rotate(45deg) scale(1) !important;
+}
+
+/* 专门针对表格中的复选框样式 */
+.ant-table-wrapper .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 修复表格行选中样式 */
+.ant-table-tbody > tr.ant-table-row-selected > td {
+    background-color: var(--primary-lighter) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+    background-color: rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 表格复选框半选状态 */
+.ant-table-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    border: 0 !important;
+    transform: none !important;
+    left: 50% !important;
+    top: 50% !important;
+    width: 8px !important;
+    height: 8px !important;
+    margin-left: -4px !important;
+    margin-top: -4px !important;
+}
+
+/* 表格复选框焦点样式 */
+.ant-table-wrapper .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+    outline: none !important;
+}
+
+/* 表格表头复选框样式 */
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* 处理表格选择列的复选框 */
+.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-selection .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 修复特定浏览器中的复选框样式问题 */
+@-moz-document url-prefix() {
+    .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+        outline: none !important;
+    }
+}
+
+@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+        outline: none !important;
+    }
+}
+
+/* ================= RADIO 单选框 ================= */
+.ant-radio-wrapper:hover .ant-radio,
 .ant-radio:hover .ant-radio-inner,
-.ant-checkbox:hover .ant-checkbox-inner {
+.ant-radio-input:focus + .ant-radio-inner {
     border-color: var(--primary-color);
 }
 
-/* 开关 */
-.ant-switch-checked {
+.ant-radio-checked .ant-radio-inner {
+    border-color: var(--primary-color);
+}
+
+.ant-radio-checked .ant-radio-inner::after {
     background-color: var(--primary-color);
 }
 
-/* 滑块 */
+.ant-radio-checked::after {
+    border-color: var(--primary-color);
+}
+
+/* 单选按钮组 */
+.ant-radio-button-wrapper:hover {
+    color: var(--primary-color);
+}
+
+.ant-radio-button-wrapper:first-child:hover {
+    border-color: var(--primary-color);
+}
+
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: -1px 0 0 0 var(--primary-color);
+}
+
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)::before {
+    background-color: var(--primary-color);
+}
+
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):hover {
+    color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):first-child {
+    border-color: var(--primary-color);
+}
+
+.ant-radio-group-solid .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.ant-radio-group-solid .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+/* ================= SELECT 选择器 ================= */
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+    border-color: var(--primary-hover);
+}
+
+.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: var(--primary-color-bg);
+    color: var(--primary-color);
+}
+
+.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background-color: rgba(101, 84, 192, 0.05);
+}
+
+.ant-select-dropdown .ant-select-item-option-selected {
+    background-color: rgba(101, 84, 192, 0.1);
+    color: var(--primary-color);
+}
+
+.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background-color: rgba(101, 84, 192, 0.05);
+}
+
+/* ================= SLIDER 滑动输入条 ================= */
 .ant-slider-track {
     background-color: var(--primary-color);
 }
@@ -188,25 +1124,223 @@ a.ant-typography:hover {
     background-color: var(--primary-hover);
 }
 
-/* 时间选择器 */
-.ant-picker-focused,
-.ant-picker:hover {
+.ant-slider:hover .ant-slider-handle {
+    border-color: var(--primary-hover);
+}
+
+.ant-slider-handle:focus {
+    border-color: var(--primary-active);
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
+}
+
+/* ================= SWITCH 开关 ================= */
+.ant-switch {
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.ant-switch-checked {
+    background-color: var(--primary-color);
+}
+
+.ant-switch:focus {
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
+}
+
+.ant-switch:hover:not(.ant-switch-disabled) {
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.ant-switch-checked:hover:not(.ant-switch-disabled) {
+    background-color: var(--primary-hover);
+}
+
+/* ================= TIME PICKER 时间选择器 ================= */
+.ant-picker:hover,
+.ant-picker-focused {
     border-color: var(--primary-color);
 }
 
-.ant-picker-focused .ant-picker-separator {
+.ant-picker-focused {
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner,
+.ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
+.ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner {
+    background-color: var(--primary-color);
+}
+
+.ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+    border-color: var(--primary-color);
+}
+
+.ant-picker-header-view button:hover {
     color: var(--primary-color);
 }
 
-/* 标签 */
-.ant-tag {
-    margin-right: 0;
+.ant-picker-today-btn {
+    color: var(--primary-color);
 }
 
-/* 卡片 */
+.ant-picker-today-btn:hover {
+    color: var(--primary-hover);
+}
+
+.ant-picker-now-btn {
+    color: var(--primary-color);
+}
+
+.ant-picker-now-btn:hover {
+    color: var(--primary-hover);
+}
+
+.ant-picker-range .ant-picker-active-bar {
+    background-color: var(--primary-color);
+}
+
+/* ================= TRANSFER 穿梭框 ================= */
+.ant-transfer-list-content-item:hover {
+    background-color: var(--primary-color-bg);
+}
+
+.ant-transfer-list-content-item-checked {
+    background-color: var(--primary-color-bg);
+}
+
+/* ================= TREE SELECT 树选择 ================= */
+.ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected {
+    background-color: var(--primary-color-bg);
+    color: var(--primary-color);
+}
+
+.ant-tree .ant-tree-node-content-wrapper:hover {
+    background-color: rgba(101, 84, 192, 0.05);
+}
+
+.ant-tree-checkbox-checked .ant-tree-checkbox-inner {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.ant-tree-checkbox-wrapper:hover .ant-tree-checkbox-inner,
+.ant-tree-checkbox:hover .ant-tree-checkbox-inner,
+.ant-tree-checkbox-input:focus + .ant-tree-checkbox-inner {
+    border-color: var(--primary-color);
+}
+
+.ant-tree-treenode-selected:hover::before,
+.ant-tree-treenode-selected::before {
+    background-color: var(--primary-color-bg);
+}
+
+.ant-tree-treenode-active {
+    background-color: rgba(101, 84, 192, 0.05);
+}
+
+.ant-tree-node-selected {
+    background-color: var(--primary-color-bg) !important;
+}
+
+.ant-tree-node-content-wrapper.ant-tree-node-selected {
+    background-color: var(--primary-color-bg) !important;
+}
+
+.ant-tree-switcher {
+    color: var(--primary-color);
+}
+
+/* ================= UPLOAD 上传 ================= */
+.ant-upload.ant-upload-select-picture-card:hover {
+    border-color: var(--primary-color);
+}
+
+.ant-upload-list-item:hover .ant-upload-list-item-info {
+    background-color: var(--primary-color-bg);
+}
+
+.ant-upload-list-item-name {
+    color: var(--text-primary);
+}
+
+.ant-upload-list-item-name:hover {
+    color: var(--primary-color);
+}
+
+.ant-upload-list-item-card-actions .anticon {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.ant-upload-list-item-card-actions .anticon:hover {
+    color: var(--text-primary);
+}
+
+.ant-upload-list-picture-card .ant-upload-list-item-info::before {
+    left: 0;
+}
+
+.ant-upload-list-picture-card .ant-upload-list-item-actions .anticon-eye,
+.ant-upload-list-picture-card .ant-upload-list-item-actions .anticon-download,
+.ant-upload-list-picture-card .ant-upload-list-item-actions .anticon-delete {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-upload-drag {
+    border-color: var(--border-color);
+    background: var(--bg-white);
+    transition: border-color var(--transition-normal);
+}
+
+.ant-upload-drag:hover {
+    border-color: var(--primary-hover);
+}
+
+.ant-upload-drag.ant-upload-drag-hover {
+    border-color: var(--primary-active);
+}
+
+.ant-upload-drag p.ant-upload-text {
+    color: var(--text-primary);
+}
+
+.ant-upload-drag p.ant-upload-hint {
+    color: var(--text-secondary);
+}
+
+.ant-upload-drag .ant-upload-drag-icon .anticon {
+    color: var(--primary-color);
+}
+
+/* ================= AVATAR 头像 ================= */
+.ant-avatar {
+    background-color: var(--primary-color);
+}
+
+.ant-avatar-group .ant-avatar {
+    border-color: var(--bg-white);
+}
+
+/* ================= BADGE 徽标 ================= */
+.ant-badge-count {
+    background: var(--primary-color) !important;
+}
+
+.ant-badge-dot {
+    background: var(--primary-color);
+}
+
+.ant-badge-status-processing {
+    background-color: var(--primary-color);
+}
+
+.ant-badge-status-processing::after {
+    border-color: var(--primary-color);
+}
+
+/* ================= CARD 卡片 ================= */
 .ant-card {
     border-radius: 8px;
     overflow: hidden;
+    box-shadow: var(--shadow);
     transition: all var(--transition-normal);
 }
 
@@ -215,78 +1349,1354 @@ a.ant-typography:hover {
     transform: translateY(-3px);
 }
 
-/* 输入框 */
-.ant-input:hover,
-.ant-input:focus,
-.ant-input-focused {
+.ant-card-head {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ant-card-head-title {
+    font-weight: 600;
+}
+
+.ant-card-actions {
+    background: var(--bg-gray-light);
+    border-top: 1px solid var(--border-color);
+}
+
+.ant-card-actions > li > span:hover {
+    color: var(--primary-color);
+}
+
+.ant-card-grid:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* ================= CALENDAR 日历 ================= */
+.ant-picker-calendar-header .ant-picker-calendar-mode-switch {
+    color: var(--text-secondary);
+}
+
+.ant-picker-calendar-date-today {
     border-color: var(--primary-color);
 }
 
-.ant-input-affix-wrapper:hover,
-.ant-input-affix-wrapper:focus,
-.ant-input-affix-wrapper-focused {
-    border-color: var(--primary-color);
+.ant-picker-calendar-date-today .ant-picker-calendar-date-value {
+    color: var(--primary-color);
 }
 
-/* 输入框搜索按钮 */
-.ant-input-search .ant-input:hover + .ant-input-group-addon .ant-input-search-button:not(.ant-btn-primary),
-.ant-input-search .ant-input:focus + .ant-input-group-addon .ant-input-search-button:not(.ant-btn-primary) {
-    border-color: var(--primary-color);
-}
-
-/* 头像 */
-.ant-avatar {
-    background-color: var(--primary-color);
-}
-
-/* 徽章 */
-.ant-badge-count {
+.ant-picker-calendar-date-content .events .ant-badge-status-processing {
     background: var(--primary-color);
 }
 
-/* 抽屉 */
+.ant-picker-calendar-date-content .events .ant-badge-status-warning {
+    background: var(--warning-color);
+}
+
+.ant-picker-calendar-date-content .events .ant-badge-status-error {
+    background: var(--error-color);
+}
+
+.ant-picker-calendar-date-content .events .ant-badge-status-success {
+    background: var(--success-color);
+}
+
+.ant-picker-calendar-date-content .events .ant-badge-status-default {
+    background: var(--text-secondary);
+}
+
+/* ================= CAROUSEL 走马灯 ================= */
+.ant-carousel .slick-dots li button {
+    background: var(--text-secondary);
+    opacity: 0.4;
+}
+
+.ant-carousel .slick-dots li.slick-active button {
+    background: var(--primary-color);
+    opacity: 1;
+}
+
+.ant-carousel .slick-prev:hover,
+.ant-carousel .slick-next:hover,
+.ant-carousel .slick-prev:focus,
+.ant-carousel .slick-next:focus {
+    color: var(--primary-color);
+}
+
+/* ================= COLLAPSE 折叠面板 ================= */
+.ant-collapse {
+    border-color: var(--border-color);
+    background-color: var(--bg-white);
+}
+
+.ant-collapse-header {
+    color: var(--text-primary);
+}
+
+.ant-collapse > .ant-collapse-item {
+    border-color: var(--border-color);
+}
+
+.ant-collapse-content {
+    background-color: var(--bg-white);
+    border-color: var(--border-color);
+}
+
+.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-arrow {
+    color: var(--text-secondary);
+}
+
+.ant-collapse > .ant-collapse-item.ant-collapse-item-active > .ant-collapse-header .ant-collapse-arrow {
+    color: var(--primary-color);
+}
+
+/* ================= COMMENT 评论 ================= */
+.ant-comment-content-author-name {
+    color: var(--text-secondary);
+}
+
+.ant-comment-actions > li > span {
+    color: var(--text-secondary);
+}
+
+.ant-comment-actions > li > span:hover {
+    color: var(--primary-color);
+}
+
+.ant-comment-content-author-time {
+    color: var(--text-disabled);
+}
+
+/* ================= DESCRIPTIONS 描述列表 ================= */
+.ant-descriptions-bordered .ant-descriptions-item-label {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-descriptions-bordered .ant-descriptions-item-content {
+    border-color: var(--border-color);
+}
+
+.ant-descriptions-bordered .ant-descriptions-item-label {
+    border-color: var(--border-color);
+}
+
+/* ================= EMPTY 空状态 ================= */
+.ant-empty-image .ant-empty-img-simple-path {
+    fill: var(--bg-gray-light);
+}
+
+.ant-empty-description {
+    color: var(--text-secondary);
+}
+
+/* ================= IMAGE 图片 ================= */
+.ant-image-preview-operations {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.ant-image-preview-operations-operation {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-image-preview-operations-operation-disabled {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.ant-image-preview-operations-operation:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+.ant-image-preview-switch-left,
+.ant-image-preview-switch-right {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.ant-image-preview-switch-left:hover,
+.ant-image-preview-switch-right:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+/* ================= LIST 列表 ================= */
+.ant-list {
+    color: var(--text-primary);
+}
+
+.ant-list-bordered {
+    border-color: var(--border-color);
+}
+
+.ant-list-item {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.ant-list-split .ant-list-item {
+    border-color: var(--border-color);
+}
+
+.ant-list-item-meta-title {
+    color: var(--text-primary);
+}
+
+.ant-list-item-meta-title > a {
+    color: var(--text-primary);
+}
+
+.ant-list-item-meta-title > a:hover {
+    color: var(--primary-color);
+}
+
+.ant-list-item-meta-description {
+    color: var(--text-secondary);
+}
+
+.ant-list-item-action-split {
+    background-color: var(--border-color);
+}
+
+.ant-list-item-action > li > a {
+    color: var(--primary-color);
+}
+
+.ant-list-item-action > li > a:hover {
+    color: var(--primary-hover);
+}
+
+/* ================= POPOVER 气泡卡片 ================= */
+.ant-popover {
+    color: var(--text-primary);
+}
+
+.ant-popover-title {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.ant-popover-inner {
+    background-color: var(--bg-white);
+    box-shadow: var(--shadow-lg);
+}
+
+.ant-popover-inner-content {
+    color: var(--text-primary);
+}
+
+.ant-popover-arrow-content {
+    background-color: var(--bg-white);
+}
+
+/* ================= STATISTIC 统计数值 ================= */
+.ant-statistic-title {
+    color: var(--text-secondary);
+}
+
+.ant-statistic-content {
+    color: var(--text-primary);
+}
+
+.ant-statistic-content-value {
+    color: var(--text-primary);
+}
+
+.ant-statistic-content-prefix,
+.ant-statistic-content-suffix {
+    color: var(--text-primary);
+}
+
+/* ================= TABLE 表格 ================= */
+.ant-table {
+    color: var(--text-primary);
+}
+
+.ant-table-thead > tr > th {
+    background-color: var(--bg-gray-light) !important;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.ant-table-tbody > tr > td {
+    border-color: var(--border-color);
+}
+
+.ant-table-tbody > tr:hover > td {
+    background-color: var(--primary-lighter) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected > td {
+    background-color: var(--primary-lighter) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+    background-color: rgba(101, 84, 192, 0.2) !important;
+}
+
+.ant-table-placeholder:hover .ant-table-cell {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-table-pagination.ant-pagination {
+    margin: 16px 0;
+}
+
+.ant-table-filter-trigger.active {
+    color: var(--primary-color);
+}
+
+.ant-table-column-sorter-up.active,
+.ant-table-column-sorter-down.active {
+    color: var(--primary-color);
+}
+
+.ant-table-filter-dropdown .ant-dropdown-menu-item:hover,
+.ant-table-filter-dropdown-submenu .ant-dropdown-menu-submenu-title:hover {
+    background-color: var(--primary-color-bg);
+}
+
+.ant-table-filter-dropdown-link {
+    color: var(--primary-color);
+}
+
+.ant-table-filter-dropdown-link:hover {
+    color: var(--primary-hover);
+}
+
+.ant-table-filter-dropdown-btns .ant-btn-link {
+    color: var(--primary-color);
+}
+
+.ant-table-filter-dropdown-btns .ant-btn-link:hover {
+    color: var(--primary-hover);
+}
+
+.ant-table-row-expand-icon {
+    border-color: var(--border-color);
+    background: var(--bg-white);
+}
+
+.ant-table-row-expand-icon:hover {
+    color: var(--primary-hover);
+}
+
+.ant-table-row-expand-icon:active {
+    color: var(--primary-active);
+}
+
+/* 表格表头复选框样式 */
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-input,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox {
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-input:hover + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: #fff !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner::after,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-checked::after,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked::after {
+    border-color: var(--primary-color) !important;
+}
+
+/* 表格表体复选框样式 */
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-input,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox {
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-input:hover + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: #fff !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner::after,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-checked::after,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked::after {
+    border-color: var(--primary-color) !important;
+}
+
+/* 表格勾选状态修复 */
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 表格悬停样式修复 */
+.ant-table-thead > tr.ant-table-row:hover > td,
+.ant-table-tbody > tr.ant-table-row:hover > td {
+    background-color: var(--primary-lighter) !important;
+}
+
+/* 确保表格表头复选框按钮样式正确 */
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-inner,
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner {
+    margin-right: 8px !important;
+}
+
+/* 修复表格行选中和悬停状态的样式 */
+.ant-table-tbody > tr.ant-table-row-selected {
+    background-color: var(--primary-lighter) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover {
+    background-color: rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 修复表格checkbox样式 */
+.ant-table .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table .ant-checkbox-inner {
+    background-color: #fff;
+    border: 1px solid #d9d9d9;
+}
+
+.ant-table .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+}
+
+/* 修复表格selection列样式 */
+.ant-table .ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+/* 强制表格表头复选框和行复选框样式一致性 */
+.ant-table .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+    background-color: transparent !important;
+}
+
+.ant-table .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: transparent !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* 为指定选择器添加更高的优先级 */
+.ant-table-wrapper .ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox .ant-checkbox-inner,
+.ant-table-wrapper .ant-table-tbody > tr > td.ant-table-selection-column .ant-checkbox .ant-checkbox-inner {
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-table-tbody > tr > td.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-wrapper .ant-table-tbody > tr > td.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 使用实体多层选择器覆盖默认样式 */
+html body .ant-table-wrapper .ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+html body .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+html body .ant-table-wrapper .ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+html body .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 处理特殊表格复选框状态 */
+.ant-table-wrapper .ant-table-selection .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+.ant-table-wrapper .ant-table-selection .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+}
+
+/* 防止样式受到覆盖 */
+[class*='ant-table'] [class*='ant-checkbox']:hover [class*='ant-checkbox-inner'] {
+    border-color: var(--primary-color) !important;
+}
+
+[class*='ant-table'] [class*='ant-checkbox-checked'] [class*='ant-checkbox-inner'] {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 处理嵌套样式，增加特异性 */
+.ant-table-wrapper .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+    background-color: transparent !important;
+}
+
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 确保表头和单元格中的复选框样式一致 */
+.ant-table-thead th .ant-checkbox-inner,
+.ant-table-tbody td .ant-checkbox-inner {
+    width: 16px !important;
+    height: 16px !important;
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-thead th .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-tbody td .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+    background-color: transparent !important;
+}
+
+.ant-table-thead th .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-tbody td .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 针对表格头部复选框的特殊处理 */
+.ant-table-thead > tr > th.ant-table-selection-column {
+    position: relative;
+}
+
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper,
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox {
+    display: inline-block;
+}
+
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner,
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox .ant-checkbox-inner {
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper.ant-checkbox-wrapper-checked .ant-checkbox-inner,
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox.ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 表格复选框专用样式，增加超高优先级 */
+body .ant-table .ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+body .ant-table-container .ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+body .ant-table-wrapper .ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+body .ant-table .ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+body .ant-table-container .ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+body .ant-table-wrapper .ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 表格复选框的勾选图标 */
+body .ant-table .ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner::after,
+body .ant-table-container .ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner::after,
+body .ant-table-wrapper .ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+}
+
+/* 表格表头复选框样式 */
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-input,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox {
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-input:hover + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: #fff !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner::after,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-checked::after,
+.ant-table-thead th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked::after {
+    border-color: var(--primary-color) !important;
+}
+
+/* 表格表体复选框样式 */
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-input,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox {
+    border-color: #d9d9d9 !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox:hover .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-input:hover + .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: #fff !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-indeterminate .ant-checkbox-inner::after,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-checked::after,
+.ant-table-tbody td.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-checked::after {
+    border-color: var(--primary-color) !important;
+}
+
+/* 表格勾选状态修复 */
+.ant-table-wrapper .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 表格悬停样式修复 */
+.ant-table-thead > tr.ant-table-row:hover > td,
+.ant-table-tbody > tr.ant-table-row:hover > td {
+    background-color: var(--primary-lighter) !important;
+}
+
+/* 确保表格表头复选框按钮样式正确 */
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-inner,
+.ant-table-thead > tr > th.ant-table-selection-column .ant-checkbox-wrapper .ant-checkbox-inner {
+    margin-right: 8px !important;
+}
+
+/* 修复表格行选中和悬停状态的样式 */
+.ant-table-tbody > tr.ant-table-row-selected {
+    background-color: var(--primary-lighter) !important;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover {
+    background-color: rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 修复表格checkbox样式 */
+.ant-table .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.ant-table .ant-checkbox-inner {
+    background-color: #fff;
+    border: 1px solid #d9d9d9;
+}
+
+.ant-table .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+}
+
+/* 修复表格selection列样式 */
+.ant-table .ant-table-selection-column .ant-checkbox-wrapper:hover .ant-checkbox-inner {
+    border-color: var(--primary-color) !important;
+} {
+    color: var(--primary-hover);
+}
+
+.ant-table-filter-dropdown-btns .ant-btn-link {
+    color: var(--primary-color);
+}
+
+.ant-table-filter-dropdown-btns .ant-btn-link:hover {
+    color: var(--primary-hover);
+}
+
+.ant-table-row-expand-icon {
+    border-color: var(--border-color);
+    background: var(--bg-white);
+}
+
+.ant-table-row-expand-icon:hover {
+    color: var(--primary-hover);
+}
+
+.ant-table-row-expand-icon:active {
+    color: var(--primary-active);
+}
+
+/* ================= TABS 标签页 ================= */
+.ant-tabs .ant-tabs-tab {
+    padding: 8px 16px;
+}
+
+.ant-tabs .ant-tabs-tab:hover {
+    color: var(--primary-hover);
+}
+
+.ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: var(--primary-color);
+}
+
+.ant-tabs .ant-tabs-tab-btn {
+    color: var(--text-primary);
+}
+
+.ant-tabs .ant-tabs-tab-btn:hover {
+    color: var(--primary-hover);
+}
+
+.ant-tabs .ant-tabs-tab-btn:active {
+    color: var(--primary-active);
+}
+
+.ant-tabs .ant-tabs-ink-bar {
+    background: var(--primary-color);
+}
+
+.ant-tabs-top > .ant-tabs-nav::before,
+.ant-tabs-bottom > .ant-tabs-nav::before,
+.ant-tabs-top > div > .ant-tabs-nav::before,
+.ant-tabs-bottom > div > .ant-tabs-nav::before {
+    border-color: var(--border-color);
+}
+
+.ant-tabs-left > .ant-tabs-nav::before,
+.ant-tabs-right > .ant-tabs-nav::before,
+.ant-tabs-left > div > .ant-tabs-nav::before,
+.ant-tabs-right > div > .ant-tabs-nav::before {
+    border-color: var(--border-color);
+}
+
+.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab,
+.ant-tabs-card.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-tab {
+    border-color: var(--border-color);
+    background: var(--bg-gray-light);
+}
+
+.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab-active,
+.ant-tabs-card.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-tab-active {
+    background: var(--bg-white);
+    border-bottom-color: var(--bg-white);
+}
+
+/* ================= TAG 标签 ================= */
+.ant-tag {
+    border-radius: 4px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.ant-tag:hover {
+    opacity: 0.85;
+}
+
+.ant-tag-checkable {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-tag-checkable:hover {
+    color: var(--bg-white);
+    background-color: var(--primary-hover);
+}
+
+.ant-tag-checkable:active {
+    background-color: var(--primary-active);
+}
+
+.ant-tag-checkable-checked {
+    background-color: var(--primary-color);
+}
+
+.ant-tag-checkable-checked:hover {
+    background-color: var(--primary-hover);
+}
+
+/* ================= TIMELINE 时间轴 ================= */
+.ant-timeline-item-tail {
+    border-left: 2px solid var(--border-color);
+}
+
+.ant-timeline-item-head-blue {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.ant-timeline-item-content {
+    color: var(--text-primary);
+}
+
+/* ================= TOOLTIP 文字提示 ================= */
+.ant-tooltip {
+    max-width: 250px;
+}
+
+.ant-tooltip-inner {
+    background-color: rgba(0, 0, 0, 0.85);
+    padding: 6px 12px;
+}
+
+.ant-tooltip-arrow-content {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+/* ================= ALERT 警告提示 ================= */
+.ant-alert {
+    border-radius: 4px;
+    padding: 12px 16px;
+}
+
+.ant-alert-message {
+    color: var(--text-primary);
+}
+
+.ant-alert-description {
+    color: var(--text-secondary);
+}
+
+.ant-alert-success {
+    background-color: #f6ffed;
+    border-color: #b7eb8f;
+}
+
+.ant-alert-info {
+    background-color: rgba(101, 84, 192, 0.05);
+    border-color: rgba(101, 84, 192, 0.2);
+}
+
+.ant-alert-info .ant-alert-icon {
+    color: var(--primary-color);
+}
+
+.ant-alert-warning {
+    background-color: #fffbe6;
+    border-color: #ffe58f;
+}
+
+.ant-alert-error {
+    background-color: #fff2f0;
+    border-color: #ffccc7;
+}
+
+.ant-alert-close-icon .anticon {
+    color: var(--text-secondary);
+}
+
+.ant-alert-close-icon .anticon:hover {
+    color: var(--text-primary);
+}
+
+/* ================= DRAWER 抽屉 ================= */
+.ant-drawer {
+    position: fixed;
+}
+
+.ant-drawer-mask {
+    background-color: rgba(0, 0, 0, 0.45);
+}
+
+.ant-drawer-content {
+    background-color: var(--bg-white);
+}
+
+.ant-drawer-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
 .ant-drawer-title {
     color: var(--text-primary);
 }
 
-/* 模态框 */
-.ant-modal-title {
+.ant-drawer-close {
+    color: var(--text-secondary);
+}
+
+.ant-drawer-close:hover {
     color: var(--text-primary);
 }
 
-/* 警告/提示 */
-.ant-alert-info {
-    background-color: var(--primary-color-bg);
-    border-color: var(--primary-color-border);
+.ant-drawer-footer {
+    border-top: 1px solid var(--border-color);
 }
 
-/* 加载指示器 */
+/* ================= MODAL 对话框 ================= */
+.ant-modal-mask {
+    background-color: rgba(0, 0, 0, 0.45);
+}
+
+.ant-modal-content {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.ant-modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ant-modal-title {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.ant-modal-close {
+    color: var(--text-secondary);
+}
+
+.ant-modal-close:hover {
+    color: var(--text-primary);
+}
+
+.ant-modal-footer {
+    border-top: 1px solid var(--border-color);
+}
+
+.ant-modal-footer .ant-btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.ant-modal-footer .ant-btn-primary:hover,
+.ant-modal-footer .ant-btn-primary:focus {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: #fff;
+}
+
+.ant-modal-confirm .ant-modal-confirm-btns {
+    margin-top: 24px;
+}
+
+.ant-modal-confirm-warning .ant-modal-confirm-body > .anticon,
+.ant-modal-confirm-confirm .ant-modal-confirm-body > .anticon {
+    color: var(--warning-color);
+}
+
+.ant-modal-confirm-error .ant-modal-confirm-body > .anticon {
+    color: var(--error-color);
+}
+
+.ant-modal-confirm-success .ant-modal-confirm-body > .anticon {
+    color: var(--success-color);
+}
+
+.ant-modal-confirm-info .ant-modal-confirm-body > .anticon {
+    color: var(--primary-color);
+}
+
+/* ================= POPCONFIRM 气泡确认框 ================= */
+.ant-popover-message > .anticon {
+    color: var(--warning-color);
+}
+
+.ant-popover-buttons .ant-btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.ant-popover-buttons .ant-btn-primary:hover,
+.ant-popover-buttons .ant-btn-primary:focus {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+/* ================= PROGRESS 进度条 ================= */
+.ant-progress-line .ant-progress-text {
+    color: var(--text-primary);
+}
+
+.ant-progress-inner {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-progress-bg {
+    background-color: var(--primary-color);
+}
+
+.ant-progress-status-success .ant-progress-bg {
+    background-color: var(--success-color);
+}
+
+.ant-progress-status-exception .ant-progress-bg {
+    background-color: var(--error-color);
+}
+
+.ant-progress-status-success .ant-progress-text {
+    color: var(--success-color);
+}
+
+.ant-progress-status-exception .ant-progress-text {
+    color: var(--error-color);
+}
+
+.ant-progress-steps-item {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-progress-steps-item-active {
+    background-color: var(--primary-color);
+}
+
+/* ================= RESULT 结果 ================= */
+.ant-result-success .ant-result-icon > .anticon {
+    color: var(--success-color);
+}
+
+.ant-result-error .ant-result-icon > .anticon {
+    color: var(--error-color);
+}
+
+.ant-result-info .ant-result-icon > .anticon {
+    color: var(--primary-color);
+}
+
+.ant-result-warning .ant-result-icon > .anticon {
+    color: var(--warning-color);
+}
+
+.ant-result-title {
+    color: var(--text-primary);
+}
+
+.ant-result-subtitle {
+    color: var(--text-secondary);
+}
+
+.ant-result-extra > .ant-btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.ant-result-extra > .ant-btn-primary:hover,
+.ant-result-extra > .ant-btn-primary:focus {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+/* ================= SKELETON 骨架屏 ================= */
+.ant-skeleton-header .ant-skeleton-avatar {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-skeleton-title,
+.ant-skeleton-paragraph > li {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-skeleton-button {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-skeleton-input {
+    background-color: var(--bg-gray-light);
+}
+
+.ant-skeleton.ant-skeleton-active .ant-skeleton-content .ant-skeleton-title,
+.ant-skeleton.ant-skeleton-active .ant-skeleton-content .ant-skeleton-paragraph > li {
+    background: linear-gradient(90deg, var(--bg-gray-light) 25%, rgba(190, 190, 190, 0.3) 45%, var(--bg-gray-light) 65%);
+}
+
+/* ================= SPIN 加载中 ================= */
+.ant-spin {
+    color: var(--primary-color);
+}
+
 .ant-spin-dot-item {
     background-color: var(--primary-color);
 }
 
-/* 瀑布流布局样式 */
-@media (max-width: 1200px) {
-    .masonry-grid {
-        columns: 3;
-    }
+.ant-spin-text {
+    color: var(--primary-color);
 }
 
-@media (max-width: 768px) {
-    .masonry-grid {
-        columns: 2;
-    }
+.ant-spin-blur {
+    clear: both;
+    overflow: hidden;
+    opacity: 0.5;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    pointer-events: none;
 }
 
-@media (max-width: 640px) {
-    .masonry-grid {
-        columns: 1;
-    }
+.ant-spin-container::after {
+    background: #fff;
+    opacity: 0.5;
+}
+
+/* ================= CASCADER 级联选择 ================= */
+.ant-cascader-menus {
+    background-color: var(--bg-white);
+    box-shadow: var(--shadow-lg);
+}
+
+.ant-cascader-menu-item:hover {
+    background-color: var(--primary-color-bg);
+}
+
+.ant-cascader-menu-item-active:not(.ant-cascader-menu-item-disabled),
+.ant-cascader-menu-item-active:not(.ant-cascader-menu-item-disabled):hover {
+    background-color: var(--primary-color-bg);
+    color: var(--primary-color);
+}
+
+.ant-cascader-menu-item-expand-icon {
+    color: var(--text-secondary);
+}
+
+.ant-cascader-menu-item-loading-icon {
+    color: var(--primary-color);
+}
+
+/* ================= MESSAGE 全局提示 ================= */
+.ant-message {
+    top: 20px;
+    pointer-events: none;
+}
+
+.ant-message-notice {
+    padding: 8px;
+    text-align: center;
+}
+
+.ant-message-notice-content {
+    display: inline-block;
+    padding: 10px 16px;
+    background: var(--bg-white);
+    border-radius: 4px;
+    box-shadow: var(--shadow-md);
+    pointer-events: all;
+}
+
+.ant-message-success .anticon {
+    color: var(--success-color);
+}
+
+.ant-message-error .anticon {
+    color: var(--error-color);
+}
+
+.ant-message-warning .anticon {
+    color: var(--warning-color);
+}
+
+.ant-message-info .anticon,
+.ant-message-loading .anticon {
+    color: var(--primary-color);
+}
+
+/* ================= NOTIFICATION 通知提醒框 ================= */
+.ant-notification {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.ant-notification-notice {
+    padding: 16px;
+    border-radius: 4px;
+    box-shadow: var(--shadow-lg);
+    background-color: var(--bg-white);
+}
+
+.ant-notification-notice-message {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.ant-notification-notice-description {
+    color: var(--text-secondary);
+}
+
+.ant-notification-notice-close {
+    color: var(--text-secondary);
+}
+
+.ant-notification-notice-close:hover {
+    color: var(--text-primary);
+}
+
+.ant-notification-notice-icon {
+    font-size: 24px;
+    margin-right: 16px;
+}
+
+.ant-notification-notice-icon-success {
+    color: var(--success-color);
+}
+
+.ant-notification-notice-icon-info {
+    color: var(--primary-color);
+}
+
+.ant-notification-notice-icon-warning {
+    color: var(--warning-color);
+}
+
+.ant-notification-notice-icon-error {
+    color: var(--error-color);
+}
+
+/* ================= ANCHOR 锚点 ================= */
+.ant-anchor {
+    font-size: 14px;
+}
+
+.ant-anchor-wrapper {
+    background-color: transparent;
+}
+
+.ant-anchor-ink {
+    position: absolute;
+    height: 100%;
+    left: 0;
+    top: 0;
+}
+
+.ant-anchor-ink::before {
+    background-color: var(--border-color);
+}
+
+.ant-anchor-ink-ball {
+    background-color: var(--bg-white);
+    border: 2px solid var(--primary-color);
+}
+
+.ant-anchor-link {
+    padding: 7px 0 7px 16px;
+    line-height: 1.5;
+}
+
+.ant-anchor-link-title {
+    color: var(--text-primary);
+}
+
+.ant-anchor-link-title:hover {
+    color: var(--primary-hover);
+}
+
+.ant-anchor-link-active > .ant-anchor-link-title {
+    color: var(--primary-color);
+}
+
+/* ================= BACK TOP 回到顶部 ================= */
+.ant-back-top {
+    bottom: 50px;
+    right: 50px;
+}
+
+.ant-back-top-content {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-radius: 20px;
+    transition: all 0.3s;
+}
+
+.ant-back-top-content:hover {
+    background-color: var(--primary-hover);
+}
+
+/* ================= GLOBAL STYLE CLASS 全局样式类 ================= */
+/* 鼠标悬浮效果 */
+.hover-primary:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.hover-primary-bg:hover {
+    background-color: var(--primary-color-bg);
+}
+
+/* 修复表格中的复选框样式 */
+.ant-table-tbody .ant-checkbox-checked .ant-checkbox-inner::after {
+    border-color: #fff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
 }
 
 /* 修复筛选器组件颜色问题 */
-
-/* 筛选器按钮样式 */
 .filter-list-btn {
     border-color: var(--border-color);
     color: var(--text-secondary);
@@ -298,16 +2708,16 @@ a.ant-typography:hover {
     border-color: var(--primary-color);
 }
 
-/* 筛选器脉冲动画修复 */
+/* 筛选器脉冲动画 */
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
+        box-shadow: 0 0 0 0 rgba(101, 84, 192, 0.7);
     }
     70% {
-        box-shadow: 0 0 0 8px rgba(79, 70, 229, 0);
+        box-shadow: 0 0 0 8px rgba(101, 84, 192, 0);
     }
     100% {
-        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+        box-shadow: 0 0 0 0 rgba(101, 84, 192, 0);
     }
 }
 
@@ -315,7 +2725,7 @@ a.ant-typography:hover {
     animation: pulse 1.5s infinite;
 }
 
-/* 分类标签和热门标签修复 */
+/* 分类标签和热门标签样式 */
 .category-tag {
     cursor: pointer;
     border-radius: 20px;
@@ -329,7 +2739,7 @@ a.ant-typography:hover {
 .category-tag-active {
     color: white !important;
     background: var(--primary-color) !important;
-    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25);
+    box-shadow: 0 2px 4px rgba(101, 84, 192, 0.25);
 }
 
 .tag-hot {
@@ -352,14 +2762,14 @@ a.ant-typography:hover {
 .create-filter-btn {
     background: var(--primary-color) !important;
     border: none !important;
-    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+    box-shadow: 0 2px 4px rgba(101, 84, 192, 0.2);
     transition: all var(--transition-normal);
 }
 
 .create-filter-btn:hover {
     background: var(--primary-hover) !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(79, 70, 229, 0.25);
+    box-shadow: 0 4px 8px rgba(101, 84, 192, 0.25);
 }
 
 /* 修复搜索框样式 */
@@ -375,52 +2785,6 @@ a.ant-typography:hover {
 
 .search-input .ant-input-search-button:active {
     background-color: var(--primary-active) !important;
-}
-
-/* 修复弹窗样式 */
-.ant-modal-footer .ant-btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.ant-modal-footer .ant-btn-primary:hover {
-    background-color: var(--primary-hover);
-    border-color: var(--primary-hover);
-}
-
-/* 修复单选框样式 */
-.ant-radio-wrapper .ant-radio-checked .ant-radio-inner {
-    border-color: var(--primary-color) !important;
-    background-color: var(--primary-color) !important;
-}
-
-.ant-radio-wrapper .ant-radio:hover .ant-radio-inner {
-    border-color: var(--primary-color) !important;
-}
-
-/* 修复下拉选择器样式 */
-.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
-    border-color: var(--primary-color) !important;
-}
-
-.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
-}
-
-.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
-    background-color: rgba(79, 70, 229, 0.1) !important;
-    color: var(--primary-color) !important;
-}
-
-/* 修复Alert样式 */
-.ant-alert-info {
-    background-color: rgba(79, 70, 229, 0.05) !important;
-    border-color: rgba(79, 70, 229, 0.2) !important;
-}
-
-.ant-alert-info .ant-alert-icon {
-    color: var(--primary-color) !important;
 }
 
 /* 修复分类标签应用筛选器后的样式 */
@@ -447,7 +2811,7 @@ a.ant-typography:hover {
 /* 修复筛选器菜单项颜色 */
 .filter-menu-item .ant-btn-text:hover {
     color: var(--primary-color) !important;
-    background-color: rgba(79, 70, 229, 0.05) !important;
+    background-color: rgba(101, 84, 192, 0.05) !important;
 }
 
 /* 加载更多按钮 */
@@ -460,24 +2824,7 @@ a.ant-typography:hover {
 .load-more-btn:hover {
     background: var(--primary-hover) !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
-}
-
-/* 修复创建筛选器弹窗按钮样式 */
-.ant-btn-primary {
-    background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-}
-
-.ant-btn-primary:hover,
-.ant-btn-primary:focus {
-    background-color: var(--primary-hover) !important;
-    border-color: var(--primary-hover) !important;
-}
-
-/* 确保徽章颜色一致 */
-.ant-badge-count {
-    background: var(--primary-color) !important;
+    box-shadow: 0 4px 12px rgba(101, 84, 192, 0.2);
 }
 
 /* 卡片操作图标 */
@@ -489,7 +2836,7 @@ a.ant-typography:hover {
     color: var(--error-color) !important;
 }
 
-/* 涟漪动画修复 */
+/* 涟漪动画 */
 .ripple {
     position: absolute;
     border-radius: 50%;
@@ -506,12 +2853,12 @@ a.ant-typography:hover {
     }
 }
 
-/* 修复帮助信息链接颜色 */
+/* 帮助信息链接颜色 */
 .ant-form-item-extra {
     color: var(--text-secondary);
 }
 
-/* 修复滚动条样式，使其更符合整体设计 */
+/* 滚动条样式 */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -523,15 +2870,15 @@ a.ant-typography:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(79, 70, 229, 0.3);
+    background: rgba(101, 84, 192, 0.3);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(79, 70, 229, 0.5);
+    background: rgba(101, 84, 192, 0.5);
 }
 
-/* 调整深色模式下的一些颜色 */
+/* 深色模式调整 */
 [data-theme="dark"] .ant-btn-primary {
     background: var(--primary-light) !important;
 }
@@ -546,281 +2893,121 @@ a.ant-typography:hover {
     border-color: rgba(99, 102, 241, 0.3) !important;
 }
 
-/* 修复鼠标悬停时输入框和按钮边框颜色问题 */
-
-/* 输入框悬停和聚焦状态 */
-.ant-input:hover,
-.ant-input:focus,
-.ant-input-focused,
-.ant-input-affix-wrapper:hover,
-.ant-input-affix-wrapper:focus,
-.ant-input-affix-wrapper-focused,
-.ant-input-search-with-button .ant-input:hover,
-.ant-input-search-with-button .ant-input:focus {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
-}
-
-/* 按钮悬停状态 */
-.ant-btn:hover,
-.ant-btn:focus {
-    color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-}
-
-/* 主按钮悬停状态保持白色文字 */
-.ant-btn-primary:hover,
-.ant-btn-primary:focus {
-    color: #fff !important;
-}
-
-/* 筛选器按钮悬停状态 */
-.filter-list-btn:hover,
-.filter-list-btn:focus {
-    color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-}
-
-/* 输入框组合悬停状态 */
-.ant-input-group-addon .ant-btn:hover,
-.ant-input-search .ant-input-group-addon .ant-btn:hover {
-    border-color: var(--primary-color) !important;
-    color: var(--primary-color) !important;
-}
-
-/* 修复搜索框按钮悬停状态 */
-.ant-input-search .ant-input:hover + .ant-input-group-addon .ant-input-search-button,
-.ant-input-search .ant-input:focus + .ant-input-group-addon .ant-input-search-button {
-    border-color: var(--primary-color) !important;
-}
-
-/* 搜索按钮悬停状态 */
-.ant-input-search-button:hover,
-.ant-input-search-button:focus {
-    background-color: var(--primary-hover) !important;
-    border-color: var(--primary-hover) !important;
-}
-
-/* 下拉选择器悬停和聚焦状态 */
-.ant-select:not(.ant-select-disabled):hover .ant-select-selector,
-.ant-select-focused:not(.ant-select-disabled) .ant-select-selector {
-    border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
-}
-
-/* 筛选排序下拉按钮悬停状态 */
-.sort-dropdown:hover,
-.sort-dropdown:focus {
-    color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-}
-
-/* 修复弹窗中按钮的悬停状态 */
-.ant-modal-footer .ant-btn:hover,
-.ant-modal-footer .ant-btn:focus {
-    border-color: var(--primary-color) !important;
-    color: var(--primary-color) !important;
-}
-
-.ant-modal-footer .ant-btn-primary:hover,
-.ant-modal-footer .ant-btn-primary:focus {
-    background-color: var(--primary-hover) !important;
-    border-color: var(--primary-hover) !important;
-    color: #fff !important;
-}
-
-/* 确保筛选器下拉菜单的悬停状态 */
-.filter-menu .ant-dropdown-menu-item:hover,
-.ant-dropdown-menu-item:hover {
-    background-color: rgba(79, 70, 229, 0.1) !important;
-}
-
-/* 修复各类表单控件的聚焦和悬停状态 */
-.ant-checkbox:hover .ant-checkbox-inner,
-.ant-checkbox-wrapper:hover .ant-checkbox-inner,
-.ant-checkbox-input:focus + .ant-checkbox-inner {
-    border-color: var(--primary-color) !important;
-}
-
-.ant-radio:hover .ant-radio-inner,
-.ant-radio-wrapper:hover .ant-radio-inner,
-.ant-radio-input:focus + .ant-radio-inner {
-    border-color: var(--primary-color) !important;
-}
-
-/* 修复按钮组边框颜色 */
-.ant-btn-group .ant-btn:hover,
-.ant-btn-group .ant-btn:focus {
-    border-color: var(--primary-color) !important;
-}
-
-
-/* 修复表格相关组件悬停状态 */
-.ant-table-column-sorter:hover .ant-table-column-sorter-up,
-.ant-table-column-sorter:hover .ant-table-column-sorter-down {
-    color: var(--primary-color) !important;
-}
-
-/* 修复分页组件悬停状态 */
-.ant-pagination-prev:hover .ant-pagination-item-link,
-.ant-pagination-next:hover .ant-pagination-item-link {
-    border-color: var(--primary-color) !important;
-    color: var(--primary-color) !important;
-}
-
-/* 确保其他各种交互组件的悬停颜色一致性 */
-.ant-btn-link:hover,
-.ant-btn-link:focus {
-    color: var(--primary-hover) !important;
-}
-
-/* 修复表格复选框样式 */
-.ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: #6554C0 !important;
-    border-color: #6554C0 !important;
-}
-
-.ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner,
-.ant-checkbox-wrapper:hover .ant-checkbox-inner,
-.ant-checkbox-wrapper .ant-checkbox:hover .ant-checkbox-inner {
-    border-color: #6554C0 !important;
-}
-
-/* 修复查询按钮样式 */
+/* 查询按钮样式 */
 .ant-btn.ant-btn-primary.search-button,
 .user-management-container [class*="ant-btn"].ant-btn-primary {
-    background-color: #6554C0 !important;
-    border-color: #6554C0 !important;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
 }
 
 .ant-btn.ant-btn-primary.search-button:hover,
 .ant-btn.ant-btn-primary.search-button:focus,
 .user-management-container [class*="ant-btn"].ant-btn-primary:hover,
 .user-management-container [class*="ant-btn"].ant-btn-primary:focus {
-    background-color: #7C68EE !important;
-    border-color: #7C68EE !important;
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
 }
 
-/* 修复分页组件样式 */
-.ant-pagination .ant-pagination-item-active {
-    border-color: #6554C0 !important;
+/* 顶部导航标签及按钮的悬停样式 */
+.ant-tabs-tab:hover,
+.ant-tabs-tab:hover .ant-tabs-tab-btn,
+.ant-tabs-nav .ant-tabs-tab-btn:hover,
+.ant-tabs-nav .ant-tabs-tab-btn:active,
+html body .ant-tabs-tab:hover,
+html body .ant-tabs-tab:hover .ant-tabs-tab-btn {
+    color: var(--primary-color) !important;
 }
 
-.ant-pagination .ant-pagination-item-active a,
-.ant-pagination .ant-pagination-item:hover a {
-    color: #6554C0 !important;
+/* 标签页下划线颜色 */
+.ant-tabs-ink-bar,
+.ant-tabs-top > .ant-tabs-nav .ant-tabs-ink-bar,
+.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-ink-bar {
+    background-color: var(--primary-color) !important;
 }
 
-.ant-pagination .ant-pagination-item:hover {
-    border-color: #6554C0 !important;
+/* 强制覆盖标签页ink-bar样式 */
+.ant-tabs .ant-tabs-ink-bar {
+    background: var(--primary-color) !important;
 }
 
-.ant-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
-.ant-pagination .ant-pagination-next:hover .ant-pagination-item-link {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
+/* 修复左侧导航标签hover样式 */
+.ant-tabs-left > .ant-tabs-nav .ant-tabs-tab:hover,
+.ant-tabs-left > div > .ant-tabs-nav .ant-tabs-tab:hover {
+    color: var(--primary-color) !important;
+    background-color: rgba(101, 84, 192, 0.05) !important;
 }
 
-.ant-pagination .ant-pagination-jump-prev .ant-pagination-item-container .ant-pagination-item-link-icon,
-.ant-pagination .ant-pagination-jump-next .ant-pagination-item-container .ant-pagination-item-link-icon {
-    color: #6554C0 !important;
+/* 自定义Tab切换样式 */
+.custom-tab-container {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    width: fit-content;
 }
 
-.ant-pagination-options .ant-select:hover .ant-select-selector {
-    border-color: #6554C0 !important;
+.custom-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background-color: white;
+    color: var(--text-secondary);
 }
 
-.ant-pagination-options .ant-select-focused .ant-select-selector {
-    border-color: #6554C0 !important;
-    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+.custom-tab:hover:not(.active) {
+    color: var(--primary-color);
+    background-color: rgba(101, 84, 192, 0.05);
 }
 
-.ant-pagination-options-quick-jumper input:hover,
-.ant-pagination-options-quick-jumper input:focus {
-    border-color: #6554C0 !important;
-    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+.custom-tab.active {
+    background-color: var(--primary-color);
+    color: white;
 }
 
-/* 修复表格操作列按钮样式 */
+/* 表格操作按钮样式 */
+.table-action-btn {
+    color: var(--primary-color) !important;
+    transition: all 0.2s ease;
+}
+
+.table-action-btn:hover {
+    background-color: rgba(101, 84, 192, 0.05) !important;
+    color: var(--primary-hover) !important;
+}
+
+.table-action-btn.danger:hover {
+    color: var(--error-color) !important;
+}
+
+/* 用户表格样式 */
 .user-table .ant-btn-link {
-    color: #6554C0 !important;
+    color: var(--primary-color) !important;
 }
 
 .user-table .ant-btn-link:hover,
 .user-table .ant-btn-link:focus {
-    color: #7C68EE !important;
+    color: var(--primary-hover) !important;
     background-color: rgba(101, 84, 192, 0.05);
 }
 
 .user-table .ant-btn-link.ant-btn-dangerous,
 .user-table .ant-btn-link.ant-btn-dangerous:hover {
-    color: #F5222D !important;
+    color: var(--error-color) !important;
 }
 
-/* 修复搜索和重置按钮 */
-.operation-bar .ant-btn.ant-btn-icon-only,
-.ant-btn-circle {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
-}
-
-.operation-bar .ant-btn.ant-btn-icon-only:hover,
-.operation-bar .ant-btn.ant-btn-icon-only:focus,
-.ant-btn-circle:hover,
-.ant-btn-circle:focus {
-    color: #7C68EE !important;
-    border-color: #7C68EE !important;
-    background-color: rgba(101, 84, 192, 0.1);
-}
-
-/* 修复选择框样式 */
-.ant-select-dropdown .ant-select-item-option-selected {
-    background-color: rgba(101, 84, 192, 0.1) !important;
-    color: #6554C0 !important;
-}
-
-.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    background-color: rgba(101, 84, 192, 0.05) !important;
-}
-
-/* 强制修复所有按钮图标颜色 */
-.ant-btn > .anticon {
-    color: inherit !important;
-}
-
-/* 修复查看、编辑、重置密码、删除按钮图标 */
-.user-table .ant-btn-link .anticon,
-.user-table .ant-btn-link .anticon + span {
-    color: inherit !important;
-}
-
-/* 修复查询搜索按钮 */
-.user-management-container .ant-btn-primary.search-button {
-    background-color: #6554C0 !important;
-    border-color: #6554C0 !important;
-}
-
-.user-management-container .ant-btn-primary.search-button:hover,
-.user-management-container .ant-btn-primary.search-button:focus {
-    background-color: #7C68EE !important;
-    border-color: #7C68EE !important;
-}
-
-.user-management-container .ant-btn-primary.search-button .anticon,
-.user-management-container .ant-btn-primary.search-button span {
-    color: white !important;
-}
-
-/* 修复添加用户按钮 */
+/* 添加用户按钮 */
 .ant-btn-primary.primary-button {
-    background-color: #6554C0 !important;
-    border-color: #6554C0 !important;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
 }
 
 .ant-btn-primary.primary-button:hover,
 .ant-btn-primary.primary-button:focus {
-    background-color: #7C68EE !important;
-    border-color: #7C68EE !important;
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
 }
 
 .ant-btn-primary.primary-button .anticon,
@@ -828,356 +3015,278 @@ a.ant-typography:hover {
     color: white !important;
 }
 
-/* 修复弹窗右上角关闭按钮 */
+/* 弹窗右上角关闭按钮 */
 .ant-modal-close:hover {
-    color: #6554C0 !important;
+    color: var(--primary-color) !important;
 }
 
-/* 修复日期选择器 */
-.ant-picker:hover,
-.ant-picker-focused {
-    border-color: #6554C0 !important;
+/* 图片预览弹窗样式 */
+.preview-modal .ant-modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
-.ant-picker-focused {
-    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+.preview-modal .ant-modal-mask {
+    backdrop-filter: blur(5px);
 }
 
-.ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner {
-    background-color: #6554C0 !important;
+/* 当预览模态框打开时禁用页面滚动 */
+body.preview-modal-open {
+    overflow: hidden;
 }
 
-.ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
-    border-color: #6554C0 !important;
+/* 修复表格头部样式 */
+.ant-table-thead > tr > th {
+    background-color: #f9f7ff !important;
+    color: var(--primary-color) !important;
+    font-weight: 500;
+    padding: 12px 8px;
 }
 
-.ant-picker-header-view button:hover {
-    color: #6554C0 !important;
+/* 表格行悬停效果 */
+.ant-table-tbody > tr:hover > td {
+    background-color: #f9f7ff !important;
 }
 
-/* 设置搜索图标和分页定位图标的颜色 */
-.user-management-container .anticon-search,
-.user-management-container .anticon-eye,
-.user-management-container .anticon-edit,
-.user-management-container .anticon-key,
-.user-management-container .ant-pagination-jump-prev .ant-pagination-item-container .ant-pagination-item-link-icon,
-.user-management-container .ant-pagination-jump-next .ant-pagination-item-container .ant-pagination-item-link-icon {
-    color: #6554C0 !important;
+/* 表格内容样式优化 */
+.ant-table-tbody > tr > td {
+    padding: 12px 8px;
 }
 
-/* 修复表格头部筛选和排序图标 */
-.ant-table-column-sorter-up.active,
-.ant-table-column-sorter-down.active {
-    color: #6554C0 !important;
+/* 设置图标颜色 */
+.ant-picker-header-view button:hover,
+.ant-select-tree-switcher,
+.ant-breadcrumb a,
+.ant-menu-item-selected,
+.ant-menu-item:hover,
+.ant-menu-item-active {
+    color: var(--primary-color) !important;
 }
 
-/* 表格行选中背景颜色 */
-.ant-table-tbody > tr.ant-table-row-selected > td {
-    background-color: rgba(101, 84, 192, 0.1) !important;
+/* 空状态组件样式 */
+.ant-empty-description {
+    color: var(--text-secondary);
 }
 
-/* 修复批量选择提示文本 */
-.ant-table-selection-extra .ant-dropdown-trigger:hover {
-    color: #6554C0 !important;
+/* 网格视图样式 */
+.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 }
 
-/* 修复复选框勾选标记不可见的问题 */
-
-/* 确保勾选标记可见 */
-.ant-checkbox-checked .ant-checkbox-inner::after {
-    border-color: #fff !important; /* 白色勾选标记 */
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
-    border-width: 0 2px 2px 0 !important; /* 确保勾选标记的宽度 */
-    border-style: solid !important;
-    transform: rotate(45deg) !important;
-    transition: all 0.2s cubic-bezier(0.12, 0.4, 0.29, 1.46) 0.1s !important;
+.image-card {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s;
+    height: 100%;
 }
 
-/* 确保正确的尺寸和位置 */
-.ant-checkbox-inner::after {
-    position: absolute !important;
-    top: 50% !important;
-    left: 21.5% !important;
-    display: table !important;
-    width: 5.71428571px !important;
-    height: 9.14285714px !important;
-    margin-top: -6.14285714px !important;
+.image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* 确保背景色正确 */
-.ant-checkbox-checked .ant-checkbox-inner {
-    background-color: #6554C0 !important;
-    border-color: #6554C0 !important;
+/* 图片预览样式 */
+.image-preview {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
 }
 
-/* 确保鼠标悬停时背景色正确 */
-.ant-checkbox-wrapper:hover .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: #7C68EE !important;
-    border-color: #7C68EE !important;
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
 }
 
-/* 确保禁用状态的样式正确 */
-.ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner::after {
-    border-color: rgba(255, 255, 255, 0.5) !important;
+.image-preview:hover .preview-img {
+    transform: scale(1.05);
 }
 
-/* 确保复选框内部尺寸正确 */
-.ant-checkbox-inner {
-    width: 16px !important;
-    height: 16px !important;
+/* 图片悬停遮罩 */
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 5;
 }
 
-/* 确保表头复选框勾选标记也可见 */
-.ant-table-thead .ant-checkbox-checked .ant-checkbox-inner::after {
-    border-color: #fff !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
+.image-preview:hover .image-overlay {
+    opacity: 1;
 }
 
-/* 确保表格行中的复选框勾选标记可见 */
-.ant-table-tbody .ant-checkbox-checked .ant-checkbox-inner::after {
-    border-color: #fff !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
+/* 图标选择器样式 */
+.icon-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-/* 为半选状态单独处理 */
-.ant-checkbox-indeterminate .ant-checkbox-inner::after {
-    background-color: #fff !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
-    border: 0 !important;
-    transform: none !important;
-    left: 50% !important;
-    top: 50% !important;
-    width: 8px !important;
-    height: 8px !important;
-    margin-left: -4px !important;
-    margin-top: -4px !important;
+.selected-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+}
+
+.icons-container {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.icon-option {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #f0f0f0;
+}
+
+.icon-option:hover {
+    background-color: #f5f5f5;
+    border-color: #d9d9d9;
+}
+
+.color-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.color-option {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #f0f0f0;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 页面标题区域 */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.page-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* 数据统计卡片样式 */
+.stat-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* 菜单分隔线 */
+.ant-menu .ant-menu-item-divider {
+    background-color: var(--border-color);
+}
+
+/* 全局模态框样式 */
+.custom-modal .ant-modal-content,
+.view-category-modal .ant-modal-content,
+.edit-category-modal .ant-modal-content,
+.add-category-modal .ant-modal-content,
+.articles-modal .ant-modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.custom-modal .ant-modal-mask {
+    backdrop-filter: blur(5px);
+}
+
+/* 统一按钮图标颜色 */
+.ant-btn > .anticon {
+    color: inherit !important;
+}
+
+/* 确保表格行中的操作按钮完全展示 */
+.action-buttons-cell {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+/* 表单控件对齐 */
+.ant-form-item-control-input {
+    min-height: 32px;
 }
 
 
-/* 修复复选框和单选框聚焦时的蓝色边框闪烁 */
 
-/* 复选框获得焦点时的样式 */
-.ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
-    border-color: #6554C0 !important;
-    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
-    outline: none !important;
-}
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .operation-bar {
+        flex-direction: column;
+        gap: 16px;
+    }
 
-/* 复选框点击瞬间的样式 */
-.ant-checkbox-wrapper .ant-checkbox-inner::after {
-    border-color: #6554C0 !important;
-}
+    .search-form {
+        flex-direction: column;
+    }
 
-/* 处理 Chrome 浏览器的 focus-visible 状态 */
-.ant-checkbox-wrapper .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
-    outline: none !important;
-    border-color: #6554C0 !important;
-    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
-}
+    .search-form .ant-form-item {
+        margin-right: 0;
+        margin-bottom: 16px;
+    }
 
-/* 处理全选复选框 */
-.ant-table-thead .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner,
-.ant-table-thead .ant-checkbox-wrapper .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
-    border-color: #6554C0 !important;
-    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
-}
-
-/* 点击行复选框时整行的样式 */
-.ant-table-tbody > tr.ant-table-row-selected:hover > td {
-    background-color: rgba(101, 84, 192, 0.15) !important;
-}
-
-/* 确保选中状态的复选框以及其内部的对勾符号保持紫色 */
-.ant-checkbox-checked::after {
-    border: 1px solid #6554C0 !important;
-}
-
-/* 处理IE和Edge浏览器的特殊情况 */
-@media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
-    .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner,
-    .ant-checkbox-wrapper .ant-checkbox-input:active + .ant-checkbox-inner {
-        border-color: #6554C0 !important;
-        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
-        outline: none !important;
+    .grid-view {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     }
 }
 
-/* 修复Safari浏览器的特殊情况 */
-@media not all and (min-resolution:.001dpcm) {
-    @supports (-webkit-appearance:none) {
-        .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
-            border-color: #6554C0 !important;
-            box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
-            outline: none !important;
-        }
+@media (max-width: 480px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
-}
 
-/* 处理Firefox的特殊情况 */
-@-moz-document url-prefix() {
-    .ant-checkbox-wrapper .ant-checkbox-input:focus + .ant-checkbox-inner {
-        border-color: #6554C0 !important;
-        box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
-        outline: none !important;
+    .grid-view {
+        grid-template-columns: 1fr;
     }
-}
-
-/* 修复顶部导航标签及按钮的悬停样式 - 添加到base.css */
-
-/* 标签页悬停和选中状态的修复 */
-.ant-tabs-tab:hover,
-.ant-tabs-tab:hover .ant-tabs-tab-btn,
-.ant-tabs-nav .ant-tabs-tab-btn:hover,
-.ant-tabs-nav .ant-tabs-tab-btn:active,
-html body .ant-tabs-tab:hover,
-html body .ant-tabs-tab:hover .ant-tabs-tab-btn {
-    color: #6554C0 !important;
-}
-
-/* 标签页下划线颜色修复 */
-.ant-tabs-ink-bar,
-.ant-tabs-top > .ant-tabs-nav .ant-tabs-ink-bar,
-.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-ink-bar {
-    background-color: #6554C0 !important;
-}
-
-/* 增强标签页选择器优先级 */
-#app .ant-tabs > .ant-tabs-nav .ant-tabs-tab:hover,
-#app .ant-tabs > div > .ant-tabs-nav .ant-tabs-tab:hover,
-#app .ant-tabs > .ant-tabs-nav .ant-tabs-tab-active:hover,
-#app .ant-tabs > div > .ant-tabs-nav .ant-tabs-tab-active:hover {
-    color: #6554C0 !important;
-}
-
-/* 强制修复图片页面中的标签样式 */
-.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab:hover,
-.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab-active,
-.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-tab:hover,
-.ant-tabs-top > div > .ant-tabs-nav .ant-tabs-tab-active,
-.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn,
-.ant-tabs-tab-btn:hover,
-.ant-tabs-tab:hover .ant-tabs-tab-btn {
-    color: #6554C0 !important;
-}
-
-/* 修复单选按钮组样式 */
-.ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
-}
-
-/* 强制覆盖标签页ink-bar样式 */
-.ant-tabs .ant-tabs-ink-bar {
-    background: #6554C0 !important;
-}
-
-/* 修复设置页面左侧导航 */
-.ant-tabs-left > .ant-tabs-nav .ant-tabs-tab:hover,
-.ant-tabs-left > div > .ant-tabs-nav .ant-tabs-tab:hover {
-    color: #6554C0 !important;
-    background-color: rgba(101, 84, 192, 0.05) !important;
-}
-
-/* 解决特殊场景下的标签页悬停问题 */
-.ant-tabs-nav .ant-tabs-tab:hover,
-.ant-tabs-nav .ant-tabs-tab:hover .ant-tabs-tab-btn,
-.ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active:hover,
-.ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active:hover .ant-tabs-tab-btn {
-    color: #6554C0 !important;
-}
-
-/* 全局修复所有ant-tabs相关悬停样式 */
-div[class*='ant-tabs'] .ant-tabs-tab:hover .ant-tabs-tab-btn,
-div[class*='ant-tabs'] .ant-tabs-tab:hover {
-    color: #6554C0 !important;
-}
-
-/* 修复筛选器全部图片/公开/私密标签 */
-.filter-row .ant-radio-button-wrapper:hover,
-.filter-row .ant-radio-group .ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
-}
-
-/* 防止浏览器默认获取焦点样式覆盖 */
-.ant-tabs-tab:focus,
-.ant-tabs-tab:focus-visible,
-.ant-tabs-tab-btn:focus,
-.ant-tabs-tab-btn:focus-visible,
-.ant-tabs-tab-remove:focus,
-.ant-tabs-tab-remove:focus-visible {
-    color: #6554C0 !important;
-}
-
-/* 特别处理标签页组件的活动和悬停状态 */
-.ant-tabs-tab.ant-tabs-tab-active,
-.ant-tabs-tab.ant-tabs-tab-active:hover {
-    color: #6554C0 !important;
-}
-
-/* 修复标签切换按钮的悬停样式 - 添加到base.css */
-
-/* 单选按钮组样式修复 - 特别针对"全部图片/公开/私密"切换按钮 */
-.ant-radio-group .ant-radio-button-wrapper:hover,
-.ant-radio-group .ant-radio-button-wrapper:focus {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
-    background-color: #f5f5f5 !important; /* 保留浅灰色背景 */
-}
-
-/* 确保未选中的按钮在悬停时颜色也是紫色 */
-.ant-radio-group .ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
-}
-
-/* 选中状态的按钮背景色 */
-.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-    background: #6554C0 !important;
-    border-color: #6554C0 !important;
-    box-shadow: -1px 0 0 0 #6554C0 !important;
-}
-
-/* 选中状态按钮的文字颜色 */
-.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-    color: white !important;
-}
-
-/* 选中按钮左侧边框修复 */
-.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)::before {
-    background-color: #6554C0 !important;
-}
-
-/* 特别处理按钮组第一个和最后一个按钮的边角 */
-.ant-radio-group .ant-radio-button-wrapper:first-child:hover,
-.ant-radio-group .ant-radio-button-wrapper:last-child:hover {
-    border-color: #6554C0 !important;
-}
-
-/* 解决按钮悬停时蓝色背景问题 */
-.ant-radio-group .ant-radio-button-wrapper:hover {
-    background-color: rgba(101, 84, 192, 0.05) !important; /* 非常浅的紫色背景 */
-}
-
-/* 当前截图中显示的问题 - 针对性修复 */
-.ant-radio-group-solid .ant-radio-button-wrapper:hover {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
-    background: transparent !important; /* 移除蓝色背景 */
-}
-
-/* 强制覆盖Ant Design默认样式 */
-html body .ant-radio-button-wrapper:hover,
-html body .ant-radio-button-wrapper:focus {
-    color: #6554C0 !important;
-    border-color: #6554C0 !important;
-    background: rgba(101, 84, 192, 0.05) !important;
 }

@@ -28,6 +28,15 @@ const routes: Array<RouteRecordRaw> = [
                 },
             },
             {
+                path: 'create-space',
+                name: 'CreateSpace',
+                component: () => import('@/pages/space/CreateSpace.vue'),
+                meta: {
+                    title: '创建空间 - 智能云图库',
+                    requiresAuth: true
+                },
+            },
+            {
                 path: '/favorites',
                 name: 'FavoritePage',
                 component: () => import('@/pages/other/FavoritePage.vue'),
