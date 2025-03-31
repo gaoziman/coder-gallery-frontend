@@ -1,15 +1,51 @@
 <template>
   <div class="space-management-container">
+    <div class="page-header-wrapper">
+      <!-- 页面标题区域 -->
+      <div class="page-title-container">
+        <div class="title-icon-wrapper">
+          <folder-outlined class="title-icon" />
+        </div>
+        <div class="title-content">
+          <div class="title-main">
+            <h1 class="page-title">空间管理</h1>
+            <a-tag color="#6554C0">内容管理</a-tag>
+          </div>
+          <p class="page-desc">创建和管理用户空间，监控空间使用情况，维护存储资源</p>
+        </div>
+      </div>
+
+      <!-- 页面统计数据 -->
+      <div class="page-stats">
+        <div class="stat-item">
+          <database-outlined class="stat-icon" />
+          <div class="stat-info">
+            <div class="stat-label">已用空间</div>
+            <div class="stat-value">68%</div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <appstore-outlined class="stat-icon" />
+          <div class="stat-info">
+            <div class="stat-label">空间总数</div>
+            <div class="stat-value">24</div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <warning-outlined class="stat-icon" />
+          <div class="stat-info">
+            <div class="stat-label">空间预警</div>
+            <div class="stat-value">3</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- 顶部标题和描述 -->
     <div class="page-header">
       <div>
         <h1 class="page-title">空间管理</h1>
         <p class="page-desc">创建和管理用户空间，监控空间使用情况</p>
       </div>
-      <a-button type="primary" class="create-button" @click="openCreateSpaceModal">
-        <plus-outlined />
-        创建空间
-      </a-button>
     </div>
 
     <!-- 顶部卡片统计信息 -->
@@ -87,7 +123,7 @@
         <!-- 空间名称列 -->
         <template v-if="column.dataIndex === 'spaceName'">
           <div class="space-name-cell">
-            <folder-outlined class="folder-icon" />
+            <folder-outlined class="folder-icon"/>
             <span>{{ record.spaceName }}</span>
           </div>
         </template>
@@ -119,7 +155,7 @@
         <template v-if="column.dataIndex === 'action'">
           <a-space>
             <a-button type="link" size="small" @click="editSpace(record)">
-              <edit-outlined />
+              <edit-outlined/>
               编辑
             </a-button>
             <a-popconfirm
@@ -129,7 +165,7 @@
                 @confirm="deleteSpace(record)"
             >
               <a-button type="link" size="small" danger>
-                <delete-outlined />
+                <delete-outlined/>
                 删除
               </a-button>
             </a-popconfirm>
@@ -137,40 +173,6 @@
         </template>
       </template>
     </a-table>
-
-    <!-- 创建空间弹窗 -->
-    <a-modal
-        v-model:visible="createModalVisible"
-        title="创建空间"
-        @ok="handleCreateSubmit"
-        :confirmLoading="submitLoading"
-        okText="创建"
-        cancelText="取消"
-        width="600px"
-    >
-      <a-form :model="createForm" :rules="rules" ref="createFormRef" layout="vertical">
-        <a-form-item label="空间名称" name="spaceName">
-          <a-input v-model:value="createForm.spaceName" placeholder="请输入空间名称"/>
-        </a-form-item>
-        <a-form-item label="空间级别" name="spaceLevel">
-          <a-select v-model:value="createForm.spaceLevel" placeholder="请选择空间级别">
-            <a-select-option value="normal">普通版 (100MB)</a-select-option>
-            <a-select-option value="pro">高级版 (1GB)</a-select-option>
-            <a-select-option value="premium">旗舰版 (10GB)</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="用户ID" name="userId">
-          <a-input v-model:value="createForm.userId" placeholder="请输入用户ID"/>
-        </a-form-item>
-        <a-form-item label="空间描述" name="description">
-          <a-textarea v-model:value="createForm.description" placeholder="请输入空间描述" :rows="3"/>
-        </a-form-item>
-        <a-form-item name="enableAI">
-          <a-checkbox v-model:checked="createForm.enableAI">启用智能AI功能</a-checkbox>
-          <div class="checkbox-description">允许在此空间中使用AI智能标签、图像分析等功能</div>
-        </a-form-item>
-      </a-form>
-    </a-modal>
 
     <!-- 编辑空间弹窗 -->
     <a-modal
@@ -220,7 +222,7 @@ import {
 } from 'vue';
 import {
   SearchOutlined,
-  PlusOutlined,
+  WarningOutlined,
   ReloadOutlined,
   FolderOutlined,
   EditOutlined,
@@ -232,7 +234,7 @@ import {
   DatabaseOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
 
 // 表格列定义
@@ -259,9 +261,9 @@ const columns = [
     align: 'center',
     width: 120,
     filters: [
-      { text: '普通版', value: 'normal' },
-      { text: '高级版', value: 'pro' },
-      { text: '旗舰版', value: 'premium' },
+      {text: '普通版', value: 'normal'},
+      {text: '高级版', value: 'pro'},
+      {text: '旗舰版', value: 'premium'},
     ],
     onFilter: (value, record) => record.spaceLevel === value,
   },
@@ -391,14 +393,14 @@ const editForm = reactive({
 // 表单验证规则
 const rules = {
   spaceName: [
-    { required: true, message: '请输入空间名称', trigger: 'blur' },
-    { min: 2, max: 20, message: '空间名称长度应为2-20个字符', trigger: 'blur' }
+    {required: true, message: '请输入空间名称', trigger: 'blur'},
+    {min: 2, max: 20, message: '空间名称长度应为2-20个字符', trigger: 'blur'}
   ],
   spaceLevel: [
-    { required: true, message: '请选择空间级别', trigger: 'change' }
+    {required: true, message: '请选择空间级别', trigger: 'change'}
   ],
   userId: [
-    { required: true, message: '请输入用户ID', trigger: 'blur' },
+    {required: true, message: '请输入用户ID', trigger: 'blur'},
   ],
 };
 
@@ -681,7 +683,7 @@ function getUsagePercent(usedSize, totalSize) {
   const totalUnit = totalMatch[3];
 
   // 转换为相同单位
-  const unitMap = { 'KB': 1, 'MB': 1024, 'GB': 1024 * 1024 };
+  const unitMap = {'KB': 1, 'MB': 1024, 'GB': 1024 * 1024};
   const usedBytes = usedValue * (unitMap[usedUnit] || 1);
   const totalBytes = totalValue * (unitMap[totalUnit] || 1);
 
@@ -696,14 +698,6 @@ function getUsageColor(usedSize, totalSize) {
   return '#1890ff';
 }
 
-// 打开创建空间弹窗
-function openCreateSpaceModal() {
-  // 重置表单
-  Object.keys(createForm).forEach(key => {
-    createForm[key] = key === 'spaceLevel' ? 'normal' : (key === 'enableAI' ? false : '');
-  });
-  createModalVisible.value = true;
-}
 
 // 处理创建空间提交
 function handleCreateSubmit() {
@@ -785,7 +779,7 @@ function handleEditSubmit() {
             // 更新编辑时间
             editForm.updateTime = new Date().getTime();
 
-            spaceData.value[index] = { ...spaceData.value[index], ...editForm };
+            spaceData.value[index] = {...spaceData.value[index], ...editForm};
           }
 
           submitLoading.value = false;
@@ -842,15 +836,6 @@ function deleteSpace(record) {
   color: #8c8c8c;
 }
 
-.create-button {
-  background-color: #6554C0;
-  border-color: #6554C0;
-}
-
-.create-button:hover, .create-button:focus {
-  background-color: #7C68EE;
-  border-color: #7C68EE;
-}
 
 /* 数据统计卡片样式 */
 .stat-cards {
@@ -884,6 +869,7 @@ function deleteSpace(record) {
   color: white;
   font-size: 22px;
 }
+
 .stat-info {
   flex: 1;
 }
