@@ -40,7 +40,7 @@
     </div>
 
     <div class="server-status">
-      <div class="status-label">服务器状态</div>
+      <div >服务器状态</div>
       <div class="status-chips">
         <a-tag class="status-chip online">
           <CheckCircleFilled />

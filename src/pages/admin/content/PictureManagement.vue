@@ -10,7 +10,7 @@
           <div class="im-header-info">
             <div class="im-title-row">
               <h1 class="im-title">图片管理</h1>
-              <a-tag color="#6554C0">内容资源</a-tag>
+              <a-tag color="#6554C0">内容管理</a-tag>
             </div>
             <p class="im-description">
               管理系统图片资源，支持上传、分类、优化以及使用情况追踪
@@ -154,10 +154,6 @@
             <delete-outlined/>
             批量删除
           </a-button>
-          <a-button :disabled="!hasSelected" @click="handleBatchOptimize">
-            <thunderbolt-outlined/>
-            批量优化
-          </a-button>
         </a-space>
       </div>
 
@@ -233,10 +229,6 @@
                 <link-outlined/>
                 复制链接
               </a-button>
-              <a-button type="link" size="small" @click="optimizeImage(record)" :disabled="record.status === 'processing'">
-                <thunderbolt-outlined/>
-                优化
-              </a-button>
               <a-dropdown>
                 <template #overlay>
                   <a-menu>
@@ -307,24 +299,18 @@
                   </span>
                 </div>
                 <div class="image-actions">
-                  <a-button type="text" size="small" @click.stop="handlePreviewImage(image)">
+                  <a-button type="link" size="small" @click.stop="handlePreviewImage(image)">
                     <eye-outlined />
                   </a-button>
-                  <a-button type="text" size="small" @click.stop="editImageInfo(image)">
+                  <a-button type="link" size="small" @click.stop="editImageInfo(image)">
                     <edit-outlined />
                   </a-button>
-                  <a-button type="text" size="small" @click.stop="copyImageUrl(image)">
+                  <a-button type="link" size="small" @click.stop="copyImageUrl(image)">
                     <link-outlined />
                   </a-button>
                   <a-dropdown>
                     <template #overlay>
                       <a-menu>
-                        <a-menu-item key="1" @click.stop="optimizeImage(image)">
-                          <thunderbolt-outlined /> 优化
-                        </a-menu-item>
-                        <a-menu-item key="2" @click.stop="replaceImage(image)">
-                          <swap-outlined /> 替换
-                        </a-menu-item>
                         <a-menu-item key="3" @click.stop="downloadImage(image)">
                           <download-outlined /> 下载
                         </a-menu-item>
@@ -334,7 +320,7 @@
                         </a-menu-item>
                       </a-menu>
                     </template>
-                    <a-button type="text" size="small" @click.stop>
+                    <a-button type="link" size="small" @click.stop>
                       <more-outlined />
                     </a-button>
                   </a-dropdown>
@@ -362,18 +348,154 @@
     </div>
 
     <!-- 图片预览 -->
-    <a-image
-        :width="0"
-        :style="{ display: 'none' }"
-        :preview="{
-        visible: previewVisible,
-        onVisibleChange: (visible) => previewVisible = visible,
-        current: previewIndex,
-        src: previewImage ? previewImage.url : '',
-        title: previewImage ? previewImage.name : '',
-        toolbarRender: renderPreviewToolbar,
-      }"
-    />
+    <a-modal
+        v-model:visible="previewVisible"
+        :footer="null"
+        :width="1200"
+        :centered="true"
+        :mask-closable="true"
+        class="custom-preview-modal"
+        @cancel="handlePreviewClose"
+        :destroyOnClose="true"
+    >
+      <!-- 确保关闭按钮可见且正确绑定事件 -->
+      <template #closeIcon>
+        <div class="close-btn-wrapper" @click="handlePreviewClose">
+          <close-outlined class="custom-close-icon" />
+        </div>
+      </template>
+
+      <div class="preview-container">
+        <!-- 左侧图片区域 - 调整为60%宽度 -->
+        <div class="preview-image-container">
+          <img
+              :src="previewImage ? previewImage.url : ''"
+              :alt="previewImage ? previewImage.name : ''"
+              class="preview-image"
+          />
+
+          <!-- 上一张/下一张按钮 -->
+          <div class="preview-nav prev" @click.stop="navigateImages(-1)" v-if="imageData.length > 1">
+            <left-outlined />
+          </div>
+          <div class="preview-nav next" @click.stop="navigateImages(1)" v-if="imageData.length > 1">
+            <right-outlined />
+          </div>
+
+          <!-- 图片计数器 -->
+          <div class="preview-counter" v-if="imageData.length > 1">
+            {{ previewIndex + 1 }} / {{ imageData.length }}
+          </div>
+        </div>
+
+        <!-- 右侧信息面板，增加宽度到40% -->
+        <div class="preview-info-panel">
+          <div class="preview-info-content">
+            <div class="preview-header">
+              <h2 class="preview-title">{{ previewImage ? previewImage.name : '' }}</h2>
+              <div class="file-type-badge">
+                <a-tag :color="getFormatColor(previewImage?.format)">
+                  {{ previewImage?.format?.toUpperCase() }}
+                </a-tag>
+              </div>
+            </div>
+
+            <!-- 基本信息区域 -->
+            <div class="info-section">
+              <div class="section-header">
+                <info-circle-outlined />
+                <span>基本信息</span>
+              </div>
+
+              <div class="info-table">
+                <div class="info-row">
+                  <div class="info-label">分类</div>
+                  <div class="info-value">
+                    <a-tag :color="getCategoryColor(previewImage?.category)">
+                      {{ getCategoryName(previewImage?.category) }}
+                    </a-tag>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">尺寸</div>
+                  <div class="info-value">{{ previewImage?.width || 0 }} × {{ previewImage?.height || 0 }} px</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">大小</div>
+                  <div class="info-value">{{ formatFileSize(previewImage?.size) }}</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">状态</div>
+                  <div class="info-value">
+                    <a-badge :status="getStatusType(previewImage?.status)" :text="getStatusText(previewImage?.status)" />
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">上传时间</div>
+                  <div class="info-value">{{ formatDateTime(previewImage?.uploadTime) }}</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">访问控制</div>
+                  <div class="info-value">
+                    {{ previewImage?.accessControl === 'public' ? '公开访问' :
+                      previewImage?.accessControl === 'restricted' ? '限制访问' : '私有' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 描述信息区域 -->
+            <div class="info-section">
+              <div class="section-header">
+                <file-text-outlined />
+                <span>描述</span>
+              </div>
+              <div class="description-content">
+                {{ previewImage?.description || '暂无描述' }}
+              </div>
+            </div>
+
+            <!-- 使用情况区域 -->
+            <div class="info-section">
+              <div class="section-header">
+                <bar-chart-outlined />
+                <span>使用情况</span>
+              </div>
+              <div class="usage-content">
+                <div class="usage-stat-item">
+                  <div class="usage-label">引用次数</div>
+                  <div class="usage-value">{{ Math.floor(Math.random() * 50) }}</div>
+                </div>
+                <div class="usage-stat-item">
+                  <div class="usage-label">最近使用</div>
+                  <div class="usage-value">{{ dayjs().subtract(Math.floor(Math.random() * 10), 'day').format('YYYY-MM-DD') }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作按钮，确保在滚动区域内 -->
+            <div class="action-section">
+              <a-button type="primary" @click="copyImageUrl(previewImage)" class="action-button">
+                <template #icon><link-outlined /></template>
+                复制链接
+              </a-button>
+              <a-button @click="downloadImage(previewImage)" class="action-button">
+                <template #icon><download-outlined /></template>
+                下载
+              </a-button>
+              <a-button type="dashed" @click="editImageInfo(previewImage)" class="action-button">
+                <template #icon><edit-outlined /></template>
+                编辑信息
+              </a-button>
+              <a-button danger @click="showDeleteConfirm(previewImage)" class="action-button">
+                <template #icon><delete-outlined /></template>
+                删除
+              </a-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </a-modal>
 
     <!-- 图片上传弹窗 -->
     <a-modal
@@ -457,12 +579,6 @@
             </a-col>
           </a-row>
 
-          <a-form-item label="启用图片优化" name="optimize">
-            <a-switch v-model:checked="uploadForm.optimize" />
-            <span class="form-item-hint" v-if="uploadForm.optimize">
-              <info-circle-outlined /> 将自动进行图片压缩和优化
-            </span>
-          </a-form-item>
 
           <a-form-item label="访问限制" name="accessControl">
             <a-radio-group v-model:value="uploadForm.accessControl">
@@ -562,17 +678,6 @@
                 </template>
               </a-select>
             </a-form-item>
-
-            <a-form-item label="替代文本" name="altText">
-              <a-input
-                  v-model:value="editForm.altText"
-                  placeholder="图片的替代文本 (用于SEO和辅助技术)"
-              >
-                <template #prefix>
-                  <font-colors-outlined style="color: rgba(0, 0, 0, 0.25)"/>
-                </template>
-              </a-input>
-            </a-form-item>
           </div>
 
           <!-- 右侧表单列 -->
@@ -650,11 +755,10 @@ import {
   reactive,
   onMounted,
   computed,
-  h
+  h, onBeforeUnmount
 } from 'vue';
 import {
   SearchOutlined,
-  PlusOutlined,
   ReloadOutlined,
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -667,6 +771,7 @@ import {
   WarningOutlined,
   SettingOutlined,
   PictureOutlined,
+  CloseOutlined,
   UploadOutlined,
   ThunderboltOutlined,
   AppstoreOutlined,
@@ -679,11 +784,13 @@ import {
   DownloadOutlined,
   CloudOutlined,
   FileImageOutlined,
-  FontColorsOutlined,
   ProfileOutlined,
   ColumnWidthOutlined,
   CheckCircleOutlined,
-  SaveOutlined
+  SaveOutlined,
+  LeftOutlined,
+  RightOutlined,
+  FileTextOutlined
 } from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
@@ -1460,48 +1567,14 @@ function handlePreviewImage(record) {
   previewVisible.value = true;
 }
 
-// 渲染预览工具栏
-function renderPreviewToolbar(originalNode) {
-  return [
-    originalNode,
-    h(
-        'button',
-        {
-          style: {
-            color: '#fff',
-            border: 'none',
-            background: 'rgba(0,0,0,0.5)',
-            padding: '8px 16px',
-            margin: '0 8px',
-            cursor: 'pointer',
-            borderRadius: '4px',
-          },
-          onClick: () => {
-            message.success('图片信息已复制到剪贴板');
-          }
-        },
-        '复制图片信息'
-    ),
-    h(
-        'button',
-        {
-          style: {
-            color: '#fff',
-            border: 'none',
-            background: 'rgba(0,0,0,0.5)',
-            padding: '8px 16px',
-            margin: '0 8px',
-            cursor: 'pointer',
-            borderRadius: '4px',
-          },
-          onClick: () => {
-            downloadImage(previewImage.value);
-          }
-        },
-        '下载'
-    ),
-  ];
-}
+const isFiltered = computed(() => {
+  return searchForm.imageName ||
+      searchForm.category ||
+      searchForm.status ||
+      (searchForm.uploadTime && searchForm.uploadTime.length === 2);
+});
+
+
 
 // 复制图片链接
 function copyImageUrl(record) {
@@ -1531,35 +1604,6 @@ function copyImageUrl(record) {
   }
 }
 
-// 优化图片
-function optimizeImage(record) {
-  if (record.status === 'processing') {
-    message.warning('图片正在处理中，请稍后再试');
-    return;
-  }
-
-  // 模拟优化过程
-  const index = imageData.value.findIndex(item => item.id === record.id);
-  if (index > -1) {
-    imageData.value[index].status = 'processing';
-
-    message.loading({ content: '图片优化中...', key: `optimize-${record.id}` });
-
-    setTimeout(() => {
-      // 优化后尺寸减小
-      const originalSize = imageData.value[index].size;
-      const optimizedSize = Math.floor(originalSize * 0.6); // 模拟优化后尺寸减少40%
-      imageData.value[index].size = optimizedSize;
-      imageData.value[index].status = 'active';
-
-      message.success({
-        content: `优化完成，节省了 ${formatFileSize(originalSize - optimizedSize)} (${Math.floor((originalSize - optimizedSize) / originalSize * 100)}%)`,
-        key: `optimize-${record.id}`
-      });
-    }, 2000);
-  }
-}
-
 // 编辑图片信息
 function editImageInfo(record) {
   // 复制图片数据到编辑表单
@@ -1572,6 +1616,46 @@ function editImageInfo(record) {
   // 打开编辑模态框
   editModalVisible.value = true;
 }
+
+
+// 处理预览关闭
+function handlePreviewClose() {
+  // 确保明确设置为false强制关闭
+  previewVisible.value = false;
+
+  // 延迟清空预览图片数据，确保动画完成后再清理数据
+  setTimeout(() => {
+    previewImage.value = null;
+    previewIndex.value = 0;
+  }, 300);
+}
+
+
+// 图片导航
+function navigateImages(step) {
+  // 防止快速点击导致的问题
+  if (!previewImage.value) return;
+
+  let newIndex = previewIndex.value + step;
+
+  // 循环导航
+  if (newIndex < 0) {
+    newIndex = imageData.value.length - 1;
+  } else if (newIndex >= imageData.value.length) {
+    newIndex = 0;
+  }
+
+  previewIndex.value = newIndex;
+  previewImage.value = imageData.value[newIndex];
+}
+
+// 确保在组件销毁时清理相关资源
+onBeforeUnmount(() => {
+  if (previewVisible.value) {
+    previewVisible.value = false;
+    previewImage.value = null;
+  }
+});
 
 // 取消编辑
 function handleEditCancel() {
@@ -1697,59 +1781,6 @@ function handleBatchDelete() {
   });
 }
 
-// 批量优化图片
-function handleBatchOptimize() {
-  if (selectedRowKeys.value.length === 0) {
-    message.warning('请先选择要优化的图片');
-    return;
-  }
-
-  // 筛选出可以优化的图片（非处理中状态）
-  const optimizableIds = selectedRowKeys.value.filter(id => {
-    const image = imageData.value.find(item => item.id === id);
-    return image && image.status !== 'processing';
-  });
-
-  if (optimizableIds.length === 0) {
-    message.warning('所选图片均在处理中，请稍后再试');
-    return;
-  }
-
-  // 开始优化
-  message.loading({ content: `正在优化 ${optimizableIds.length} 张图片...`, key: 'batchOptimize' });
-
-  // 更新状态为处理中
-  optimizableIds.forEach(id => {
-    const index = imageData.value.findIndex(item => item.id === id);
-    if (index > -1) {
-      imageData.value[index].status = 'processing';
-    }
-  });
-
-  // 模拟优化过程
-  setTimeout(() => {
-    let totalSaved = 0;
-
-    optimizableIds.forEach(id => {
-      const index = imageData.value.findIndex(item => item.id === id);
-      if (index > -1) {
-        // 优化后尺寸减小
-        const originalSize = imageData.value[index].size;
-        const optimizedSize = Math.floor(originalSize * 0.65); // 随机优化比例
-        imageData.value[index].size = optimizedSize;
-        imageData.value[index].status = 'active';
-
-        totalSaved += (originalSize - optimizedSize);
-      }
-    });
-
-    message.success({
-      content: `优化完成！共节省 ${formatFileSize(totalSaved)} 存储空间`,
-      key: 'batchOptimize'
-    });
-  }, 3000);
-}
-
 // 暴露方法给父组件使用
 defineExpose({
   openUploadModal
@@ -1825,23 +1856,6 @@ defineExpose({
 
 .decrease {
   color: #F5222D;
-}
-
-/* 背景颜色类 */
-.bg-purple {
-  background: linear-gradient(135deg, #6554C0 0%, #7B64D8 100%);
-}
-
-.bg-blue {
-  background: linear-gradient(135deg, #1890FF 0%, #4DB6FF 100%);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #7FD84D 100%);
-}
-
-.bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFCB47 100%);
 }
 
 /* 优化的搜索表单样式 */
@@ -2289,6 +2303,308 @@ defineExpose({
   font-size: 20px;
   font-weight: 600;
   color: #333;
+}
+
+/* 图片预览弹窗样式 */
+.custom-preview-modal :deep(.ant-modal-content) {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.custom-preview-modal :deep(.ant-modal-body) {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+.custom-preview-modal :deep(.ant-modal-close) {
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+}
+
+.custom-preview-modal :deep(.ant-modal-close-x) {
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  color: white;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 关闭按钮包装器，确保点击区域更大 */
+.close-btn-wrapper {
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 预览容器样式 */
+.preview-container {
+  display: flex;
+  height: 600px; /* 增加高度以显示更多内容 */
+}
+
+/* 左侧图片区域样式 */
+.preview-image-container {
+  position: relative;
+  width: 60%; /* 调整为60%宽度 */
+  height: 100%;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* 左右导航按钮 */
+.preview-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 10;
+  font-size: 16px;
+}
+
+.preview-nav:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.preview-nav.prev {
+  left: 16px;
+}
+
+.preview-nav.next {
+  right: 16px;
+}
+
+/* 图片计数器 */
+.preview-counter {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+}
+
+/* 右侧信息面板样式 */
+.preview-info-panel {
+  width: 40%; /* 增加至40%宽度 */
+  height: 100%;
+  overflow: hidden;
+  background: #f7f9fc;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 可滚动内容区域 */
+.preview-info-content {
+  height: 100%;
+  padding: 24px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d9d9d9 #f7f9fc;
+}
+
+/* 自定义滚动条样式 */
+.preview-info-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.preview-info-content::-webkit-scrollbar-track {
+  background: #f7f9fc;
+}
+
+.preview-info-content::-webkit-scrollbar-thumb {
+  background-color: #d9d9d9;
+  border-radius: 6px;
+}
+
+/* 标题区域 */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.preview-title {
+  margin: 0;
+  font-size: 20px;
+  color: #262626;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80%;
+}
+
+.file-type-badge {
+  flex-shrink: 0;
+}
+
+/* 信息区域样式 */
+.info-section {
+  margin-bottom: 24px;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: #262626;
+  font-weight: 500;
+}
+
+.section-header .anticon {
+  margin-right: 8px;
+  color: #6554C0;
+  font-size: 18px;
+}
+
+/* 表格式布局 */
+.info-table {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+}
+
+.info-row {
+  display: flex;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  flex: 0 0 100px;
+  padding: 12px 16px;
+  background: #f9f9f9;
+  color: #666;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.info-value {
+  flex: 1;
+  padding: 12px 16px;
+  color: #333;
+}
+
+/* 描述内容 */
+.description-content {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 50px;
+  padding: 8px 0;
+}
+
+/* 使用情况统计 */
+.usage-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.usage-stat-item {
+  background: #f9f9f9;
+  padding: 12px 16px;
+  border-radius: 6px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.usage-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.usage-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* 操作按钮区 */
+.action-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-button {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* 自定义关闭图标样式 */
+.custom-close-icon {
+  font-size: 18px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  padding: 6px;
+  color: white;
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+  .preview-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .preview-image-container {
+    width: 100%;
+    height: 400px;
+  }
+
+  .preview-info-panel {
+    width: 100%;
+    height: 400px;
+  }
 }
 
 /* 响应式设计 */

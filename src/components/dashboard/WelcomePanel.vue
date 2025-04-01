@@ -246,11 +246,6 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
-.action-btn {
-  display: flex;
-  align-items: center;
-}
-
 .stats-summary {
   height: 100%;
   display: flex;
