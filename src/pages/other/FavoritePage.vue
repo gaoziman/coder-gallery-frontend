@@ -1,72 +1,78 @@
 <template>
   <div class="favorite-page">
-    <!-- 页面标题和状态 -->
+    <!-- 页面标题和统计信息 -->
     <div class="page-header"
          v-motion
          :initial="{ opacity: 0, y: -20 }"
          :enter="{ opacity: 1, y: 0, transition: { delay: 200, duration: 500 } }">
-      <div class="header-content">
+      <div class="header-title">
+        <div class="title-icon">
+          <picture-outlined />
+        </div>
         <h1 class="page-title">我的收藏</h1>
-        <div class="collection-stats">
-          <a-statistic title="收藏总数" :value="totalFavorites" class="stat-item">
-            <template #suffix>
-              <star-filled style="color: #faad14" />
-            </template>
-          </a-statistic>
-          <a-statistic title="创建于" :value="formatDate(userInfo.favoriteCreatedAt)" class="stat-item" />
-          <a-statistic title="最近更新" :value="formatDate(userInfo.favoriteUpdatedAt)" class="stat-item" />
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <div class="stat-label">收藏总数</div>
+          <div class="stat-value">{{ totalFavorites }} <star-filled class="star-icon" /></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">创建于</div>
+          <div class="stat-value">{{ userInfo.favoriteCreatedAt }}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">最近更新</div>
+          <div class="stat-value">{{ userInfo.favoriteUpdatedAt }}</div>
         </div>
       </div>
     </div>
 
-    <!-- 收藏整理工具栏 -->
-    <a-card class="tools-card"
-            :bordered="false"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 400, duration: 600 } }">
-      <div class="tools-header">
-        <div class="view-controls">
-          <a-radio-group v-model:value="viewMode" button-style="solid">
-            <a-radio-button value="grid">
-              <template #icon><appstore-outlined /></template>
-              网格视图
-            </a-radio-button>
-            <a-radio-button value="list">
-              <template #icon><unordered-list-outlined /></template>
-              列表视图
-            </a-radio-button>
-          </a-radio-group>
-        </div>
-
-        <div class="tools-actions">
-          <a-dropdown :trigger="['click']">
-            <a-button class="sort-dropdown">
-              排序方式: {{ getSortLabel(currentSort) }}
-              <down-outlined />
-            </a-button>
-            <template #overlay>
-              <a-menu @click="handleSortMenuClick">
-                <a-menu-item key="newest">最近添加</a-menu-item>
-                <a-menu-item key="oldest">最早添加</a-menu-item>
-                <a-menu-item key="nameAsc">名称 A-Z</a-menu-item>
-                <a-menu-item key="nameDesc">名称 Z-A</a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
-
-          <a-button
-              type="primary"
-              class="create-collection-btn"
-              @click="showCreateCollectionModal"
-              @mousedown="addRippleEffect">
-            <template #icon><folder-add-outlined /></template>
-            创建收藏夹
+    <!-- 视图控制和工具栏 -->
+    <div class="view-controls-bar"
+         v-motion
+         :initial="{ opacity: 0, y: 20 }"
+         :enter="{ opacity: 1, y: 0, transition: { delay: 300, duration: 500 } }">
+      <div class="dropdown-section">
+        <a-dropdown :trigger="['click']" class="sort-dropdown">
+          <a-button class="sort-button">
+            {{ getSortLabel(currentSort) }}
+            <down-outlined />
           </a-button>
-        </div>
+          <template #overlay>
+            <a-menu @click="handleSortMenuClick">
+              <a-menu-item key="newest">最近添加</a-menu-item>
+              <a-menu-item key="oldest">最早添加</a-menu-item>
+              <a-menu-item key="nameAsc">名称 A-Z</a-menu-item>
+              <a-menu-item key="nameDesc">名称 Z-A</a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
       </div>
 
-      <!-- 收藏夹标签 -->
+      <div class="view-buttons">
+        <a-radio-group v-model:value="viewMode" size="small" button-style="solid">
+          <a-radio-button value="list">
+            <unordered-list-outlined /> 列表视图
+          </a-radio-button>
+          <a-radio-button value="grid">
+            <appstore-outlined /> 网格视图
+          </a-radio-button>
+        </a-radio-group>
+      </div>
+
+      <div class="action-section">
+        <a-button
+            type="primary"
+            class="create-collection-btn"
+            @click="showCreateCollectionModal"
+            @mousedown="addRippleEffect">
+          <template #icon><folder-add-outlined /></template>
+          创建收藏夹
+        </a-button>
+      </div>
+  </div>
+
+    <!-- 收藏夹标签 -->
       <div class="collections-section">
         <div class="section-title">
           <h3>我的收藏夹</h3>
@@ -156,7 +162,6 @@
           </template>
         </a-alert>
       </div>
-    </a-card>
 
     <!-- 收藏内容展示 -->
     <div
@@ -452,7 +457,7 @@
                   type="link"
                   @click="startCollectionEdit(index)"
               >
-                查看<edit-outlined />
+                编辑<edit-outlined />
               </a-button>
               <a-popconfirm
                   title="确定要删除这个收藏夹吗？"
@@ -1398,79 +1403,269 @@ onMounted(() => {
 
 
 <style scoped>
-/* 页面基础样式 */
+<style scoped>
+  /* 基础页面样式 */
 .favorite-page {
-  padding-top: 16px;
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* 顶部统计信息区域布局调整 */
-.page-header .header-content {
+/* 页面标题和统计区域 */
+.page-header {
   display: flex;
   justify-content: space-between;
-  width: 100%;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: white;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+}
+
+.title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: #6c5ce7;
+  border-radius: 12px;
+  margin-right: 16px;
+}
+
+.title-icon :deep(.anticon) {
+  font-size: 28px;
+  color: white;
 }
 
 .page-title {
   font-size: 24px;
   font-weight: 600;
   margin: 0;
+  color: #333;
 }
 
-.collection-stats {
+.header-stats {
   display: flex;
-  gap: 24px;
+  gap: 40px;
 }
 
 .stat-item {
   text-align: center;
 }
 
-/* 工具栏卡片 */
-.tools-card {
-  margin-bottom: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background-color: white;
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
 }
 
-.tools-header {
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-icon {
+  color: #f1c40f;
+  margin-left: 6px;
+  font-size: 18px;
+}
+
+/* 视图控制和工具栏 - 整体调整 */
+.view-controls-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.view-controls {
-  display: flex;
-  align-items: center;
-}
-
-.tools-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.create-collection-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-  border: none;
+  padding: 10px 16px;
+  background-color: #fff;
   border-radius: 8px;
-  height: 38px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* 视图切换按钮组 - 整体对齐和样式 */
+.view-buttons {
+  min-width: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.view-buttons :deep(.ant-radio-group) {
+  display: flex;
+  background: #f0f2f5;
+  border-radius: 8px;
+  padding: 2px;
+  border: none;
+  box-shadow: none;
+}
+
+.view-buttons :deep(.ant-radio-button-wrapper) {
+  height: 32px;
+  border: none !important;
+  background: transparent;
+  color: #606060;
+  box-shadow: none !important;
+  transition: all 0.2s;
+  border-radius: 6px !important;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1;
+}
+
+.view-buttons :deep(.ant-radio-button-wrapper::before) {
+  display: none !important;
+}
+
+.view-buttons :deep(.ant-radio-button-wrapper-checked) {
+  background-color: #6366f1;
+  color: white;
+  font-weight: 500;
+}
+
+/* 其他栏目调整 */
+.dropdown-section {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.action-section {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 下拉按钮˚ */
+.sort-button {
+  min-width: 120px; /* 增加最小宽度 */
+  height: 36px; /* 适当增加高度 */
   padding: 0 16px;
   display: flex;
   align-items: center;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
-  transition: all 0.3s;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #606060;
+  border-color: #e0e0e0;
+  border-radius: 6px;
+  background-color: #f9f9fb;
+  transition: all 0.2s;
 }
 
-.create-collection-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.25);
+/* 下拉图标调整 */
+.sort-button :deep(.anticon) {
+  margin-left: 10px;
+  font-size: 12px;
 }
 
+/* 创建收藏夹按钮的高度统一 */
+.create-collection-btn {
+  height: 32px;
+  padding: 0 16px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.create-collection-btn :deep(.anticon) {
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+/* 添加涟漪效果 */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* 响应式适配 */
+@media (max-width: 1024px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-stats {
+    margin-top: 20px;
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .view-controls-bar {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .dropdown-section,
+  .action-section {
+    flex: 0 0 100%;
+    padding: 0;
+  }
+
+  .view-buttons {
+    order: 3;
+    min-width: 100%;
+  }
+
+  .sort-dropdown {
+    width: 100%;
+  }
+
+  .sort-button {
+    width: 100%;
+  }
+
+  .create-collection-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .stat-item {
+    text-align: left;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-value {
+    justify-content: flex-start;
+  }
+}
 .sort-dropdown {
   height: 38px;
   padding: 0 16px;
@@ -1488,68 +1683,159 @@ onMounted(() => {
   color: #6366f1;
 }
 
-/* 收藏夹标签 */
+/* 增强收藏夹标签的视觉效果 */
 .collections-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.section-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
 }
 
 .section-title h3 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #333;
-  margin: 0;
+  margin-bottom: 16px;
+  position: relative;
+  padding-left: 12px;
 }
 
+.section-title h3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background: #6366f1;
+  border-radius: 2px;
+}
+
+/* 增强收藏夹标签样式 */
 .collection-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .collection-tag {
-  cursor: pointer;
-  padding: 6px 16px;
-  border-radius: 20px;
+  padding: 8px 16px;
+  border-radius: 8px;
   font-size: 14px;
-  background-color: #f5f5f5;
-  border: none;
-  transition: all 0.2s ease;
-  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+  background-color: #f5f7fa;
+  border: 1px solid #e5e7eb;
+  transition: all 0.25s ease;
+  color: #374151;
   margin: 0;
   height: auto;
   line-height: 1.5;
   user-select: none;
   display: flex;
   align-items: center;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.collection-tag:hover {
+  border-color: #6366f1;
+  background-color: #f9f9ff;
+  transform: translateY(-1px);
 }
 
 .collection-tag-active {
   color: white;
-  background: #6366f1;
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+  transform: translateY(-1px);
+}
+
+.collection-tag-active:hover {
+  background: linear-gradient(135deg, #5254cc 0%, #6c78e8 100%);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.collection-tag :deep(.anticon) {
+  margin-right: 8px;
+  font-size: 16px;
 }
 
 .collection-count {
-  margin-left: 6px;
-  background: rgba(255, 255, 255, 0.2);
+  margin-left: 8px;
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 10px;
-  padding: 1px 6px;
+  padding: 1px 8px;
   font-size: 12px;
   font-weight: bold;
   line-height: normal;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* 筛选区域 */
+/* 为不同收藏夹设置不同图标颜色 */
+.collection-tag:not(.collection-tag-active) :deep(.anticon-star) {
+  color: #f59e0b;
+}
+
+.collection-tag:not(.collection-tag-active) :deep(.anticon-heart) {
+  color: #ef4444;
+}
+
+.collection-tag:not(.collection-tag-active) :deep(.anticon-picture) {
+  color: #3b82f6;
+}
+
+.collection-tag:not(.collection-tag-active) :deep(.anticon-file) {
+  color: #10b981;
+}
+
+.collection-tag:not(.collection-tag-active) :deep(.anticon-folder) {
+  color: #6366f1;
+}
+
+/* 设置收藏夹头部区域的布局 */
+.collections-section .section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+/* 增强设置按钮的视觉效果 */
+.collections-section .ant-btn-text {
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.collections-section .ant-btn-text:hover {
+  background-color: rgba(99, 102, 241, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.2);
+}
+
+.collections-section .ant-btn-text .anticon {
+  font-size: 16px;
+}
+
+/* 为设置按钮添加文字 */
+.settings-btn::after {
+  content: '管理收藏夹';
+  margin-left: 4px;
+}
+
 .filter-section {
   margin-bottom: 20px;
 }

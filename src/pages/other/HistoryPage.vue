@@ -1,1269 +1,835 @@
 <template>
-  <div class="browsing-history-page">
-    <!-- 页面标题和状态 -->
+  <div class="history-page">
+    <!-- 页面标题和统计信息 -->
     <div class="page-header"
          v-motion
          :initial="{ opacity: 0, y: -20 }"
          :enter="{ opacity: 1, y: 0, transition: { delay: 200, duration: 500 } }">
-      <div class="header-content">
-        <h1 class="page-title">最近浏览</h1>
-        <div class="history-stats">
-          <a-statistic title="浏览项目" :value="totalHistoryItems" class="stat-item">
-            <template #suffix>
-              <eye-outlined style="color: #6366f1" />
-            </template>
-          </a-statistic>
-          <a-statistic title="今日浏览" :value="todayViewCount" class="stat-item" />
-          <a-statistic title="最近更新" :value="formatDate(latestViewDate)" class="stat-item" />
+      <div class="header-title">
+        <div class="title-icon">
+          <history-outlined />
+        </div>
+        <h1 class="page-title">浏览历史</h1>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <div class="stat-label">总浏览数</div>
+          <div class="stat-value">{{ totalHistory }} <eye-outlined class="stat-icon" /></div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">今日浏览</div>
+          <div class="stat-value">{{ todayViews }}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">本周热门</div>
+          <div class="stat-value">{{ popularCategory }}</div>
         </div>
       </div>
     </div>
 
-    <!-- 浏览历史管理工具栏 -->
-    <a-card class="tools-card"
-            :bordered="false"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 400, duration: 600 } }">
-      <div class="tools-header">
-        <div class="view-controls">
-          <a-radio-group v-model:value="viewMode" button-style="solid">
-            <a-radio-button value="grid">
-              <template #icon><appstore-outlined /></template>
-              网格视图
-            </a-radio-button>
+    <!-- 视图控制和工具栏 -->
+    <div class="view-controls-bar"
+         v-motion
+         :initial="{ opacity: 0, y: 20 }"
+         :enter="{ opacity: 1, y: 0, transition: { delay: 300, duration: 500 } }">
+      <div class="left-section">
+        <a-dropdown :trigger="['click']" class="sort-dropdown">
+          <a-button class="sort-button">
+            {{ getSortLabel(currentSort) }}
+            <down-outlined />
+          </a-button>
+          <template #overlay>
+            <a-menu @click="handleSortMenuClick">
+              <a-menu-item key="newest">最近浏览</a-menu-item>
+              <a-menu-item key="oldest">最早浏览</a-menu-item>
+              <a-menu-item key="most">浏览最多</a-menu-item>
+              <a-menu-item key="nameAsc">名称 A-Z</a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </div>
+
+      <div class="center-section">
+        <!-- 修改后的视图按钮组 - 添加文字 -->
+        <div class="view-toggle">
+          <a-radio-group v-model:value="viewMode" optionType="button" buttonStyle="solid" size="middle">
             <a-radio-button value="list">
-              <template #icon><unordered-list-outlined /></template>
-              列表视图
+              <div class="view-option-content">
+                <unordered-list-outlined />
+                <span class="view-option-text">列表视图</span>
+              </div>
+            </a-radio-button>
+            <a-radio-button value="grid">
+              <div class="view-option-content">
+                <appstore-outlined />
+                <span class="view-option-text">网格视图</span>
+              </div>
             </a-radio-button>
             <a-radio-button value="timeline">
-              <template #icon><calendar-outlined /></template>
-              时间轴
+              <div class="view-option-content">
+                <clock-circle-outlined />
+                <span class="view-option-text">时间轴视图</span>
+              </div>
             </a-radio-button>
           </a-radio-group>
         </div>
-
-        <div class="tools-actions">
-          <a-dropdown :trigger="['click']">
-            <a-button class="sort-dropdown">
-              排序方式: {{ getSortLabel(currentSort) }}
-              <down-outlined />
-            </a-button>
-            <template #overlay>
-              <a-menu @click="handleSortMenuClick">
-                <a-menu-item key="latest">最近浏览</a-menu-item>
-                <a-menu-item key="earliest">最早浏览</a-menu-item>
-                <a-menu-item key="mostViewed">最常浏览</a-menu-item>
-                <a-menu-item key="nameAsc">名称 A-Z</a-menu-item>
-                <a-menu-item key="nameDesc">名称 Z-A</a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
-
-          <a-button
-              type="primary"
-              @click="showClearHistoryModal"
-              @mousedown="addRippleEffect">
-            <template #icon><delete-outlined /></template>
-            清除历史
-          </a-button>
-        </div>
       </div>
 
-      <!-- 时间范围筛选 -->
-      <div class="filter-section">
-        <div class="section-title">
-          <h3>时间筛选</h3>
-        </div>
-
-        <div class="time-range-filter">
-          <a-radio-group v-model:value="timeRange" button-style="solid" @change="applyTimeFilter">
-            <a-radio-button value="all">所有时间</a-radio-button>
-            <a-radio-button value="today">今天</a-radio-button>
-            <a-radio-button value="yesterday">昨天</a-radio-button>
-            <a-radio-button value="week">本周</a-radio-button>
-            <a-radio-button value="month">本月</a-radio-button>
-          </a-radio-group>
-
-          <a-range-picker
-              v-model:value="customDateRange"
-              :disabled="timeRange !== 'custom'"
-              :disabledDate="disabledFutureDate"
-              @change="handleCustomDateChange"
-              @click="enableCustomRange" />
-        </div>
+      <div class="right-section">
+        <a-button
+            type="primary"
+            class="clear-history-btn"
+            @click="showClearHistoryModal">
+          <template #icon><delete-outlined /></template>
+          清除历史
+        </a-button>
       </div>
+    </div>
 
-      <!-- 内容筛选 -->
-      <div class="filter-section">
-        <div class="section-title">
-          <h3>内容筛选</h3>
+    <!-- 筛选区域 -->
+    <div class="filter-section"
+         v-motion
+         :initial="{ opacity: 0, y: 20 }"
+         :enter="{ opacity: 1, y: 0, transition: { delay: 400, duration: 500 } }">
+      <div class="filter-card">
+        <div class="filter-title">
+          <h3>快速筛选</h3>
         </div>
+        <div class="filter-content">
+          <div class="time-filter">
+            <a-radio-group v-model:value="timeFilter" button-style="solid">
+              <a-radio-button value="all">全部时间</a-radio-button>
+              <a-radio-button value="today">今天</a-radio-button>
+              <a-radio-button value="week">本周</a-radio-button>
+              <a-radio-button value="month">本月</a-radio-button>
+            </a-radio-group>
+          </div>
 
-        <div class="filter-options">
-          <a-select
-              v-model:value="selectedCategories"
-              mode="multiple"
-              placeholder="按分类筛选"
-              style="width: 220px"
-              :options="categoryOptions"
-              @change="handleFilterChange"
-          />
+          <div class="category-filter">
+            <a-select
+                v-model:value="selectedCategories"
+                mode="multiple"
+                placeholder="按分类筛选"
+                style="width: 100%"
+                :options="categoryOptions">
+            </a-select>
+          </div>
 
-          <a-select
-              v-model:value="selectedAuthors"
-              mode="multiple"
-              placeholder="按作者筛选"
-              style="width: 220px"
-              :options="authorOptions"
-              @change="handleFilterChange"
-          />
-
-          <a-select
-              v-model:value="selectedTags"
-              mode="multiple"
-              placeholder="按标签筛选"
-              style="width: 220px"
-              :options="tagOptions"
-              @change="handleFilterChange"
-          />
-
-          <a-button type="primary" @click="applyFilters">
-            应用筛选
-          </a-button>
-          <a-button @click="resetFilters">
-            重置
-          </a-button>
-        </div>
-      </div>
-
-      <!-- 活跃筛选器通知 -->
-      <div v-if="isFilterActive" class="active-filter-alert">
-        <a-alert type="info" show-icon>
-          <template #message>
-              <span>当前已应用 <b>{{ activeFilterCount }}</b> 个筛选条件</span>
-              <a-button type="link" size="small" @click="resetFilters">
-                清除全部
-              </a-button>
-          </template>
-        </a-alert>
-      </div>
-    </a-card>
-
-    <!-- 浏览历史内容展示 -->
-    <div
-        :class="{
-          'history-grid': viewMode === 'grid',
-          'history-list': viewMode === 'list',
-          'history-timeline': viewMode === 'timeline'
-        }"
-        v-motion
-        :initial="{ opacity: 0 }"
-        :enter="{ opacity: 1, transition: { delay: 800, duration: 800 } }">
-
-      <!-- 网格视图模式 -->
-      <template v-if="viewMode === 'grid' && filteredHistory.length > 0">
-        <div
-            v-for="(item, index) in filteredHistory"
-            :key="index"
-            class="history-item"
-            v-motion
-            :initial="{ opacity: 0, y: 50 }"
-            :enter="{
-            opacity: 1,
-            y: 0,
-            transition: {
-              delay: 1000 + (index * 100),
-              duration: 500,
-              ease: 'easeOut'
-            }
-          }"
-        >
-          <div class="history-card" @click="navigateToDetail(item)">
-            <div class="image-container">
-              <img :src="item.src" :alt="item.title" class="history-image" />
-              <div class="image-actions-overlay">
-                <a-button type="text" class="image-action-btn" @click.stop="viewItem(item)">
-                  <template #icon><eye-outlined /></template>
-                </a-button>
-                <a-button type="text" class="image-action-btn" @click.stop="addToFavorites(item)">
-                  <template #icon><star-outlined /></template>
-                </a-button>
-                <a-button
-                    type="text"
-                    class="image-action-btn remove-btn"
-                    @click.stop="removeFromHistory(item)"
-                >
-                  <template #icon><delete-outlined /></template>
-                </a-button>
-              </div>
-              <div class="view-count-badge" v-if="item.viewCount > 1">
-                浏览 {{ item.viewCount }} 次
-              </div>
-              <div class="view-time">
-                {{ formatTimeAgo(item.lastViewedAt) }}
-              </div>
-            </div>
-            <div class="history-info">
-              <div class="history-title">{{ item.title }}</div>
-              <div class="history-author">
-                <a-avatar :src="item.author.avatar" :size="24" />
-                <span class="author-name">{{ item.author.name }}</span>
-              </div>
-              <div class="history-tags">
-                <a-tag v-for="(tag, tagIdx) in item.tags.slice(0, 2)" :key="tagIdx" class="history-tag">
-                  {{ tag.name }}
-                </a-tag>
-                <a-tag v-if="item.tags.length > 2" class="history-tag more-tag">
-                  +{{ item.tags.length - 2 }}
-                </a-tag>
-              </div>
-              <div class="history-category">
-                <folder-outlined />
-                <span>{{ item.category }}</span>
-              </div>
-            </div>
+          <div class="filter-actions">
+            <a-button type="primary" @click="applyFilters">应用筛选</a-button>
+            <a-button @click="resetFilters">重置</a-button>
           </div>
         </div>
-      </template>
+      </div>
+    </div>
 
-      <!-- 列表视图模板 - 替换原有模板 -->
-      <template v-if="viewMode === 'list' && filteredHistory.length > 0">
-        <div class="history-list">
-          <!-- 按日期分组的列表视图 -->
-          <div v-for="(dateGroup, date) in groupedByDate" :key="date">
-            <!-- 日期指示器 -->
-            <div class="timeline-date-indicator">
-              <div class="timeline-date-text">{{ formatDateLabel(date) }}</div>
-              <div class="timeline-date-line"></div>
-            </div>
+    <!-- 内容显示区域 - 根据视图模式切换 -->
+    <div class="history-content"
+         v-if="filteredHistory.length > 0"
+         v-motion
+         :initial="{ opacity: 0 }"
+         :enter="{ opacity: 1, transition: { delay: 500, duration: 600 } }">
 
-            <!-- 该日期下的历史记录项 -->
-            <a-list
-                class="history-list-container"
-                item-layout="horizontal"
-                :data-source="dateGroup"
+      <!-- 列表视图 -->
+      <div v-if="viewMode === 'list'" class="list-view">
+        <a-list
+            class="history-list"
+            :data-source="filteredHistory"
+            :pagination="{ pageSize: 10, hideOnSinglePage: true }"
+        >
+          <template #renderItem="{ item, index }">
+            <a-list-item
+                :key="item.id"
+                v-motion
+                :initial="{ opacity: 0, x: -20 }"
+                :enter="{ opacity: 1, x: 0, transition: { delay: 100 * index, duration: 400 } }"
             >
-              <template #renderItem="{ item, index }">
-                <a-list-item :key="item.id">
-                  <!-- 未读标记 (可基于业务逻辑添加条件) -->
-                  <div class="list-item-unread" v-if="item.viewCount === 1"></div>
+              <a-list-item-meta>
+                <template #avatar>
+                  <div class="list-item-thumb">
+                    <img :src="item.thumbnail" :alt="item.title" />
+                  </div>
+                </template>
+                <template #title>
+                  <div class="list-item-title">
+                    <span @click="viewItem(item)">{{ item.title }}</span>
+                    <a-tag v-if="isToday(item.viewTime)" color="green">今日</a-tag>
+                  </div>
+                </template>
+                <template #description>
+                  <div class="list-item-info">
+                    <span class="view-time"><clock-circle-outlined /> {{ formatDate(item.viewTime) }}</span>
+                    <span class="view-count"><eye-outlined /> 浏览 {{ item.viewCount }} 次</span>
+                    <span class="category-tag">
+                      <tag-outlined /> {{ item.category }}
+                    </span>
+                  </div>
+                </template>
+              </a-list-item-meta>
+              <template #actions>
+                <a-button type="text" @click="viewItem(item)">
+                  <eye-outlined />
+                </a-button>
+                <a-button type="text" @click="addToFavorites(item)">
+                  <star-outlined />
+                </a-button>
+                <a-button type="text" @click="removeFromHistory(item)">
+                  <delete-outlined />
+                </a-button>
+              </template>
+            </a-list-item>
+          </template>
+        </a-list>
+      </div>
 
-                  <div class="list-item-content-wrapper">
-                    <!-- 左侧图片区域 -->
-                    <div class="list-item-image-section" @click="navigateToDetail(item)">
-                      <div class="list-item-image-container">
-                        <img :src="item.src" class="list-item-image" />
-                        <div class="image-overlay"></div>
-
-                        <!-- 浏览次数标记 -->
-                        <div class="view-count-indicator" v-if="item.viewCount > 1">
-                          <eye-outlined />
-                          {{ item.viewCount }}
-                        </div>
-
-                        <!-- 浏览进度条 -->
-                        <div
-                            class="history-progress-bar"
-                            :style="{ width: `${Math.min(item.viewCount * 20, 100)}%` }">
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 右侧内容区域 -->
-                    <div class="list-item-info-section">
-                      <!-- 顶部信息栏 -->
-                      <div class="item-top-info">
-                        <div class="item-category">
-                          <folder-outlined />
-                          {{ item.category }}
-                        </div>
-                        <div class="item-view-time">
-                          <clock-circle-outlined />
-                          {{ formatTimeAgo(item.lastViewedAt) }}
-                        </div>
-                      </div>
-
-                      <!-- 标题 -->
-                      <div class="list-item-title" @click="navigateToDetail(item)">
-                        {{ item.title }}
-                      </div>
-
-                      <!-- 中间内容区 -->
-                      <div class="item-middle-content">
-                        <!-- 作者信息 -->
-                        <div class="list-item-author">
-                          <a-avatar :src="item.author.avatar" :size="24" class="author-avatar" />
-                          <div class="author-info">
-                            <div class="author-name">{{ item.author.name }}</div>
-                            <div class="author-role">{{ getAuthorRole(item.category) }}</div>
-                          </div>
-                        </div>
-
-                        <!-- 标签 -->
-                        <div class="list-item-tags">
-                          <a-tag
-                              v-for="(tag, tagIdx) in item.tags"
-                              :key="tagIdx"
-                              class="history-tag"
-                              :color="tag.color ? tag.color : undefined">
-                            {{ tag.name }}
-                          </a-tag>
-                        </div>
-                      </div>
-
-                      <!-- 底部信息栏 -->
-                      <div class="item-bottom-info">
-                        <div class="item-metadata">
-                          <div class="metadata-item">
-                            <eye-outlined />
-                            {{ item.viewCount }} 次浏览
-                          </div>
-                          <div class="metadata-item">
-                            <calendar-outlined />
-                            {{ formatDate(item.firstViewedAt) }}
-                          </div>
-                        </div>
-
-                        <div class="item-actions">
-                          <a-button
-                              type="text"
-                              class="action-btn"
-                              @click.stop="viewItem(item)"
-                              title="查看">
-                            <template #icon><eye-outlined /></template>
-                          </a-button>
-                          <a-button
-                              type="text"
-                              class="action-btn"
-                              @click.stop="addToFavorites(item)"
-                              title="收藏">
-                            <template #icon><star-outlined /></template>
-                          </a-button>
-                          <a-button
-                              type="text"
-                              class="action-btn remove-btn"
-                              @click.stop="removeFromHistory(item)"
-                              title="删除">
-                            <template #icon><delete-outlined /></template>
-                          </a-button>
-                        </div>
-                      </div>
+      <!-- 改进的网格视图组件 -->
+      <div v-else-if="viewMode === 'grid'" class="grid-view">
+        <div class="history-grid-container">
+          <div class="history-grid">
+            <div
+                v-for="(item, index) in filteredHistory"
+                :key="item.id"
+                class="grid-item"
+                v-motion
+                :initial="{ opacity: 0, y: 30 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 50 * index, duration: 400 } }"
+            >
+              <div class="grid-card" @click="viewItem(item)">
+                <div class="grid-thumb">
+                  <img :src="item.thumbnail" :alt="item.title" />
+                  <div class="grid-overlay">
+                    <div class="grid-actions">
+                      <a-button type="primary" shape="circle" class="grid-action-btn" @click.stop="viewItem(item)">
+                        <template #icon><eye-outlined /></template>
+                      </a-button>
+                      <a-button type="primary" shape="circle" class="grid-action-btn" @click.stop="addToFavorites(item)">
+                        <template #icon><star-outlined /></template>
+                      </a-button>
+                      <a-button type="primary" shape="circle" class="grid-action-btn remove-btn" @click.stop="removeFromHistory(item)">
+                        <template #icon><delete-outlined /></template>
+                      </a-button>
                     </div>
                   </div>
-                </a-list-item>
-              </template>
-            </a-list>
-          </div>
-        </div>
-      </template>
-
-      <!-- 时间轴视图模式 -->
-      <template v-else-if="viewMode === 'timeline' && filteredHistory.length > 0">
-        <div class="history-timeline-container">
-          <a-timeline mode="left">
-            <a-timeline-item v-for="(dateGroup, date) in groupedByDate" :key="date">
-              <template #dot>
-                <calendar-outlined style="font-size: 16px;" />
-              </template>
-              <template #label>
-                <div class="timeline-date">{{ formatDateLabel(date) }}</div>
-              </template>
-
-              <div class="timeline-group">
-                <div
-                    v-for="(item, itemIndex) in dateGroup"
-                    :key="itemIndex"
-                    class="timeline-item"
-                    v-motion
-                    :initial="{ opacity: 0, x: 30 }"
-                    :enter="{
-                    opacity: 1,
-                    x: 0,
-                    transition: {
-                      delay: 200 + (itemIndex * 100),
-                      duration: 500,
-                    }
-                  }"
-                >
-                  <div class="timeline-item-time">{{ formatTime(item.lastViewedAt) }}</div>
-                  <div class="timeline-item-card" @click="navigateToDetail(item)">
-                    <div class="timeline-item-content">
-                      <img :src="item.src" class="timeline-item-image" />
-                      <div class="timeline-item-info">
-                        <div class="timeline-item-title">{{ item.title }}</div>
-                        <div class="timeline-item-author">
-                          <a-avatar :src="item.author.avatar" :size="20" />
-                          <span>{{ item.author.name }}</span>
-                        </div>
-                        <div class="timeline-item-tags">
-                          <a-tag v-for="(tag, tagIdx) in item.tags.slice(0, 2)" :key="tagIdx" class="history-tag small">
-                            {{ tag.name }}
-                          </a-tag>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="timeline-item-actions">
-                      <a-button type="text" size="small" @click.stop="viewItem(item)">
-                        <eye-outlined />
-                      </a-button>
-                      <a-button type="text" size="small" @click.stop="addToFavorites(item)">
-                        <star-outlined />
-                      </a-button>
-                      <a-button type="text" size="small" @click.stop="removeFromHistory(item)">
-                        <delete-outlined />
-                      </a-button>
-                    </div>
+                  <div class="view-time-badge" v-if="isToday(item.viewTime)">
+                    <clock-circle-outlined /> 今日浏览
+                  </div>
+                </div>
+                <div class="grid-info">
+                  <div class="grid-title">{{ item.title }}</div>
+                  <div class="grid-author">
+                    <a-avatar :size="24" :style="{ backgroundColor: getAvatarColor(item.category) }">
+                      {{ getAvatarText(item.category) }}
+                    </a-avatar>
+                    <span class="author-name">{{ getCategoryAuthor(item.category) }}</span>
+                  </div>
+                  <div class="grid-meta">
+                    <span class="view-count"><eye-outlined /> {{ item.viewCount }}</span>
+                    <span class="view-time"><clock-circle-outlined /> {{ formatDate(item.viewTime) }}</span>
+                  </div>
+                  <div class="grid-category">
+                    <tag-outlined /> {{ item.category }}
                   </div>
                 </div>
               </div>
-            </a-timeline-item>
-          </a-timeline>
-        </div>
-      </template>
-
-      <!-- 空状态 -->
-      <div v-else class="empty-history">
-        <a-empty
-            :description="isFilterActive ? '没有找到符合条件的浏览记录' : '你还没有浏览任何内容'"
-            :image="isFilterActive ? 'https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg' : undefined"
-        >
-          <template #extra>
-            <div class="empty-actions">
-              <a-button v-if="isFilterActive" type="primary" @click="resetFilters">清除筛选条件</a-button>
-              <a-button v-else type="primary" @click="goToHomePage">去浏览图库</a-button>
             </div>
-          </template>
-        </a-empty>
+          </div>
+        </div>
+      </div>
+
+      <!-- 时间轴视图 -->
+      <div v-else class="timeline-view">
+        <a-timeline mode="left">
+          <a-timeline-item
+              v-for="(group, dateKey) in groupedHistory"
+              :key="dateKey"
+              :color="getTimelineColor(dateKey)"
+          >
+            <template #dot>
+              <calendar-outlined :style="{ fontSize: '16px' }" />
+            </template>
+
+            <div class="timeline-date-header">{{ formatDateHeader(dateKey) }}</div>
+
+            <div class="timeline-items-container">
+              <div
+                  v-for="(item, itemIndex) in group"
+                  :key="item.id"
+                  class="timeline-item"
+                  v-motion
+                  :initial="{ opacity: 0, x: -20 }"
+                  :enter="{ opacity: 1, x: 0, transition: { delay: 100 * itemIndex, duration: 400 } }"
+              >
+                <div class="timeline-item-card" @click="viewItem(item)">
+                  <div class="timeline-thumb">
+                    <img :src="item.thumbnail" :alt="item.title" />
+                  </div>
+                  <div class="timeline-content">
+                    <div class="timeline-title">{{ item.title }}</div>
+                    <div class="timeline-info">
+                      <span class="timeline-time"><clock-circle-outlined /> {{ formatTime(item.viewTime) }}</span>
+                      <span class="timeline-category"><tag-outlined /> {{ item.category }}</span>
+                      <span class="timeline-views"><eye-outlined /> {{ item.viewCount }}次</span>
+                    </div>
+                  </div>
+                  <div class="timeline-actions">
+                    <a-button type="text" shape="circle" size="small" @click.stop="viewItem(item)">
+                      <eye-outlined />
+                    </a-button>
+                    <a-button type="text" shape="circle" size="small" @click.stop="addToFavorites(item)">
+                      <star-outlined />
+                    </a-button>
+                    <a-button type="text" shape="circle" size="small" @click.stop="removeFromHistory(item)">
+                      <delete-outlined />
+                    </a-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a-timeline-item>
+        </a-timeline>
       </div>
     </div>
 
-    <!-- 加载更多 -->
-    <div v-if="filteredHistory.length > 0 && hasMoreItems" class="load-more">
-      <a-button type="primary" class="load-more-btn" @click="loadMore">
-        加载更多
-        <template #icon><down-outlined /></template>
-      </a-button>
-    </div>
-
-    <!-- 批量操作悬浮工具栏 -->
-    <div v-if="selectedItems.length > 0" class="batch-actions-bar">
-      <div class="batch-info">
-        已选择 <b>{{ selectedItems.length }}</b> 项
-      </div>
-      <div class="batch-buttons">
-        <a-button @click="clearSelection">取消选择</a-button>
-        <a-button type="primary" @click="batchAddToFavorites">
-          <template #icon><star-outlined /></template>
-          批量收藏
-        </a-button>
-        <a-button danger @click="confirmBatchRemove">
-          <template #icon><delete-outlined /></template>
-          批量删除
-        </a-button>
-      </div>
+    <!-- 空状态 -->
+    <div v-else class="empty-state"
+         v-motion
+         :initial="{ opacity: 0, scale: 0.9 }"
+         :enter="{ opacity: 1, scale: 1, transition: { delay: 400, duration: 500 } }">
+      <a-empty
+          :description="isFilterActive ? '没有找到符合条件的浏览记录' : '暂无浏览记录'"
+          :image="emptyImage">
+        <template #description>
+          <div class="empty-description">
+            <p>{{ isFilterActive ? '没有找到符合条件的浏览记录' : '暂无浏览记录' }}</p>
+            <p class="empty-hint">{{ isFilterActive ? '尝试调整筛选条件' : '浏览内容后，将自动记录在这里' }}</p>
+          </div>
+        </template>
+        <template #extra>
+          <a-button v-if="isFilterActive" @click="resetFilters">清除筛选条件</a-button>
+          <a-button v-else type="primary" @click="navigateToHome">去浏览内容</a-button>
+        </template>
+      </a-empty>
     </div>
 
     <!-- 清除历史确认对话框 -->
     <a-modal
-        v-model:visible="clearHistoryModalVisible"
+        v-model:visible="clearModalVisible"
         title="清除浏览历史"
-        @ok="clearHistory"
-        okText="确定"
-        cancelText="取消"
+        @ok="confirmClearHistory"
+        :okText="clearOption === 'all' ? '清除全部' : '确认清除'"
         okType="danger"
+        cancelText="取消"
     >
-      <div class="clear-history-options">
-        <a-radio-group v-model:value="clearHistoryOption">
-          <a-radio value="all">清除所有浏览历史</a-radio>
-          <a-radio value="filtered" :disabled="!isFilterActive">仅清除当前筛选的历史记录</a-radio>
-          <a-radio value="before">清除特定日期之前的历史</a-radio>
-        </a-radio-group>
-
-        <div class="clear-date-selector" v-if="clearHistoryOption === 'before'">
-          <a-date-picker
-              v-model:value="clearBeforeDate"
-              :disabledDate="disabledFutureDate"
-              placeholder="选择日期" />
-        </div>
-      </div>
-      <div class="clear-warning" v-if="clearHistoryOption === 'all'">
-        <a-alert type="warning" show-icon message="所有浏览历史将被永久删除，无法恢复" />
-      </div>
+      <p>请选择要清除的浏览记录：</p>
+      <a-radio-group v-model:value="clearOption">
+        <a-radio value="selected">仅清除筛选结果 ({{ filteredHistory.length }} 项)</a-radio>
+        <a-radio value="all">清除全部浏览历史 ({{ totalHistory }} 项)</a-radio>
+      </a-radio-group>
+      <p class="warning-text">注意：此操作不可恢复，请谨慎操作！</p>
     </a-modal>
   </div>
 </template>
-
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import {
   AppstoreOutlined,
   UnorderedListOutlined,
-  CalendarOutlined,
-  DownOutlined,
+  FieldTimeOutlined,
+  HistoryOutlined,
   EyeOutlined,
-  StarOutlined,
   DeleteOutlined,
-  FolderOutlined,
-  ClockCircleOutlined
+  StarOutlined,
+  DownOutlined,
+  TagOutlined,
+  ClockCircleOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons-vue';
 import { useRouter } from 'vue-router';
 import { message, Modal } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/zh-cn';
-import { useIntersectionObserver } from "@vueuse/core";
-
-// 配置dayjs插件
-dayjs.extend(relativeTime);
-dayjs.locale('zh-cn');
 
 const router = useRouter();
 
-// 视图模式 - 网格/列表/时间轴
-const viewMode = ref('grid');
+// 视图模式
+const viewMode = ref('list');
 
-// 当前排序
-const currentSort = ref('latest');
+// 排序方式
+const currentSort = ref('newest');
 
-// 浏览历史数据 - 修复：增加多个示例数据以便测试分组和筛选功能
-const historyItems = ref([
+// 时间筛选
+const timeFilter = ref('all');
+
+// 分类筛选
+const selectedCategories = ref([]);
+
+// 清除历史对话框相关
+const clearModalVisible = ref(false);
+const clearOption = ref('selected');
+
+// 模拟用户信息
+const userInfo = reactive({
+  userId: '001',
+  username: '用户名',
+});
+
+// 模拟浏览历史数据
+const historyData = ref([
   {
     id: '1',
-    src: 'https://images.unsplash.com/photo-1481487196290-c152efe083f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    title: 'macbook-abstract-40',
-    author: {
-      name: '程序员Leo',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: '海报', color: 'purple' },
-      { name: 'Mac壁纸', color: '' },
-    ],
-    category: '设计素材',
-    viewCount: 3,
-    firstViewedAt: '2025-03-25 10:15:00',
-    lastViewedAt: '2025-03-25 15:20:00',
+    title: '现代化Vue3组件库设计模式与实践',
+    thumbnail: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '前端开发',
+    viewTime: '2025-03-31T15:30:00',
+    viewCount: 5,
   },
   {
     id: '2',
-    src: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: 'Spring Boot项目结构',
-    author: {
-      name: 'Java大神',
-      avatar: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: 'SpringBoot', color: 'blue' },
-      { name: '代码', color: '' },
-    ],
-    category: '代码参考',
-    viewCount: 5,
-    firstViewedAt: '2025-03-25 09:30:00',
-    lastViewedAt: '2025-03-25 14:45:00',
+    title: '自然风光摄影技巧与后期处理',
+    thumbnail: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '摄影',
+    viewTime: '2025-03-31T10:15:00',
+    viewCount: 2,
   },
   {
     id: '3',
-    src: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '自然风光摄影集',
-    author: {
-      name: '摄影师小王',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: '风景', color: 'blue' },
-      { name: '高清', color: '' },
-    ],
-    category: '壁纸',
-    viewCount: 2,
-    firstViewedAt: '2025-03-24 16:20:00',
-    lastViewedAt: '2025-03-24 20:15:00',
+    title: 'UI设计趋势：扁平化到新拟物风格的演变',
+    thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '设计',
+    viewTime: '2025-03-30T14:45:00',
+    viewCount: 3,
   },
   {
     id: '4',
-    src: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '现代UI组件设计集',
-    author: {
-      name: 'UI设计师小李',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: '素材', color: 'green' },
-      { name: '创意', color: '' },
-      { name: 'UI设计', color: 'pink' },
-    ],
-    category: '设计素材',
+    title: '动漫人物表情绘制教程',
+    thumbnail: 'https://images.unsplash.com/photo-1580477667995-2b94f01c9516?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '插画',
+    viewTime: '2025-03-29T19:20:00',
     viewCount: 1,
-    firstViewedAt: '2025-03-24 10:10:00',
-    lastViewedAt: '2025-03-24 10:10:00',
   },
   {
     id: '5',
-    src: 'https://images.unsplash.com/photo-1580477667995-2b94f01c9516?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '二次元精选壁纸',
-    author: {
-      name: '动漫爱好者',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: '动漫', color: 'pink' },
-      { name: '壁纸', color: '' },
-    ],
-    category: '壁纸',
-    viewCount: 4,
-    firstViewedAt: '2025-03-23 18:30:00',
-    lastViewedAt: '2025-03-23 22:45:00',
+    title: 'Spring Boot微服务架构设计',
+    thumbnail: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '后端开发',
+    viewTime: '2025-03-28T11:05:00',
+    viewCount: 7,
   },
   {
     id: '6',
-    src: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '现代抽象艺术作品',
-    author: {
-      name: '艺术家小陈',
-      avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: '艺术', color: 'red' },
-      { name: '创意', color: '' },
-    ],
-    category: '灵感',
-    viewCount: 1,
-    firstViewedAt: '2025-03-22 14:25:00',
-    lastViewedAt: '2025-03-22 14:25:00',
+    title: '校园四季风光摄影集锦',
+    thumbnail: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '摄影',
+    viewTime: '2025-03-27T16:40:00',
+    viewCount: 2,
   },
   {
     id: '7',
-    src: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '校园风光四季集',
-    author: {
-      name: '校园摄影师',
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: '校园', color: 'cyan' },
-      { name: '四季', color: '' },
-      { name: '摄影', color: 'green' },
-    ],
-    category: '壁纸',
-    viewCount: 2,
-    firstViewedAt: '2025-03-21 09:35:00',
-    lastViewedAt: '2025-03-21 16:40:00',
+    title: '现代抽象艺术创作指南',
+    thumbnail: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '艺术',
+    viewTime: '2025-03-26T09:15:00',
+    viewCount: 3,
   },
   {
     id: '8',
-    src: 'https://images.unsplash.com/photo-1542903660-eedba2cda473?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: 'Vue 3组件设计模式',
-    author: {
-      name: '前端架构师',
-      avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    tags: [
-      { name: 'Vue3', color: 'green' },
-      { name: '代码', color: '' },
-      { name: '组件', color: 'blue' },
-    ],
-    category: '代码参考',
+    title: 'TensorFlow深度学习实践与应用',
+    thumbnail: 'https://images.unsplash.com/photo-1542903660-eedba2cda473?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '人工智能',
+    viewTime: '2025-03-25T13:25:00',
+    viewCount: 4,
+  },
+  {
+    id: '9',
+    title: '响应式Web设计与实现',
+    thumbnail: 'https://images.unsplash.com/photo-1481487196290-c152efe083f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '前端开发',
+    viewTime: '2025-03-24T08:50:00',
+    viewCount: 6,
+  },
+  {
+    id: '10',
+    title: '城市建筑摄影构图技巧',
+    thumbnail: 'https://images.unsplash.com/photo-1486728297118-82a07bc48a28?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    category: '摄影',
+    viewTime: '2025-03-23T15:10:00',
     viewCount: 3,
-    firstViewedAt: '2025-03-20 11:20:00',
-    lastViewedAt: '2025-03-20 16:30:00',
   },
 ]);
 
-// 当前筛选后的历史记录
-const filteredHistory = ref([...historyItems.value]);
 
-// 筛选相关数据
-const selectedCategories = ref<string[]>([]);
-const selectedAuthors = ref<string[]>([]);
-const selectedTags = ref<string[]>([]);
-const timeRange = ref('all');
-const customDateRange = ref<any[]>([]);
-const clearBeforeDate = ref();
+// 根据分类生成头像颜色
+const getAvatarColor = (category :any) => {
+  const colorMap = {
+    '前端开发': '#6c5ce7',
+    '后端开发': '#0984e3',
+    '设计': '#e84393',
+    '摄影': '#00b894',
+    '插画': '#fdcb6e',
+    '人工智能': '#00cec9',
+    '艺术': '#e17055'
+  };
 
-// 当前选中的项目
-const selectedItems = ref<string[]>([]);
+  return colorMap[category] || '#6c5ce7';
+};
 
-// 清除历史相关数据
-const clearHistoryModalVisible = ref(false);
-const clearHistoryOption = ref('all');
+// 获取分类的首字母或图标文本
+const getAvatarText = (category :any) => {
+  const textMap = {
+    '前端开发': 'F',
+    '后端开发': 'B',
+    '设计': 'D',
+    '摄影': 'P',
+    '插画': 'I',
+    '人工智能': 'AI',
+    '艺术': 'A'
+  };
 
-// 计算最新一次浏览的日期
-const latestViewDate = computed(() => {
-  if (historyItems.value.length === 0) return '';
-  return historyItems.value.reduce((latest, item) => {
-    return dayjs(item.lastViewedAt).isAfter(dayjs(latest)) ? item.lastViewedAt : latest;
-  }, historyItems.value[0].lastViewedAt);
-});
+  return textMap[category] || category.substring(0, 1);
+};
 
-// 计算属性 - 总浏览项目数
-const totalHistoryItems = computed(() => {
-  return historyItems.value.length;
-});
+// 根据分类生成作者信息
+const getCategoryAuthor = (category) => {
+  const authorMap = {
+    '前端开发': '前端开发者',
+    '后端开发': '后端工程师',
+    '设计': 'UI设计师',
+    '摄影': '摄影师',
+    '插画': '插画师',
+    '人工智能': 'AI工程师',
+    '艺术': '艺术家'
+  };
 
-// 计算属性 - 今日浏览数量
-const todayViewCount = computed(() => {
+  return authorMap[category] || '创作者';
+};
+
+// 计算属性 - 统计数据
+const totalHistory = computed(() => historyData.value.length);
+
+const todayViews = computed(() => {
   const today = dayjs().startOf('day');
-  return historyItems.value.filter(item =>
-      dayjs(item.lastViewedAt).isAfter(today)
+  return historyData.value.filter(item =>
+      dayjs(item.viewTime).isAfter(today)
   ).length;
 });
 
-// 计算属性 - 是否有更多项目可加载
-const hasMoreItems = computed(() => {
-  // 示例中假设有更多项目
-  return filteredHistory.value.length < totalHistoryItems.value * 2;
+const popularCategory = computed(() => {
+  const categoryCount = {};
+  historyData.value.forEach(item => {
+    categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
+  });
+
+  let maxCategory = '';
+  let maxCount = 0;
+
+  Object.keys(categoryCount).forEach(category => {
+    if (categoryCount[category] > maxCount) {
+      maxCount = categoryCount[category];
+      maxCategory = category;
+    }
+  });
+
+  return maxCategory;
 });
 
-// 计算属性 - 是否有活跃的筛选条件
+// 计算属性 - 筛选是否激活
 const isFilterActive = computed(() => {
-  return selectedCategories.value.length > 0 ||
-      selectedAuthors.value.length > 0 ||
-      selectedTags.value.length > 0 ||
-      timeRange.value !== 'all';
+  return timeFilter.value !== 'all' || selectedCategories.value.length > 0;
 });
 
-// 计算属性 - 活跃筛选条件数量
-const activeFilterCount = computed(() => {
-  let count = 0;
-  if (selectedCategories.value.length > 0) count++;
-  if (selectedAuthors.value.length > 0) count++;
-  if (selectedTags.value.length > 0) count++;
-  if (timeRange.value !== 'all') count++;
-  return count;
-});
-
-// 分类选项
+// 计算属性 - 分类选项
 const categoryOptions = computed(() => {
-  // 从所有历史项中提取唯一的分类
   const categories = new Set();
-  historyItems.value.forEach(item => {
+
+  historyData.value.forEach(item => {
     categories.add(item.category);
   });
 
-  // 转换为选择器选项格式
-  return Array.from(categories).map(cat => ({
-    label: cat,
-    value: cat
+  return Array.from(categories).map(category => ({
+    label: category,
+    value: category
   }));
 });
 
-// 作者选项
-const authorOptions = computed(() => {
-  // 从所有历史项中提取唯一的作者
-  const authors = new Set();
-  historyItems.value.forEach(item => {
-    authors.add(item.author.name);
-  });
+// 计算属性 - 根据筛选条件过滤历史记录
+const filteredHistory = computed(() => {
+  let result = [...historyData.value];
 
-  // 转换为选择器选项格式
-  return Array.from(authors).map(author => ({
-    label: author,
-    value: author
-  }));
-});
-
-// 标签选项
-const tagOptions = computed(() => {
-  // 从所有历史项中提取唯一的标签名称
-  const tags = new Set();
-  historyItems.value.forEach(item => {
-    item.tags.forEach(tag => {
-      tags.add(tag.name);
-    });
-  });
-
-  // 转换为选择器选项格式
-  return Array.from(tags).map(tag => ({
-    label: tag,
-    value: tag
-  }));
-});
-
-// 计算属性 - 按日期分组的历史记录
-const groupedByDate = computed(() => {
-  const grouped = {};
-
-  filteredHistory.value.forEach(item => {
-    const dateKey = dayjs(item.lastViewedAt).format('YYYY-MM-DD');
-
-    if (!grouped[dateKey]) {
-      grouped[dateKey] = [];
-    }
-
-    grouped[dateKey].push(item);
-  });
-
-  // 对每个日期组内的项目按时间排序
-  Object.keys(grouped).forEach(date => {
-    grouped[date].sort((a, b) => {
-      return dayjs(b.lastViewedAt).valueOf() - dayjs(a.lastViewedAt).valueOf();
-    });
-  });
-
-  return grouped;
-});
-
-// 获取排序标签文本
-const getSortLabel = (sortKey: string): string => {
-  const sortLabels = {
-    latest: '最近浏览',
-    earliest: '最早浏览',
-    mostViewed: '最常浏览',
-    nameAsc: '名称 A-Z',
-    nameDesc: '名称 Z-A'
-  };
-  return sortLabels[sortKey] || '最近浏览';
-};
-
-// 排序菜单点击处理
-const handleSortMenuClick = (e: { key: string }) => {
-  currentSort.value = e.key;
-  sortHistory();
-  message.success(`已按${getSortLabel(e.key)}排序`);
-};
-
-// 根据分类获取作者角色
-const getAuthorRole = (category) => {
-  const roleMap = {
-    '设计素材': '设计师',
-    '代码参考': '开发者',
-    '壁纸': '摄影师',
-    '灵感': '创意师',
-    '教程': '讲师'
-  };
-
-  return roleMap[category] || '贡献者';
-};
-
-// 丰富描述内容生成函数
-const getItemDescription = (item) => {
-  // 可以根据不同的内容类型生成不同的描述
-  const descriptions = [
-    `${item.title}是一个由${item.author.name}创建的${item.category}`,
-    `这是一份关于${item.title}的${item.category}，创建于${formatDate(item.firstViewedAt)}`,
-    `${item.author.name}分享的精选${item.category}，获得了${item.viewCount}次浏览`
-  ];
-
-  // 随机选择一个描述，也可以根据业务逻辑选择合适的描述
-  const index = (item.id.charCodeAt(0) || 0) % descriptions.length;
-  return descriptions[index];
-};
-
-// 获取随机颜色函数
-const getRandomColor = () => {
-  const colors = ['blue', 'green', 'red', 'cyan', 'purple', 'orange'];
-  return colors[Math.floor(Math.random() * colors.length)];
-};
-
-// 根据当前排序方式对列表进行排序
-const sortHistory = () => {
-  const sortedHistory = [...filteredHistory.value];
-
-  sortedHistory.sort((a, b) => {
-    switch (currentSort.value) {
-      case 'latest':
-        return dayjs(b.lastViewedAt).valueOf() - dayjs(a.lastViewedAt).valueOf();
-      case 'earliest':
-        return dayjs(a.lastViewedAt).valueOf() - dayjs(b.lastViewedAt).valueOf();
-      case 'mostViewed':
-        return b.viewCount - a.viewCount;
-      case 'nameAsc':
-        return a.title.localeCompare(b.title);
-      case 'nameDesc':
-        return b.title.localeCompare(a.title);
-      default:
-        return dayjs(b.lastViewedAt).valueOf() - dayjs(a.lastViewedAt).valueOf();
-    }
-  });
-
-  filteredHistory.value = sortedHistory;
-};
-
-// 禁用未来日期
-const disabledFutureDate = (current) => {
-  return current && current > dayjs().endOf('day');
-};
-
-// 启用自定义日期范围
-const enableCustomRange = () => {
-  timeRange.value = 'custom';
-};
-
-// 处理自定义日期范围变化
-const handleCustomDateChange = (dates) => {
-  if (dates && dates.length === 2) {
-    customDateRange.value = dates;
-    applyTimeFilter();
-  }
-};
-
-// 处理筛选条件变化
-const handleFilterChange = () => {
-  // 可以在这里实现即时筛选，也可以等待用户点击"应用筛选"按钮
-  // 这里选择后者，所以暂不执行筛选
-};
-
-// 应用时间筛选
-const applyTimeFilter = () => {
-  filterHistory();
-  message.success('已应用时间筛选');
-};
-
-// 应用筛选条件
-const applyFilters = () => {
-  filterHistory();
-  message.success('筛选条件已应用');
-};
-
-// 重置筛选条件
-const resetFilters = () => {
-  selectedCategories.value = [];
-  selectedAuthors.value = [];
-  selectedTags.value = [];
-  timeRange.value = 'all';
-  customDateRange.value = [];
-
-  // 重新加载历史记录列表
-  filterHistory();
-
-  message.success('筛选条件已重置');
-};
-
-// 根据当前条件筛选历史记录
-const filterHistory = () => {
-  // 创建一个完整的历史记录副本
-  let filtered = [...historyItems.value];
-
-  // 按分类筛选
-  if (selectedCategories.value.length > 0) {
-    filtered = filtered.filter(item => {
-      return selectedCategories.value.includes(item.category);
-    });
-  }
-
-  // 按作者筛选
-  if (selectedAuthors.value.length > 0) {
-    filtered = filtered.filter(item => {
-      return selectedAuthors.value.includes(item.author.name);
-    });
-  }
-
-  // 按标签筛选
-  if (selectedTags.value.length > 0) {
-    filtered = filtered.filter(item => {
-      return item.tags.some(tag => selectedTags.value.includes(tag.name));
-    });
-  }
-
-  // 按时间范围筛选
-  if (timeRange.value !== 'all') {
+  // 按时间筛选
+  if (timeFilter.value !== 'all') {
     const now = dayjs();
-    filtered = filtered.filter(item => {
-      const itemDate = dayjs(item.lastViewedAt);
 
-      switch (timeRange.value) {
+    result = result.filter(item => {
+      const itemTime = dayjs(item.viewTime);
+
+      switch (timeFilter.value) {
         case 'today':
-          return itemDate.isSame(now, 'day');
-        case 'yesterday': {
-          const yesterday = now.subtract(1, 'day');
-          return itemDate.isSame(yesterday, 'day');
-        }
+          return itemTime.isAfter(now.startOf('day'));
         case 'week':
-          return itemDate.isAfter(now.subtract(1, 'week'));
+          return itemTime.isAfter(now.subtract(7, 'day'));
         case 'month':
-          return itemDate.isAfter(now.subtract(1, 'month'));
-        case 'custom':
-          if (customDateRange.value && customDateRange.value.length === 2) {
-            const startDate = dayjs(customDateRange.value[0]).startOf('day');
-            const endDate = dayjs(customDateRange.value[1]).endOf('day');
-            return itemDate.isAfter(startDate) && itemDate.isBefore(endDate);
-          }
-          return true;
+          return itemTime.isAfter(now.subtract(30, 'day'));
         default:
           return true;
       }
     });
   }
 
-  // 应用排序
-  filteredHistory.value = filtered;
-  sortHistory();
-};
-
-// 跳转到详情页
-const navigateToDetail = (item) => {
-  // 假设item对象有id属性
-  const itemId = item.id;
-  router.push({
-    name: 'PictureDetail',
-    params: { id: itemId },
-    // 可以通过state传递一些数据，避免重新加载
-    state: { imageData: item }
-  });
-};
-
-// 查看项目
-const viewItem = (item) => {
-  navigateToDetail(item);
-};
-
-// 添加到收藏
-const addToFavorites = (item) => {
-  message.success(`已将"${item.title}"添加到收藏`);
-  // 这里可以添加实际的收藏逻辑
-};
-
-// 批量添加到收藏
-const batchAddToFavorites = () => {
-  if (selectedItems.value.length === 0) {
-    message.warning('请先选择要收藏的项目');
-    return;
-  }
-
-  // 这里可以添加实际的批量收藏逻辑
-  message.success(`已将 ${selectedItems.value.length} 个项目添加到收藏`);
-
-  // 清空选中列表
-  selectedItems.value = [];
-};
-
-// 确认删除浏览记录
-const removeFromHistory = (item) => {
-  Modal.confirm({
-    title: '确认删除',
-    content: `确定要将"${item.title}"从浏览历史中删除吗？`,
-    okText: '确定',
-    cancelText: '取消',
-    onOk: () => {
-      // 从列表中移除
-      const index = historyItems.value.findIndex(i => i.id === item.id);
-      if (index !== -1) {
-        historyItems.value.splice(index, 1);
-      }
-
-      // 从筛选结果中移除
-      const filteredIndex = filteredHistory.value.findIndex(i => i.id === item.id);
-      if (filteredIndex !== -1) {
-        filteredHistory.value.splice(filteredIndex, 1);
-      }
-
-      message.success(`已将"${item.title}"从浏览历史中删除`);
-    },
-  });
-};
-
-// 确认批量删除
-const confirmBatchRemove = () => {
-  if (selectedItems.value.length === 0) {
-    message.warning('请先选择要删除的项目');
-    return;
-  }
-
-  Modal.confirm({
-    title: '批量删除',
-    content: `确定要删除选中的 ${selectedItems.value.length} 项浏览记录吗？`,
-    okText: '确定',
-    cancelText: '取消',
-    onOk: batchRemoveFromHistory,
-  });
-};
-
-// 批量删除实现
-const batchRemoveFromHistory = () => {
-  const itemCount = selectedItems.value.length;
-
-  // 从列表中移除
-  historyItems.value = historyItems.value.filter(i => !selectedItems.value.includes(i.id));
-
-  // 从筛选结果中移除
-  filteredHistory.value = filteredHistory.value.filter(i => !selectedItems.value.includes(i.id));
-
-  // 清空选中列表
-  const removedCount = itemCount;
-  selectedItems.value = [];
-
-  message.success(`已删除 ${removedCount} 条浏览记录`);
-};
-
-// 清除选择
-const clearSelection = () => {
-  selectedItems.value = [];
-  message.info('已取消选择');
-};
-
-// 显示清除历史对话框
-const showClearHistoryModal = () => {
-  clearHistoryModalVisible.value = true;
-};
-
-// 清除历史
-const clearHistory = () => {
-  const option = clearHistoryOption.value;
-
-  if (option === 'all') {
-    // 清除所有历史
-    historyItems.value = [];
-    filteredHistory.value = [];
-    message.success('已清除所有浏览历史');
-  }
-  else if (option === 'filtered' && isFilterActive.value) {
-    // 清除筛选后的历史
-    const idsToRemove = new Set(filteredHistory.value.map(item => item.id));
-    historyItems.value = historyItems.value.filter(item => !idsToRemove.has(item.id));
-    filteredHistory.value = [];
-    message.success('已清除筛选的浏览历史');
-  }
-  else if (option === 'before' && clearBeforeDate.value) {
-    // 清除特定日期之前的历史
-    const beforeDate = dayjs(clearBeforeDate.value).endOf('day');
-
-    historyItems.value = historyItems.value.filter(item =>
-        dayjs(item.lastViewedAt).isAfter(beforeDate)
+  // 按分类筛选
+  if (selectedCategories.value.length > 0) {
+    result = result.filter(item =>
+        selectedCategories.value.includes(item.category)
     );
-
-    filterHistory(); // 重新应用筛选条件
-    message.success(`已清除 ${beforeDate.format('YYYY-MM-DD')} 之前的浏览历史`);
   }
 
-  clearHistoryModalVisible.value = false;
+  // 应用排序
+  result = sortHistoryItems(result);
+
+  return result;
+});
+
+// 计算属性 - 时间轴分组
+const groupedHistory = computed(() => {
+  const groups = {};
+
+  filteredHistory.value.forEach(item => {
+    const dateKey = dayjs(item.viewTime).format('YYYY-MM-DD');
+
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+
+    groups[dateKey].push(item);
+  });
+
+  // 确保每组内部也是排序的
+  Object.keys(groups).forEach(dateKey => {
+    groups[dateKey] = sortHistoryItems(groups[dateKey]);
+  });
+
+  return groups;
+});
+
+// 获取排序标签文本
+const getSortLabel = (sortKey :any) => {
+  const sortLabels = {
+    newest: '最近浏览',
+    oldest: '最早浏览',
+    most: '浏览最多',
+    nameAsc: '名称 A-Z'
+  };
+
+  return sortLabels[sortKey] || '最近浏览';
 };
 
-// 加载更多
-const loadMore = () => {
-  message.loading('加载更多内容...', 1.5)
-      .then(() => {
-        // 模拟加载更多
-        const newItems = [...historyItems.value.slice(0, 4)].map(item => ({
-          ...item,
-          id: `new_${item.id}_${Date.now()}`,
-          lastViewedAt: dayjs().subtract(Math.floor(Math.random() * 10), 'day').format('YYYY-MM-DD HH:mm:ss')
-        }));
-
-        // 添加到列表中
-        historyItems.value.push(...newItems);
-
-        // 重新应用筛选
-        filterHistory();
-
-        message.success('已加载更多历史记录');
-      });
+// 应用筛选
+const applyFilters = () => {
+  message.success('筛选条件已应用');
 };
 
-// 跳转到主页
-const goToHomePage = () => {
-  router.push({ name: 'HomePage' });
+// 重置筛选
+const resetFilters = () => {
+  timeFilter.value = 'all';
+  selectedCategories.value = [];
+  message.success('筛选条件已重置');
+};
+
+// 排序历史记录
+const sortHistoryItems = (items :any) => {
+  return [...items].sort((a, b) => {
+    switch (currentSort.value) {
+      case 'newest':
+        return dayjs(b.viewTime).valueOf() - dayjs(a.viewTime).valueOf();
+      case 'oldest':
+        return dayjs(a.viewTime).valueOf() - dayjs(b.viewTime).valueOf();
+      case 'most':
+        return b.viewCount - a.viewCount;
+      case 'nameAsc':
+        return a.title.localeCompare(b.title);
+      default:
+        return dayjs(b.viewTime).valueOf() - dayjs(a.viewTime).valueOf();
+    }
+  });
+};
+
+// 排序菜单点击处理
+const handleSortMenuClick = (e :any) => {
+  currentSort.value = e.key;
+  message.success(`已按${getSortLabel(e.key)}排序`);
+};
+
+// 判断是否为今天
+const isToday = (dateString :any) => {
+  return dayjs(dateString).isAfter(dayjs().startOf('day'));
 };
 
 // 格式化日期
-const formatDate = (dateStr) => {
-  return dayjs(dateStr).format('YYYY-MM-DD');
-};
+const formatDate = (dateString :any) => {
+  const now = dayjs();
+  const date = dayjs(dateString);
 
-// 格式化相对时间
-const formatTimeAgo = (dateStr) => {
-  return dayjs(dateStr).fromNow();
+  if (date.isAfter(now.startOf('day'))) {
+    return `今天 ${date.format('HH:mm')}`;
+  } else if (date.isAfter(now.subtract(1, 'day').startOf('day'))) {
+    return `昨天 ${date.format('HH:mm')}`;
+  } else if (date.isAfter(now.subtract(7, 'day'))) {
+    return `${date.format('ddd')} ${date.format('HH:mm')}`;
+  } else {
+    return date.format('YYYY-MM-DD');
+  }
 };
 
 // 格式化时间
-const formatTime = (dateStr) => {
-  return dayjs(dateStr).format('HH:mm');
+const formatTime = (dateString) => {
+  return dayjs(dateString).format('HH:mm');
 };
 
-// 格式化日期标签
-const formatDateLabel = (dateStr) => {
-  const date = dayjs(dateStr);
-  const today = dayjs().startOf('day');
-  const yesterday = today.subtract(1, 'day');
+// 格式化日期头部
+const formatDateHeader = (dateString) => {
+  const now = dayjs();
+  const date = dayjs(dateString);
 
-  if (date.isSame(today, 'day')) {
+  if (date.isSame(now, 'day')) {
     return '今天';
-  } else if (date.isSame(yesterday, 'day')) {
+  } else if (date.isSame(now.subtract(1, 'day'), 'day')) {
     return '昨天';
+  } else if (date.isAfter(now.subtract(7, 'day'))) {
+    return `${date.format('dddd')}`;
   } else {
     return date.format('YYYY年MM月DD日');
   }
 };
 
-// 添加点击涟漪效果
-const addRippleEffect = (event) => {
-  const button = event.currentTarget;
-  const ripple = document.createElement('span');
-  const rect = button.getBoundingClientRect();
+// 获取时间轴颜色
+const getTimelineColor = (dateString) => {
+  const now = dayjs();
+  const date = dayjs(dateString);
 
-  const size = Math.max(rect.width, rect.height);
-  const x = event.clientX - rect.left - size / 2;
-  const y = event.clientY - rect.top - size / 2;
-
-  ripple.style.width = ripple.style.height = `${size}px`;
-  ripple.style.left = `${x}px`;
-  ripple.style.top = `${y}px`;
-  ripple.classList.add('ripple');
-
-  const existingRipple = button.querySelector('.ripple');
-  if (existingRipple) {
-    existingRipple.remove();
+  if (date.isSame(now, 'day')) {
+    return '#52c41a'; // 今天 - 绿色
+  } else if (date.isAfter(now.subtract(3, 'day'))) {
+    return '#1890ff'; // 最近3天 - 蓝色
+  } else if (date.isAfter(now.subtract(7, 'day'))) {
+    return '#722ed1'; // 一周内 - 紫色
+  } else {
+    return '#d9d9d9'; // 更早 - 灰色
   }
-
-  button.appendChild(ripple);
-
-  setTimeout(() => {
-    ripple.remove();
-  }, 600);
 };
 
-// 初始化
-onMounted(() => {
-  // 初始加载筛选后的历史记录
-  filterHistory();
+// 查看项目
+const viewItem = (item) => {
+  message.info(`查看: ${item.title}`);
+  // 实际应用中跳转到详情页
+  // router.push({ path: `/detail/${item.id}` });
+};
 
-  // 添加动画监听
-  setTimeout(() => {
-    const cards = document.querySelectorAll('.history-item');
-    console.log('找到历史项卡片数量:', cards.length);
-    cards.forEach((card, index) => {
-      // 添加可见性检查
-      const { stop } = useIntersectionObserver(
-          card,
-          ([{ isIntersecting }]) => {
-            if (isIntersecting) {
-              setTimeout(() => {
-                card.classList.add('animate__animated', 'animate__fadeInUp');
-              }, index * 100);
-              stop();
-            }
-          },
-          { threshold: 0.2 }
-      );
-    });
-  }, 800); // 给DOM渲染足够的时间
+// 添加到收藏
+const addToFavorites = (item) => {
+  message.success(`已添加到收藏: ${item.title}`);
+};
+
+// 从历史记录中移除
+const removeFromHistory = (item) => {
+  Modal.confirm({
+    title: '确认移除',
+    content: `确定要将"${item.title}"从浏览历史中移除吗？`,
+    okText: '确定',
+    cancelText: '取消',
+    onOk: () => {
+      const index = historyData.value.findIndex(i => i.id === item.id);
+      if (index !== -1) {
+        historyData.value.splice(index, 1);
+        message.success('记录已移除');
+      }
+    }
+  });
+};
+
+// 显示清除历史确认对话框
+const showClearHistoryModal = () => {
+  clearModalVisible.value = true;
+  clearOption.value = 'selected';
+};
+
+// 确认清除历史
+const confirmClearHistory = () => {
+  if (clearOption.value === 'all') {
+    historyData.value = [];
+    message.success('所有浏览历史已清除');
+  } else {
+    // 仅清除筛选结果
+    const itemIds = new Set(filteredHistory.value.map(item => item.id));
+    historyData.value = historyData.value.filter(item => !itemIds.has(item.id));
+    message.success(`已清除 ${itemIds.size} 条浏览记录`);
+  }
+  clearModalVisible.value = false;
+};
+
+// 导航到主页
+const navigateToHome = () => {
+  router.push('/');
+};
+
+
+
+onMounted(() => {
+  // 模拟从API获取数据
+  // 实际应用中这里会通过API获取历史记录数据
+  console.log('页面加载完成，已获取浏览历史数据');
 });
 </script>
-
 <style scoped>
-/* 页面基础样式 */
-.browsing-history-page {
-  padding: 20px;
+/* 基础页面样式 */
+.history-page {
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* 顶部统计信息区域布局调整 */
-.page-header .header-content {
+/* 页面标题和统计区域 */
+.page-header {
   display: flex;
   justify-content: space-between;
-  width: 100%;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: white;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+}
+
+.title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: #6c5ce7;
+  border-radius: 12px;
+  margin-right: 16px;
+}
+
+.title-icon :deep(.anticon) {
+  font-size: 28px;
+  color: white;
 }
 
 .page-title {
   font-size: 24px;
   font-weight: 600;
   margin: 0;
+  color: #333;
 }
 
-
-/* 将统计数据移到右侧 */
-.history-stats {
+.header-stats {
   display: flex;
-  gap: 36px;
-  margin-left: auto; /* 推到右侧 */
+  gap: 40px;
 }
 
 .stat-item {
@@ -1271,971 +837,1135 @@ onMounted(() => {
   min-width: 100px;
 }
 
-/* 调整统计数据显示效果 */
-.stat-item :deep(.ant-statistic-title) {
+.stat-label {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: #666;
+  margin-bottom: 4px;
 }
 
-.stat-item :deep(.ant-statistic-content) {
-  font-size: 20px;
+.stat-value {
+  font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* 工具栏卡片 */
-.tools-card {
-  margin-bottom: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background-color: white;
+.stat-icon {
+  color: #6c5ce7;
+  margin-left: 6px;
+  font-size: 18px;
 }
 
-.tools-header {
+/* 视图控制和工具栏 */
+.view-controls-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.view-controls {
+.left-section, .right-section {
+  flex: 1;
+}
+
+.right-section {
   display: flex;
-  align-items: center;
+  justify-content: flex-end;
 }
 
-.tools-actions {
+.center-section {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  justify-content: center;
 }
 
-.clear-history-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-  border: none;
+/* 视图切换按钮组 - 带文字版本 */
+.view-toggle {
+  display: flex;
+  justify-content: center;
+}
+
+.view-toggle :deep(.ant-radio-group) {
+  padding: 2px;
+  background: #f0f2f5;
   border-radius: 8px;
-  height: 38px;
+  display: flex;
+}
+
+.view-toggle :deep(.ant-radio-button-wrapper) {
+  height: 36px;
+  padding: 0 12px;
+  border: none !important;
+  background: transparent;
+  color: #666;
+  box-shadow: none !important;
+  transition: all 0.2s;
+  border-radius: 6px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-toggle :deep(.ant-radio-button-wrapper::before) {
+  display: none !important;
+}
+
+.view-toggle :deep(.ant-radio-button-wrapper-checked) {
+  background-color: #6c5ce7;
+  color: white;
+}
+
+.view-toggle :deep(.ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):hover) {
+  color: #6c5ce7;
+  background-color: rgba(108, 92, 231, 0.1);
+}
+
+.view-option-content {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.view-option-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.view-toggle :deep(.ant-radio-button-wrapper .anticon) {
+  font-size: 16px;
+  margin-right: 0;
+}
+
+/* 视图控制和工具栏 */
+.view-controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.left-section, .right-section {
+  flex: 1;
+}
+
+.right-section {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.center-section {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+}
+
+/* 清除历史按钮 - 紫色 */
+.clear-history-btn {
+  height: 36px;
   padding: 0 16px;
   display: flex;
   align-items: center;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
-  transition: all 0.3s;
-}
-
-.clear-history-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.25);
-}
-
-.sort-dropdown {
-  height: 38px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  color: #333;
-  background-color: white;
-  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background-color: #6c5ce7 !important;
+  border-color: #6c5ce7 !important;
+  color: white !important;
   transition: all 0.2s;
 }
 
-.sort-dropdown:hover {
-  border-color: #6366f1;
-  color: #6366f1;
+.clear-history-btn:hover {
+  background-color: #5b4dc7 !important;
+  border-color: #5b4dc7 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(108, 92, 231, 0.3);
+}
+
+.clear-history-btn :deep(.anticon) {
+  margin-right: 6px;
+  font-size: 16px;
+}
+
+/* 排序下拉按钮 */
+.sort-dropdown {
+  min-width: 120px;
+}
+
+.sort-button {
+  height: 36px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #333;
+  border-color: #e0e0e0;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+/* 响应式适配 */
+@media (max-width: 992px) {
+  .view-option-text {
+    display: none;
+  }
+
+  .view-toggle :deep(.ant-radio-button-wrapper) {
+    padding: 0;
+    width: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .view-controls-bar {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .left-section {
+    order: 1;
+    flex: 0 0 100%;
+  }
+
+  .center-section {
+    order: 3;
+    width: 100%;
+    flex: 0 0 100%;
+  }
+
+  .right-section {
+    order: 2;
+    flex: 0 0 100%;
+  }
+
+  .sort-dropdown, .sort-button, .clear-history-btn {
+    width: 100%;
+  }
+
+  .view-option-text {
+    display: inline-block;
+  }
+
+  .view-toggle :deep(.ant-radio-button-wrapper) {
+    flex: 1;
+    padding: 0 12px;
+  }
+}
+
+/* 网格视图CSS - 增强特异性以覆盖全局样式 */
+.history-page .grid-view {
+  margin-bottom: 30px !important;
+}
+
+/* 外层容器 */
+.history-page .history-grid-container {
+  width: 100% !important;
+  display: block !important;
+  overflow: visible !important;
+  background-color: white !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 网格布局 - 注意使用important确保样式不被覆盖 */
+.history-page .history-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 24px !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+/* 网格项目容器 */
+.history-page .grid-item {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  margin-bottom: 0 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  position: relative !important;
+}
+
+.history-page .grid-view {
+  display: block !important;
+  width: 100% !important;
+  column-count: 1 !important; /* 禁用任何列布局 */
+  column-gap: 0 !important;
+  column-width: auto !important;
+}
+
+
+/* 悬浮效果 */
+.history-page .grid-item:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* 卡片主体 */
+.history-page .grid-card {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 300px !important; /* 设置最小高度确保卡片不会太小 */
+}
+
+/* 图片容器 */
+.history-page .grid-thumb {
+  width: 100% !important;
+  height: 0 !important;
+  padding-bottom: 65% !important; /* 约3:2的宽高比 */
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* 图片样式 */
+.history-page .grid-thumb img {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 0.5s ease !important;
+}
+
+/* 图片悬浮效果 */
+.history-page .grid-card:hover .grid-thumb img {
+  transform: scale(1.08) !important;
+}
+
+/* 图片覆盖层 */
+.history-page .grid-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+  pointer-events: none !important;
+}
+
+/* 悬浮时显示覆盖层 */
+.history-page .grid-card:hover .grid-overlay {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* 操作按钮容器 */
+.history-page .grid-actions {
+  display: flex !important;
+  gap: 12px !important;
+  z-index: 5 !important;
+}
+
+/* 通用按钮样式 */
+.history-page .grid-action-btn,
+.history-page .grid-action-btn[type="button"] {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  background-color: white !important;
+  color: #333 !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s ease !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+}
+
+/* 按钮悬浮效果 */
+.history-page .grid-action-btn:hover {
+  transform: scale(1.15) !important;
+  background-color: #6366F1 !important;
+}
+
+/* 按钮内图标悬浮效果 */
+.history-page .grid-action-btn:hover .anticon {
+  color: white !important;
+}
+
+/* 删除按钮特殊效果 */
+.history-page .grid-action-btn.remove-btn:hover {
+  background-color: #ff4d4f !important;
+}
+
+/* 图标样式 */
+.history-page .grid-action-btn .anticon {
+  font-size: 18px !important;
+  color: #333 !important;
+  transition: color 0.3s ease !important;
+}
+
+/* 时间标签 */
+.history-page .view-time-badge {
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  border-radius: 8px 0 0 0 !important;
+  z-index: 2 !important;
+}
+
+/* 内容信息区 */
+.history-page .grid-info {
+  padding: 16px !important;
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background-color: white !important;
+}
+
+/* 标题样式 */
+.history-page .grid-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 12px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  line-height: 1.4 !important;
+  height: 2.8em !important;
+}
+
+/* 作者信息 */
+.history-page .grid-author {
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 12px !important;
+}
+
+/* 作者名称 */
+.history-page .author-name {
+  margin-left: 8px !important;
+  font-size: 14px !important;
+  color: #666 !important;
+}
+
+/* 元数据信息 */
+.history-page .grid-meta {
+  display: flex !important;
+  justify-content: space-between !important;
+  font-size: 13px !important;
+  color: #666 !important;
+  margin-bottom: 12px !important;
+}
+
+/* 元数据项 */
+.history-page .grid-meta span {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* 元数据图标 */
+.history-page .grid-meta .anticon {
+  font-size: 14px !important;
+}
+
+/* 分类标签 */
+.history-page .grid-category {
+  margin-top: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 13px !important;
+  color: #6366F1 !important;
+  background-color: rgba(99, 102, 241, 0.1) !important;
+  border-radius: 4px !important;
+  padding: 5px 10px !important;
+  width: fit-content !important;
+}
+
+/* 响应式布局 */
+@media (max-width: 1280px) {
+  .history-page .history-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .history-page .history-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .history-page .history-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* 时间轴视图样式优化 */
+.timeline-view {
+  padding: 24px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+}
+
+.timeline-view :deep(.ant-timeline) {
+  margin: 0 20px;
+}
+
+.timeline-view :deep(.ant-timeline-item-head) {
+  background-color: #fff;
+  width: 20px;
+  height: 20px;
+}
+
+.timeline-view :deep(.ant-timeline-item-tail) {
+  left: 10px;
+  border-left: 2px solid #e8e8e8;
+}
+
+.timeline-date-header {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.timeline-date-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 40px;
+  height: 3px;
+  background-color: #6c5ce7;
+  border-radius: 2px;
+}
+
+.timeline-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+  margin-left: 10px;
+}
+
+.timeline-item-card {
+  display: flex;
+  align-items: center;
+  background-color: #f9f9ff;
+  border-radius: 10px;
+  padding: 12px;
+  transition: all 0.25s;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.timeline-item-card:hover {
+  background-color: #f0f0ff;
+  transform: translateX(6px);
+  box-shadow: 0 3px 8px rgba(108, 92, 231, 0.1);
+}
+
+.timeline-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-right: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.timeline-item-card:hover .timeline-thumb img {
+  transform: scale(1.05);
+}
+
+.timeline-content {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.timeline-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.timeline-item-card:hover .timeline-title {
+  color: #6c5ce7;
+}
+
+.timeline-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: #666;
+}
+
+.timeline-info span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timeline-time :deep(.anticon) {
+  color: #f39c12;
+}
+
+.timeline-category :deep(.anticon) {
+  color: #2ecc71;
+}
+
+.timeline-views :deep(.anticon) {
+  color: #3498db;
+}
+
+.timeline-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: 10px;
+}
+
+.timeline-actions :deep(.ant-btn) {
+  width: 32px;
+  height: 32px;
+  min-width: unset;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  background: white;
+  border: 1px solid #f0f0f0;
+}
+
+.timeline-actions :deep(.ant-btn:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-actions :deep(.ant-btn:nth-child(1):hover) {
+  color: #3498db;
+  border-color: #3498db;
+}
+
+.timeline-actions :deep(.ant-btn:nth-child(2):hover) {
+  color: #f1c40f;
+  border-color: #f1c40f;
+}
+
+.timeline-actions :deep(.ant-btn:nth-child(3):hover) {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+/* 响应式适配 */
+@media (max-width: 1024px) {
+  .view-buttons {
+    min-width: 100%;
+  }
+
+  .timeline-view {
+    padding: 16px;
+  }
+
+  .timeline-view :deep(.ant-timeline) {
+    margin: 0 10px;
+  }
+
+  .timeline-item-card {
+    flex-wrap: wrap;
+  }
+
+  .timeline-content {
+    flex: 1 0 calc(100% - 90px);
+  }
+
+  .timeline-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+    margin-top: 10px;
+  }
+
+  .timeline-thumb {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .timeline-item-card {
+    padding: 10px;
+  }
+
+  .timeline-thumb {
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+  }
+
+  .timeline-title {
+    font-size: 15px;
+  }
+
+  .timeline-info {
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .timeline-date-header {
+    font-size: 16px;
+  }
 }
 
 /* 筛选区域 */
 .filter-section {
   margin-bottom: 20px;
-  padding-bottom: 20px;
+}
+
+.filter-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.filter-title {
+  margin-bottom: 16px;
+}
+
+.filter-title h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.filter-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.time-filter {
+  flex: 0 0 auto;
+}
+
+.time-filter :deep(.ant-radio-group) {
+  display: flex;
+}
+
+.time-filter :deep(.ant-radio-button-wrapper) {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.category-filter {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-actions button {
+  height: 32px;
+}
+
+/* 列表视图样式 */
+.list-view {
+  margin-bottom: 30px;
+}
+
+.history-list {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.history-list :deep(.ant-list-item) {
+  padding: 16px 20px;
+  transition: all 0.2s;
+}
+
+.history-list :deep(.ant-list-item:hover) {
+  background-color: #f9f9ff;
+}
+
+.list-item-thumb {
+  width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.list-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.list-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-item-title span {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.list-item-title span:hover {
+  color: #6c5ce7;
+}
+
+.list-item-info {
+  display: flex;
+  gap: 16px;
+  color: #666;
+  font-size: 13px;
+}
+
+.list-item-info span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.list-item-info :deep(.anticon) {
+  font-size: 14px;
+  color: #999;
+}
+
+
+/* 时间轴视图样式 */
+.timeline-view {
+  padding: 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+}
+
+.timeline-view :deep(.ant-timeline) {
+  margin: 0 20px;
+}
+
+.timeline-date-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.section-title {
+.timeline-items-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.section-title h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.time-range-filter {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.filter-options {
-  display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
-.active-filter-alert {
-  margin-top: 16px;
-}
-
-.active-filter-info {
+.timeline-item-card {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  width: 100%;
-}
-
-/* 浏览历史瀑布流布局 */
-.history-grid {
-  column-count: 1;
-  column-gap: 20px;
-  margin-bottom: 32px;
-}
-
-@media (min-width: 640px) {
-  .history-grid {
-    column-count: 2;
-    column-gap: 24px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .history-grid {
-    column-count: 3;
-    column-gap: 24px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .history-grid {
-    column-count: 4;
-    column-gap: 24px;
-  }
-}
-
-.history-item {
-  break-inside: avoid;
-  margin-bottom: 24px;
-  display: inline-block;
-  width: 100%;
-}
-
-/* 卡片样式 */
-.history-card {
-  border-radius: 12px;
-  overflow: hidden;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s;
+  background-color: #f9f9ff;
+  border-radius: 8px;
+  padding: 10px;
+  transition: all 0.2s;
   cursor: pointer;
 }
 
-.history-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+.timeline-item-card:hover {
+  background-color: #f0f0ff;
+  transform: translateX(5px);
 }
 
-.image-container {
-  position: relative;
+.timeline-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
   overflow: hidden;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
-.history-image {
+.timeline-thumb img {
   width: 100%;
-  display: block;
-  transition: transform 0.5s;
+  height: 100%;
+  object-fit: cover;
 }
 
-.history-card:hover .history-image {
-  transform: scale(1.05);
+.timeline-content {
+  flex: 1;
+  min-width: 0;
 }
 
-.image-actions-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.history-card:hover .image-actions-overlay {
-  opacity: 1;
-}
-
-.image-action-btn {
-  background-color: white !important;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-  border: none !important;
-}
-
-.image-action-btn:hover {
-  transform: scale(1.1);
-  background-color: #6366F1 !important;
-}
-
-.image-action-btn:hover :deep(.anticon) {
-  font-size: 18px;
-  color: white;
-}
-
-.image-action-btn :deep(.anticon) {
-  font-size: 18px;
+.timeline-title {
+  font-size: 15px;
+  font-weight: 500;
   color: #333;
-  transition: color 0.3s ease;
-}
-
-.remove-btn:hover {
-  background-color: #ff4d4f !important;
-}
-
-.view-count-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(99, 102, 241, 0.85);
-  color: white;
-  padding: 4px 8px;
-  font-size: 12px;
-  border-radius: 12px;
-}
-
-.view-time {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 4px 8px;
-  font-size: 12px;
-  border-radius: 8px 0 0 0;
-}
-
-.history-info {
-  padding: 12px;
-}
-
-.history-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #333;
+  margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.history-author {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.author-name {
-  margin-left: 8px;
-  font-size: 14px;
-  color: #666;
-}
-
-.history-tags {
+.timeline-info {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.history-tag {
-  background: #f5f5f5;
-  border: none;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 12px;
-  color: #666;
-  margin: 0;
-}
-
-.history-tag.small {
-  padding: 0 6px;
-  font-size: 11px;
-  border-radius: 0 0 0 8px;
-}
-
-.list-item-title {
-  font-weight: 500;
-}
-
-.list-item-desc {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.list-item-author {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #666;
-}
-
-.list-item-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.list-item-meta {
-  display: flex;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #999;
-}
-
-.list-item-category {
-  display: flex;
-  align-items: center;
-  margin-right: 16px;
-}
-
-.list-item-time {
-  display: flex;
-  align-items: center;
-}
-
-.list-item-meta :deep(.anticon) {
-  margin-right: 4px;
-}
-
-/* 时间轴视图样式 */
-.history-timeline {
-  margin-bottom: 32px;
-}
-
-.history-timeline-container {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.timeline-date {
-  font-weight: 500;
-  color: #6366f1;
-  padding: 4px 8px;
-  background: rgba(99, 102, 241, 0.1);
-  border-radius: 8px;
-  display: inline-block;
-}
-
-.timeline-group {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.timeline-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.timeline-item-time {
-  font-size: 12px;
-  color: #666;
-  margin-left: 8px;
-}
-
-.timeline-item-card {
-  display: flex;
-  background: #f8f9fa;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s;
-  cursor: pointer;
-}
-
-.timeline-item-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  background: #fff;
-}
-
-.timeline-item-content {
-  display: flex;
-  padding: 12px;
-  flex-grow: 1;
   gap: 12px;
-}
-
-.timeline-item-image {
-  width: 80px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.timeline-item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.timeline-item-title {
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.timeline-item-author {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #666;
-}
-
-.timeline-item-tags {
-  display: flex;
-  gap: 4px;
-}
-
-.timeline-item-actions {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  padding: 8px;
-  background: rgba(248, 249, 250, 0.7);
-}
-
-/* 空状态 */
-.empty-history {
-  padding: 60px 0;
-  background: white;
-  border-radius: 12px;
-  margin-bottom: 32px;
-}
-
-.empty-actions {
-  margin-top: 16px;
-}
-
-/* 加载更多 */
-.load-more {
-  text-align: center;
-  margin-top: 16px;
-  margin-bottom: 40px;
-}
-
-.load-more-btn {
-  padding: 0 24px;
-  height: 40px;
-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-  border: none;
-  transition: all 0.3s;
-}
-
-.load-more-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-}
-
-/* 批量操作工具栏 */
-.batch-actions-bar {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: auto;
-  max-width: 90%;
-  background: #6366f1;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 100;
-}
-
-.batch-info {
-  margin-right: 24px;
-}
-
-.batch-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-/* 清除历史对话框 */
-.clear-history-options {
-  margin-bottom: 24px;
-}
-
-.clear-date-selector {
-  margin-top: 12px;
-  margin-left: 24px;
-}
-
-.clear-warning {
-  margin-top: 16px;
-}
-
-/* 添加涟漪效果 */
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
-  transform: scale(0);
-  animation: ripple 0.6s linear;
-  pointer-events: none;
-}
-
-/* 新设计的列表视图样式 */
-
-/* 列表容器优化 */
-.history-list-container {
-  padding: 0;
-  background: transparent;
-  border-radius: 12px;
-  margin-bottom: 16px;
-}
-
-/* 列表项容器 */
-.history-list-container :deep(.ant-list-items) {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* 列表项卡片式样式 */
-.history-list-container :deep(.ant-list-item) {
-  border: none;
-  border-radius: 12px;
-  padding: 0;
-  margin-bottom: 0;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 列表项悬停效果 */
-.history-list-container :deep(.ant-list-item:hover) {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
-}
-
-/* 列表项内容布局 */
-.history-list-container :deep(.ant-list-item-meta) {
-  margin-bottom: 0;
-  align-items: stretch;
-  padding: 0;
-}
-
-/* 列表项内容容器 */
-.list-item-content-wrapper {
-  display: flex;
-  width: 100%;
-}
-
-/* 列表项左侧图片区域 */
-.list-item-image-section {
-  width: 160px;
-  position: relative;
-}
-
-.list-item-image-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.list-item-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 图片上的渐变遮罩 */
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 50%);
-  pointer-events: none;
-}
-
-/* 浏览次数指示器 */
-.view-count-indicator {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-  color: white;
-  border-radius: 20px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 2;
-}
-
-.view-count-indicator :deep(.anticon) {
-  font-size: 12px;
-}
-
-/* 浏览进度条 */
-.history-progress-bar {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 4px;
-  background: linear-gradient(to right, #6366f1, #818cf8);
-  border-radius: 0;
-  z-index: 2;
-}
-
-/* 未读标记 */
-.list-item-unread {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-  z-index: 2;
-}
-
-/* 列表项右侧内容区域 */
-.list-item-info-section {
-  flex: 1;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-}
-
-/* 列表项标题 */
-.list-item-title {
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 1.4;
-  color: #333;
-  margin-bottom: 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* 顶部信息栏 */
-.item-top-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2px;
-}
-
-/* 分类标签 */
-.item-category {
-  font-size: 12px;
-  color: #6366f1;
-  background-color: rgba(99, 102, 241, 0.1);
-  padding: 2px 8px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.item-category :deep(.anticon) {
-  font-size: 12px;
-}
-
-/* 浏览时间 */
-.item-view-time {
-  font-size: 12px;
-  color: #888;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.item-view-time :deep(.anticon) {
-  font-size: 12px;
-  color: #6366f1;
-}
-
-/* 列表项中间内容区 */
-.item-middle-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* 作者信息 */
-.list-item-author {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.author-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  overflow: hidden;
-  background-color: #f0f0f0;
-  border: 1px solid #e0e0e0;
-}
-
-.author-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.author-name {
   font-size: 13px;
-  font-weight: 500;
-  color: #444;
-  line-height: 1.2;
+  color: #666;
 }
 
-.author-role {
-  font-size: 11px;
-  color: #888;
-  line-height: 1.2;
-}
-
-/* 标签容器 */
-.list-item-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-/* 标签样式 */
-.list-item-tags .history-tag {
-  border: none;
-  padding: 0 8px;
-  height: 22px;
-  line-height: 22px;
-  font-size: 12px;
-  border-radius: 4px;
-  background-color: #f5f7ff;
-  color: #6366f1;
-  transition: all 0.2s;
-  margin: 0;
-}
-
-.list-item-tags .history-tag:hover {
-  background-color: #e0e7ff;
-  transform: translateY(-1px);
-}
-
-/* 为不同颜色的标签设置样式 */
-.list-item-tags .history-tag[color="blue"] {
-  background-color: #e6f4ff;
-  color: #1677ff;
-}
-
-.list-item-tags .history-tag[color="green"] {
-  background-color: #e6fffb;
-  color: #13c2c2;
-}
-
-.list-item-tags .history-tag[color="red"] {
-  background-color: #fff1f0;
-  color: #f5222d;
-}
-
-.list-item-tags .history-tag[color="purple"] {
-  background-color: #f9f0ff;
-  color: #722ed1;
-}
-
-.list-item-tags .history-tag[color="pink"] {
-  background-color: #fff0f6;
-  color: #eb2f96;
-}
-
-.list-item-tags .history-tag[color="cyan"] {
-  background-color: #e6fffb;
-  color: #13c2c2;
-}
-
-/* 底部信息栏 */
-.item-bottom-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* 元数据指标 */
-.item-metadata {
-  display: flex;
-  gap: 16px;
-}
-
-.metadata-item {
+.timeline-info span {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+}
+
+.timeline-info :deep(.anticon) {
+  font-size: 14px;
+  color: #6c5ce7;
+}
+
+.timeline-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 10px;
+}
+
+.timeline-actions :deep(.ant-btn) {
+  width: 28px;
+  height: 28px;
+  min-width: unset;
+  padding: 0;
+}
+
+.timeline-actions :deep(.anticon) {
+  font-size: 14px;
+}
+
+/* 空状态样式 */
+.empty-state {
+  padding: 48px 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.empty-description {
+  margin: 16px 0;
+}
+
+.empty-description p {
+  margin: 4px 0;
+}
+
+.empty-hint {
   color: #888;
-}
-
-.metadata-item :deep(.anticon) {
   font-size: 14px;
-  color: #6366f1;
 }
 
-/* 操作按钮容器 */
-.item-actions {
-  display: flex;
-  gap: 8px;
+/* 清除历史对话框样式 */
+.warning-text {
+  color: #ff4d4f;
+  font-size: 13px;
+  margin-top: 16px;
 }
 
-/* 操作按钮样式 */
-.item-actions .action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  background-color: #f9f9f9;
-  border: none;
-  transition: all 0.2s;
-}
-
-.item-actions .action-btn:hover {
-  background-color: #f0f2ff;
-  color: #6366f1;
-  transform: translateY(-2px);
-}
-
-.item-actions .action-btn :deep(.anticon) {
-  font-size: 16px;
-}
-
-.item-actions .action-btn.remove-btn:hover {
-  background-color: #fff1f0;
-  color: #f5222d;
-}
-
-/* 操作按钮悬停提示 */
-.action-btn-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-  white-space: nowrap;
-}
-
-.action-btn:hover .action-btn-tooltip {
-  opacity: 1;
-}
-
-/* 日期分组指示器 */
-.timeline-date-indicator {
-  margin: 24px 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.timeline-date-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: #6366f1;
-  background: rgba(99, 102, 241, 0.1);
-  padding: 4px 12px;
-  border-radius: 20px;
-  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.1);
-}
-
-.timeline-date-line {
-  flex-grow: 1;
-  height: 1px;
-  background: #e0e0e0;
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .list-item-content-wrapper {
+/* 响应式适配 */
+@media (max-width: 1024px) {
+  .page-header {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .list-item-image-section {
+  .header-stats {
+    margin-top: 20px;
     width: 100%;
-    height: 140px;
+    justify-content: space-between;
+    gap: 10px;
   }
 
-  .item-bottom-info {
+  .view-controls-bar {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .dropdown-section,
+  .action-section {
+    flex: 0 0 100%;
+    padding: 0;
+  }
+
+  .view-buttons {
+    order: 3;
+    min-width: 100%;
+  }
+
+  .sort-dropdown {
+    width: 100%;
+  }
+
+  .sort-button {
+    width: 100%;
+  }
+
+  .clear-history-btn {
+    width: 100%;
+  }
+
+  .filter-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .time-filter,
+  .category-filter {
+    width: 100%;
+  }
+
+  .time-filter :deep(.ant-radio-group) {
+    width: 100%;
+  }
+
+  .time-filter :deep(.ant-radio-button-wrapper) {
+    flex: 1;
+    padding: 0 4px;
+    justify-content: center;
+  }
+
+  .filter-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .history-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .timeline-item-card {
+    flex-wrap: wrap;
+  }
+
+  .timeline-content {
+    flex: 1 0 60%;
+    margin-bottom: 8px;
+  }
+
+  .timeline-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-stats {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
 
-  .item-actions {
+  .stat-item {
+    text-align: left;
     width: 100%;
-    justify-content: flex-end;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-}
 
-@keyframes ripple {
-  to {
-    transform: scale(2);
-    opacity: 0;
+  .stat-value {
+    justify-content: flex-start;
+  }
+
+  .history-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .list-item-thumb {
+    width: 60px;
+    height: 45px;
+  }
+
+  .timeline-item-card {
+    padding: 8px;
+  }
+
+  .timeline-thumb {
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+  }
+
+  .timeline-title {
+    font-size: 14px;
+  }
+
+  .timeline-info {
+    gap: 8px;
+    font-size: 12px;
   }
 }
 
@@ -2251,62 +1981,68 @@ onMounted(() => {
   }
 }
 
-.history-item {
-  animation: fadeIn 0.5s ease-out;
+.fade-enter-active {
+  animation: fadeIn 0.3s ease-out;
 }
 
-/* 响应式布局调整 */
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
+/* 增强的交互效果 */
+.list-item-info .view-time :deep(.anticon) {
+  color: #f39c12;
+}
 
-  .history-stats {
-    width: 100%;
-    justify-content: space-between;
-  }
+.list-item-info .view-count :deep(.anticon) {
+  color: #3498db;
+}
 
-  .tools-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
+.list-item-info .category-tag :deep(.anticon) {
+  color: #2ecc71;
+}
 
-  .tools-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
+.timeline-item-card:hover .timeline-title {
+  color: #6c5ce7;
+}
 
-  .filter-options {
-    flex-direction: column;
-    align-items: stretch;
-  }
+/* 分页样式美化 */
+.history-list :deep(.ant-pagination) {
+  margin: 16px 0;
+  padding: 0 16px 16px;
+}
 
-  .time-range-filter {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.history-list :deep(.ant-pagination-item-active) {
+  background-color: #6c5ce7;
+  border-color: #6c5ce7;
+}
 
-  .batch-actions-bar {
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-  }
+.history-list :deep(.ant-pagination-item-active a) {
+  color: white;
+}
 
-  .batch-info {
-    margin-right: 0;
-    margin-bottom: 8px;
-  }
+.history-list :deep(.ant-pagination-item:hover) {
+  border-color: #6c5ce7;
+}
 
-  .timeline-item-content {
-    flex-direction: column;
-  }
+.history-list :deep(.ant-pagination-item:hover a) {
+  color: #6c5ce7;
+}
 
-  .timeline-item-image {
-    width: 100%;
-    height: auto;
-  }
+/* 列表项操作按钮悬停效果 */
+.history-list :deep(.ant-list-item-action-split) {
+  display: none;
+}
+
+.history-list :deep(.ant-list-item-action li .ant-btn) {
+  transition: all 0.2s;
+}
+
+.history-list :deep(.ant-list-item-action li:nth-child(1) .ant-btn:hover) {
+  color: #3498db;
+}
+
+.history-list :deep(.ant-list-item-action li:nth-child(2) .ant-btn:hover) {
+  color: #f1c40f;
+}
+
+.history-list :deep(.ant-list-item-action li:nth-child(3) .ant-btn:hover) {
+  color: #e74c3c;
 }
 </style>
