@@ -1,1249 +1,1904 @@
 <!-- pages/explore/ExplorePage.vue -->
 <template>
-  <div class="explore-page">
-    <!-- 顶部横幅区域 -->
-    <div class="banner-container"
-         v-motion
-         :initial="{ opacity: 0, y: -20 }"
-         :enter="{ opacity: 1, y: 0, transition: { delay: 200, duration: 500 } }">
-      <div class="banner-content">
-        <h1 class="banner-title">探索发现</h1>
-        <p class="banner-desc">发现创意灵感，探索精选内容</p>
-      </div>
+  <div class="discovery-hero">
+    <div class="discovery-header">
+      <h1 class="page-title">探索发现</h1>
+      <p class="subtitle">发现创意灵感，探索精彩内容</p>
     </div>
 
-    <!-- 主体内容区域 -->
-    <div class="explore-content">
-      <!-- 趋势分析区域 -->
-      <a-card class="trends-card"
-              :bordered="false"
-              v-motion
-              :initial="{ opacity: 0, y: 20 }"
-              :enter="{ opacity: 1, y: 0, transition: { delay: 300, duration: 500 } }">
-        <div class="section-header">
-          <h2 class="section-title">
-            <area-chart-outlined /> 热门趋势
-          </h2>
-          <a-radio-group v-model:value="trendPeriod" button-style="solid" size="small">
-            <a-radio-button value="daily">今日</a-radio-button>
-            <a-radio-button value="weekly">本周</a-radio-button>
-            <a-radio-button value="monthly">本月</a-radio-button>
-          </a-radio-group>
-        </div>
-
-        <div class="trends-container">
-          <div v-for="(trend, index) in currentTrends" :key="index" class="trend-item"
-               v-motion
-               :initial="{ opacity: 0, x: 20 }"
-               :enter="{ opacity: 1, x: 0, transition: { delay: 300 + (index * 100), duration: 500 } }">
-            <div class="trend-rank">{{ index + 1 }}</div>
-            <div class="trend-content">
-              <div class="trend-tag">
-                <a-tag :color="getTagColor(trend.category)">{{ trend.category }}</a-tag>
-              </div>
-              <div class="trend-name">{{ trend.name }}</div>
-              <div class="trend-stats">
-                <span><eye-outlined /> {{ trend.views }}</span>
-                <span><heart-outlined /> {{ trend.likes }}</span>
-                <span><cloud-download-outlined /> {{ trend.downloads }}</span>
-              </div>
-            </div>
-            <div class="trend-growth" :class="trend.growth > 0 ? 'positive' : 'negative'">
-              <arrow-up-outlined v-if="trend.growth > 0" />
-              <arrow-down-outlined v-else />
-              {{ Math.abs(trend.growth) }}%
-            </div>
-          </div>
-        </div>
-      </a-card>
-
-      <!-- 精选推荐区域 -->
-      <div class="featured-section"
-           v-motion
-           :initial="{ opacity: 0 }"
-           :enter="{ opacity: 1, transition: { delay: 500, duration: 600 } }">
-        <div class="section-header with-more">
-          <h2 class="section-title">
-            <fire-outlined /> 精选推荐
-          </h2>
-          <a-button type="link" class="view-more-btn">
-            查看更多 <right-outlined />
-          </a-button>
-        </div>
-
-        <div class="featured-list">
-          <div v-for="(item, index) in featuredItems" :key="index" class="featured-item"
-               v-motion
-               :initial="{ opacity: 0, scale: 0.9 }"
-               :enter="{ opacity: 1, scale: 1, transition: { delay: 600 + (index * 150), duration: 500 } }">
-            <div class="featured-img-container">
-              <img :src="item.image" :alt="item.title" class="featured-img" />
-              <div class="featured-overlay">
-                <div class="featured-category">{{ item.category }}</div>
-                <a-button type="primary" shape="circle" class="view-btn">
-                  <template #icon><eye-outlined /></template>
-                </a-button>
-              </div>
-            </div>
-            <div class="featured-info">
-              <h3 class="featured-title">{{ item.title }}</h3>
-              <div class="featured-meta">
-                <div class="featured-author">
-                  <a-avatar :src="item.author.avatar" :size="24" />
-                  <span>{{ item.author.name }}</span>
-                </div>
-                <div class="featured-stats">
-                  <span><heart-outlined /> {{ item.likes }}</span>
-                  <span><eye-outlined /> {{ item.views }}</span>
-                </div>
-              </div>
-            </div>
+    <!-- 轮播展示区 -->
+    <a-carousel autoplay class="featured-carousel">
+      <div class="carousel-item" v-for="(item, index) in featuredItems" :key="index">
+        <div class="carousel-content" :style="{ backgroundImage: `url(${item.coverImage})` }">
+          <div class="carousel-overlay">
+            <h2>{{ item.title }}</h2>
+            <p>{{ item.description }}</p>
+            <a-button type="primary"  class="action-btn">立即查看</a-button>
           </div>
         </div>
       </div>
+    </a-carousel>
 
-      <!-- 发现创作者区域 -->
-      <div class="creators-section"
-           v-motion
-           :initial="{ opacity: 0 }"
-           :enter="{ opacity: 1, transition: { delay: 700, duration: 600 } }">
-        <div class="section-header with-more">
-          <h2 class="section-title">
-            <user-outlined /> 发现创作者
-          </h2>
-          <a-button type="link" class="view-more-btn">
-            查看更多 <right-outlined />
-          </a-button>
-        </div>
-
-        <div class="creators-list">
-          <div v-for="(creator, index) in popularCreators" :key="index" class="creator-card"
-               v-motion
-               :initial="{ opacity: 0, y: 20 }"
-               :enter="{ opacity: 1, y: 0, transition: { delay: 800 + (index * 100), duration: 500 } }">
-            <div class="creator-header">
-              <div class="creator-cover" :style="{ backgroundImage: `url(${creator.coverImage})` }"></div>
-              <a-avatar :src="creator.avatar" :size="64" class="creator-avatar" />
-            </div>
-            <div class="creator-info">
-              <h3 class="creator-name">{{ creator.name }}</h3>
-              <p class="creator-bio">{{ creator.bio }}</p>
-              <div class="creator-stats">
-                <div class="stat-item">
-                  <div class="stat-value">{{ creator.followers }}</div>
-                  <div class="stat-label">粉丝</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-value">{{ creator.works }}</div>
-                  <div class="stat-label">作品</div>
-                </div>
-                <div class="stat-item">
-                  <div class="stat-value">{{ creator.likes }}</div>
-                  <div class="stat-label">获赞</div>
-                </div>
-              </div>
-              <div class="creator-tags">
-                <a-tag v-for="(tag, tagIndex) in creator.tags" :key="tagIndex">{{ tag }}</a-tag>
-              </div>
-              <a-button type="primary" ghost block class="follow-btn">
-                <template #icon><plus-outlined /></template>
-                关注
-              </a-button>
-            </div>
-          </div>
-        </div>
+    <!-- 快速筛选标签 -->
+    <div class="quick-filter-tags">
+      <div class="filter-label">快速筛选:</div>
+      <div class="tags-wrapper">
+        <a-tag
+            v-for="tag in quickTags"
+            :key="tag.id"
+            :color="tag.color"
+            @click="applyQuickFilter(tag.id)"
+            class="filter-tag"
+        >
+          {{ tag.name }}
+          <fire-outlined v-if="tag.isHot" class="hot-icon" />
+        </a-tag>
       </div>
+    </div>
+  </div>
 
-      <!-- 每日灵感区域 -->
-      <div class="daily-inspiration"
-           v-motion
-           :initial="{ opacity: 0 }"
-           :enter="{ opacity: 1, transition: { delay: 900, duration: 600 } }">
-        <div class="section-header">
-          <h2 class="section-title">
-            <bulb-outlined /> 每日灵感
-          </h2>
-          <a-button type="link" class="refresh-btn" @click="refreshInspiration">
-            <reload-outlined /> 换一批
-          </a-button>
-        </div>
 
-        <div class="inspiration-grid">
-          <div v-for="(item, index) in inspirationItems" :key="index"
-               class="inspiration-item"
-               :class="getInspirationSize(index)"
-               v-motion
-               :initial="{ opacity: 0, scale: 0.95 }"
-               :enter="{ opacity: 1, scale: 1, transition: { delay: 1000 + (index * 100), duration: 500 } }">
-            <img :src="item.image" :alt="item.title" class="inspiration-img" />
-            <div class="inspiration-overlay">
-              <div class="inspiration-info">
-                <h3 class="inspiration-title">{{ item.title }}</h3>
-                <div class="inspiration-category">{{ item.category }}</div>
-                <div class="inspiration-actions">
-                  <a-button type="text" shape="circle" class="action-btn">
-                    <template #icon><heart-outlined /></template>
-                  </a-button>
-                  <a-button type="text" shape="circle" class="action-btn">
-                    <template #icon><share-alt-outlined /></template>
-                  </a-button>
-                  <a-button type="text" shape="circle" class="action-btn">
-                    <template #icon><download-outlined /></template>
-                  </a-button>
-                </div>
+  <div class="discovery-categories">
+    <div class="section-header">
+      <h2>精选专辑</h2>
+      <a-button type="link" @click="viewAllCategories">
+        查看全部
+        <right-outlined />
+      </a-button>
+    </div>
+
+    <div class="categories-grid">
+      <div
+          v-for="category in categories"
+          :key="category.id"
+          class="category-card"
+          v-motion
+          :initial="{ opacity: 0, y: 50 }"
+          :enter="{
+        opacity: 1,
+        y: 0,
+        transition: {
+          delay: category.id * 100,
+          duration: 500
+        }
+      }"
+      >
+        <div class="category-image" :style="{ backgroundImage: `url(${category.coverImage})` }">
+          <div class="category-overlay">
+            <div class="category-stats">
+              <div class="stat">
+                <picture-outlined />
+                <span>{{ formatNumber(category.imageCount) }}</span>
+              </div>
+              <div class="stat">
+                <eye-outlined />
+                <span>{{ formatNumber(category.views) }}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 热门话题区域 -->
-      <div class="topics-section"
-           v-motion
-           :initial="{ opacity: 0 }"
-           :enter="{ opacity: 1, transition: { delay: 1100, duration: 600 } }">
-        <div class="section-header with-more">
-          <h2 class="section-title">
-            <message-outlined /> 热门话题
-          </h2>
-          <a-button type="link" class="view-more-btn">
-            查看更多 <right-outlined />
-          </a-button>
-        </div>
-
-        <div class="topics-list">
-          <div v-for="(topic, index) in hotTopics" :key="index" class="topic-card"
-               v-motion
-               :initial="{ opacity: 0, x: -20 }"
-               :enter="{ opacity: 1, x: 0, transition: { delay: 1200 + (index * 100), duration: 500 } }">
-            <div class="topic-content">
-              <div class="topic-header">
-                <a-tag color="#6366f1">{{ topic.category }}</a-tag>
-                <span class="topic-time">{{ topic.time }}</span>
-              </div>
-              <h3 class="topic-title">{{ topic.title }}</h3>
-              <p class="topic-desc">{{ topic.description }}</p>
-              <div class="topic-stats">
-                <span class="topic-stat"><message-outlined /> {{ topic.comments }}</span>
-                <span class="topic-stat"><like-outlined /> {{ topic.likes }}</span>
-                <span class="topic-stat"><eye-outlined /> {{ topic.views }}</span>
-              </div>
-            </div>
-            <div class="topic-image">
-              <img :src="topic.image" :alt="topic.title" />
-            </div>
+        <div class="category-info">
+          <h3>{{ category.name }}</h3>
+          <p>{{ category.description }}</p>
+          <div class="category-tags">
+            <a-tag
+                v-for="(tag, index) in category.tags.slice(0, 3)"
+                :key="index"
+                :style="{
+              backgroundColor: getTagColor(tag, true).backgroundColor,
+              color: getTagColor(tag, true).color,
+              borderColor: 'transparent'
+            }"
+            >
+              {{ tag }}
+            </a-tag>
+            <a-tag v-if="category.tags.length > 3" class="more-tag">
+              +{{ category.tags.length - 3 }}
+            </a-tag>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+
+  <div class="trending-section">
+    <div class="section-header">
+      <h2>
+        <fire-outlined class="trending-icon" />
+        热门趋势
+      </h2>
+      <a-dropdown>
+        <template #overlay>
+          <a-menu @click="handleTrendingPeriodChange">
+            <a-menu-item key="day">今日热门</a-menu-item>
+            <a-menu-item key="week">本周热门</a-menu-item>
+            <a-menu-item key="month">本月热门</a-menu-item>
+          </a-menu>
+        </template>
+        <a-button>
+          {{ trendingPeriodText }}
+          <down-outlined />
+        </a-button>
+      </a-dropdown>
+    </div>
+
+    <!-- 趋势内容网格 -->
+    <div class="trending-grid">
+      <div
+          v-for="(item, index) in trendingItems"
+          :key="item.id"
+          class="trending-item"
+          v-motion
+          :initial="{ opacity: 0, scale: 0.9 }"
+          :enter="{
+        opacity: 1,
+        scale: 1,
+        transition: {
+          delay: index * 100,
+          duration: 500
+        }
+      }"
+      >
+        <div class="trending-rank">{{ index + 1 }}</div>
+        <div class="trending-image">
+          <img :src="item.src" :alt="item.title" />
+          <div class="trending-overlay">
+            <div class="trending-stats">
+              <div class="stat">
+                <eye-outlined />
+                <span>{{ formatNumber(item.views) }}</span>
+              </div>
+              <div class="stat">
+                <heart-outlined />
+                <span>{{ formatNumber(item.likes) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="trending-info">
+          <div class="trending-title">{{ item.title }}</div>
+          <div class="trending-author">
+            <a-avatar :src="item.author.avatar" :size="24" />
+            <span>{{ item.author.name }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="creators-section">
+    <div class="section-header">
+      <h2>
+        <crown-outlined class="creator-icon" />
+        优秀创作者
+      </h2>
+      <a-button type="link">查看全部</a-button>
+    </div>
+
+    <div class="creators-carousel">
+      <a-carousel :dots="false" arrows autoplay>
+        <div class="carousel-page" v-for="page in creatorPages" :key="page.id">
+          <div class="creators-grid">
+            <div
+                v-for="creator in page.creators"
+                :key="creator.id"
+                class="creator-card"
+            >
+              <div class="creator-header">
+                <a-avatar :src="creator.avatar" :size="64" />
+                <div class="creator-info">
+                  <h4>{{ creator.name }}</h4>
+                  <p>{{ creator.role }}</p>
+                  <div class="creator-stats">
+                    <div class="stat">
+                      <picture-outlined />
+                      <span>{{ formatNumber(creator.imageCount) }}</span>
+                    </div>
+                    <div class="stat">
+                      <team-outlined />
+                      <span>{{ formatNumber(creator.followers) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <a-button type="primary" size="small" class="follow-btn">关注</a-button>
+              </div>
+              <div class="creator-gallery">
+                <div class="gallery-preview" v-for="img in creator.featured.slice(0, 4)" :key="img.id">
+                  <img :src="img.src" :alt="img.title" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a-carousel>
+    </div>
+  </div>
+
+
+
+  <div class="challenges-section">
+    <div class="section-header">
+      <h2>
+        <trophy-outlined class="challenge-icon" />
+        创意挑战
+      </h2>
+      <a-button type="link">历史挑战</a-button>
+    </div>
+
+    <div class="challenges-grid">
+      <div
+          v-for="challenge in activeAllenges"
+          :key="challenge.id"
+          class="challenge-card"
+          v-motion
+          :initial="{ opacity: 0, x: -50 }"
+          :enter="{
+        opacity: 1,
+        x: 0,
+        transition: {
+          delay: challenge.id * 150,
+          duration: 600
+        }
+      }"
+      >
+        <div class="challenge-image" :style="{ backgroundImage: `url(${challenge.coverImage})` }">
+          <div class="challenge-status" :class="{ 'status-active': challenge.isActive, 'status-ending': challenge.isEnding }">
+            {{ challenge.isEnding ? '即将结束' : '进行中' }}
+          </div>
+        </div>
+        <div class="challenge-content">
+          <h3>{{ challenge.title }}</h3>
+          <p>{{ challenge.description }}</p>
+          <div class="challenge-meta">
+            <div class="meta-item">
+              <clock-circle-outlined />
+              <span>{{ challenge.endDate }}</span>
+            </div>
+            <div class="meta-item">
+              <team-outlined />
+              <span>{{ formatNumber(challenge.participants) }}人参与</span>
+            </div>
+          </div>
+          <div class="challenge-footer">
+            <a-button type="primary">立即参与</a-button>
+            <a-button>了解详情</a-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="collections-section">
+    <div class="section-header">
+      <h2>
+        <book-outlined class="collections-icon" />
+        精选话题
+      </h2>
+      <a-radio-group v-model:value="selectedCollectionType" button-style="solid" class="custom-radio-group">
+        <a-radio-button value="popular">热门</a-radio-button>
+        <a-radio-button value="new">最新</a-radio-button>
+        <a-radio-button value="following">关注</a-radio-button>
+      </a-radio-group>
+    </div>
+
+    <div class="collections-grid">
+      <div
+          v-for="collection in visibleCollections"
+          :key="collection.id"
+          class="collection-card"
+          v-motion
+          :initial="{ opacity: 0 }"
+          :enter="{
+        opacity: 1,
+        transition: {
+          delay: collection.id * 100,
+          duration: 400
+        }
+      }"
+      >
+        <div class="collection-preview">
+          <div class="preview-large">
+            <img :src="collection.preview[0]" :alt="collection.title" />
+          </div>
+          <div class="preview-small">
+            <div class="preview-item" v-for="(img, index) in collection.preview.slice(1, 4)" :key="index">
+              <img :src="img" :alt="`${collection.title}-${index}`" />
+            </div>
+            <div class="preview-more" v-if="collection.totalItems > 4">
+              <plus-outlined />
+              <span>{{ collection.totalItems - 4 }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="collection-info">
+          <h3>{{ collection.title }}</h3>
+          <p>{{ collection.description }}</p>
+          <div class="collection-footer">
+            <div class="collection-author">
+              <a-avatar :src="collection.author.avatar" :size="24" />
+              <span>{{ collection.author.name }}</span>
+            </div>
+            <a-button type="link" size="small">
+              <folder-add-outlined />
+              添加
+            </a-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import {
-  EyeOutlined,
-  HeartOutlined,
-  CloudDownloadOutlined,
-  FireOutlined,
-  RightOutlined,
-  UserOutlined,
-  PlusOutlined,
-  BulbOutlined,
-  ReloadOutlined,
-  ShareAltOutlined,
-  DownloadOutlined,
-  MessageOutlined,
-  LikeOutlined,
-  AreaChartOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined
+  FireOutlined, CrownOutlined, BookOutlined, TrophyOutlined, BulbOutlined,
+  AppstoreOutlined, BarsOutlined, PictureOutlined, EyeOutlined, HeartOutlined,
+  HeartFilled, DownOutlined, ClockCircleOutlined, TeamOutlined, ReloadOutlined,
+  FolderAddOutlined, PlusOutlined, StarOutlined, StarFilled, ShareAltOutlined,
 } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import {message} from "ant-design-vue";
 
-// 趋势期间选择
-const trendPeriod = ref('daily');
+// 精选内容数据
+const featuredItems = reactive([
+  {
+    id: 1,
+    title: '2024年度设计趋势',
+    description: '探索今年最流行的设计风格、配色方案和创意灵感',
+    coverImage: 'https://images.unsplash.com/photo-1613909207039-6b173b755cc1?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80'
+  },
+  {
+    id: 2,
+    title: 'AI生成艺术特辑',
+    description: '探索人工智能与创意设计的完美结合',
+    coverImage: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80'
+  },
+  {
+    id: 3,
+    title: '环保主题创意合集',
+    description: '绿色设计理念如何影响现代视觉艺术',
+    coverImage: 'https://images.unsplash.com/photo-1623645481161-0d8160281b37?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80'
+  }
+]);
 
-// 趋势数据
-const trends = ref({
-  daily: [
-    { name: '极简风格UI设计', category: '设计', views: 3240, likes: 1520, downloads: 860, growth: 32 },
-    { name: 'Vue3组件库使用技巧', category: '前端', views: 2870, likes: 1340, downloads: 720, growth: 28 },
-    { name: '漫威英雄高清壁纸合集', category: '壁纸', views: 2560, likes: 1890, downloads: 1240, growth: 15 },
-    { name: 'SpringBoot最佳实践', category: '后端', views: 2150, likes: 980, downloads: 520, growth: 12 },
-    { name: '日系插画创作指南', category: '插画', views: 1980, likes: 1420, downloads: 680, growth: -5 },
-  ],
-  weekly: [
-    { name: 'TypeScript高级指南', category: '前端', views: 12540, likes: 5680, downloads: 3210, growth: 45 },
-    { name: '现代办公室UI设计', category: '设计', views: 10870, likes: 4920, downloads: 2580, growth: 38 },
-    { name: '自然风光摄影作品集', category: '摄影', views: 9240, likes: 6350, downloads: 4120, growth: 24 },
-    { name: 'React与Vue对比分析', category: '前端', views: 8450, likes: 3760, downloads: 1950, growth: 18 },
-    { name: '动漫角色绘制技巧', category: '插画', views: 7820, likes: 5430, downloads: 2840, growth: -8 },
-  ],
-  monthly: [
-    { name: '全栈开发学习路径', category: '编程', views: 45680, likes: 23450, downloads: 12340, growth: 60 },
-    { name: '现代UI设计趋势2025', category: '设计', views: 38790, likes: 19840, downloads: 9870, growth: 52 },
-    { name: '艺术创作集锦', category: '艺术', views: 32560, likes: 27980, downloads: 18240, growth: 36 },
-    { name: '程序员必备工具推荐', category: '工具', views: 28740, likes: 15680, downloads: 8960, growth: 22 },
-    { name: '城市建筑摄影指南', category: '摄影', views: 26450, likes: 18320, downloads: 10240, growth: -12 },
-  ]
-});
+// 快速筛选标签
+const quickTags = reactive([
+  { id: 1, name: '热门推荐', color: '#6366F1', isHot: true },
+  { id: 2, name: '最新上传', color: '#10B981' },
+  { id: 3, name: '高清壁纸', color: '#3B82F6' },
+  { id: 4, name: '创意插画', color: '#EC4899' },
+  { id: 5, name: 'UI设计', color: '#8B5CF6', isHot: true },
+  { id: 6, name: '摄影作品', color: '#F59E0B' },
+  { id: 7, name: '图标设计', color: '#06B6D4' },
+  { id: 8, name: '素材模板', color: '#10B981' }
+]);
 
-// 当前趋势数据
-const currentTrends = computed(() => {
-  return trends.value[trendPeriod.value];
-});
+// 专辑分类
+const categories = reactive([
+  {
+    id: 1,
+    name: '现代UI设计',
+    description: '探索现代用户界面设计的最新趋势和实践',
+    coverImage: 'https://images.unsplash.com/photo-1523726491678-bf852e717f6a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    imageCount: 1240,
+    views: 45600,
+    tags: ['UI设计', '用户体验', '界面']
+  },
+  {
+    id: 2,
+    name: '自然风光',
+    description: '大自然的壮丽景色，从山川到海洋，从日出到星空',
+    coverImage: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    imageCount: 3450,
+    views: 128900,
+    tags: ['风景', '自然', '摄影', '壁纸']
+  },
+  {
+    id: 3,
+    name: '创意插画',
+    description: '富有想象力的插画作品，展现艺术家的独特视角',
+    coverImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    imageCount: 2180,
+    views: 75400,
+    tags: ['插画', '创意', '艺术']
+  },
+  {
+    id: 4,
+    name: '城市建筑',
+    description: '现代与古典建筑的完美交融，城市风光摄影集',
+    coverImage: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    imageCount: 1840,
+    views: 63200,
+    tags: ['城市', '建筑', '摄影']
+  },
+  {
+    id: 5,
+    name: '图标设计',
+    description: '精美图标集合，从线性到立体，从简约到复杂',
+    coverImage: 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    imageCount: 5680,
+    views: 95800,
+    tags: ['图标', 'UI设计', '素材']
+  },
+  {
+    id: 6,
+    name: '科技未来',
+    description: '探索科技与未来的视觉呈现，充满想象力的未来主义作品',
+    coverImage: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    imageCount: 1260,
+    views: 48200,
+    tags: ['科技', '未来', '创意']
+  }
+]);
 
-// 标签颜色映射
-const getTagColor = (category: string) => {
-  const colorMap: Record<string, string> = {
-    '设计': '#f50',
-    '前端': '#2db7f5',
-    '后端': '#87d068',
-    '壁纸': '#722ed1',
-    '插画': '#eb2f96',
-    '编程': '#52c41a',
-    '艺术': '#faad14',
-    '工具': '#1890ff',
-    '摄影': '#fa8c16'
+// 创建view, list混合视图选择器
+const selectedView = ref('grid');
+
+// 趋势内容相关
+const trendingPeriod = ref('week');
+const trendingPeriodText = computed(() => {
+  const periodMap = {
+    day: '今日热门',
+    week: '本周热门',
+    month: '本月热门'
   };
-  return colorMap[category] || '#6366f1';
+  return periodMap[trendingPeriod.value];
+});
+
+const handleTrendingPeriodChange = (e) => {
+  trendingPeriod.value = e.key;
+  // 这里可以添加加载对应周期热门内容的逻辑
 };
 
-// 精选推荐数据
-const featuredItems = ref([
+// 趋势内容数据
+const trendingItems = reactive([
   {
-    title: '现代简约UI框架设计',
-    category: '设计',
-    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    id: 1,
+    title: '自然光影下的建筑摄影',
+    src: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 12450,
+    likes: 4325,
     author: {
-      name: 'UI设计师小李',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    likes: 1240,
-    views: 3560
+      name: '摄影师Leo',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
   },
   {
-    title: 'Vue3高性能组件开发',
-    category: '前端',
-    image: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    id: 2,
+    title: '极简主义界面设计',
+    src: 'https://images.unsplash.com/photo-1523726491678-bf852e717f6a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 8760,
+    likes: 3120,
     author: {
-      name: '前端工程师阿杰',
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    likes: 980,
-    views: 2850
+      name: 'UI设计师小王',
+      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
   },
   {
-    title: '自然风光摄影集',
-    category: '摄影',
-    image: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    id: 3,
+    title: '城市夜景灯光',
+    src: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 7480,
+    likes: 2980,
     author: {
-      name: '摄影师小王',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    likes: 1560,
-    views: 4230
+      name: '城市摄影师',
+      avatar: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
   },
   {
-    title: '二次元动漫壁纸精选',
-    category: '壁纸',
-    image: 'https://images.unsplash.com/photo-1580477667995-2b94f01c9516?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    id: 4,
+    title: '创意字体设计',
+    src: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 6520,
+    likes: 2350,
     author: {
-      name: '动漫爱好者',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    likes: 2340,
-    views: 5670
+      name: '设计师小李',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
+  },
+  {
+    id: 5,
+    title: '自然风光壁纸',
+    src: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 5980,
+    likes: 2120,
+    author: {
+      name: '风景摄影师',
+      avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
+  },
+  {
+    id: 6,
+    title: '抽象几何图形',
+    src: 'https://images.unsplash.com/photo-1550859492-d5da9d7578e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 5240,
+    likes: 1830,
+    author: {
+      name: '艺术家小张',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
+  },
+  {
+    id: 7,
+    title: '科技感UI界面',
+    src: 'https://images.unsplash.com/photo-1535223289827-42f1e9919769?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 4870,
+    likes: 1720,
+    author: {
+      name: 'UI设计师小明',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
+  },
+  {
+    id: 8,
+    title: '创意插画作品',
+    src: 'https://images.unsplash.com/photo-1563089145-599997674d42?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    views: 4320,
+    likes: 1540,
+    author: {
+      name: '插画师小红',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    }
   }
 ]);
 
-// 流行创作者数据
-const popularCreators = ref([
+// 优秀创作者数据
+const creators = reactive([
   {
-    name: '设计师大咖',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    bio: '专注UI/UX设计，8年行业经验，前阿里巴巴设计师',
-    followers: '12.5k',
-    works: 86,
-    likes: '35.2k',
-    tags: ['UI设计', 'Web设计', '移动端']
+    id: 1,
+    name: '摄影师李伟',
+    role: '风光摄影师',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 248,
+    followers: 12450,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '山间日出' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '海岸线' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '峡谷风光' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '雪山' }
+    ]
   },
   {
-    name: '前端工程师小陈',
-    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1608306448197-e83633f1261c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    bio: 'Vue.js核心贡献者，大型前端应用架构专家',
-    followers: '8.7k',
-    works: 62,
-    likes: '24.8k',
-    tags: ['Vue', 'TypeScript', '前端架构']
+    id: 2,
+    name: 'UI设计师王晓',
+    role: '资深界面设计师',
+    avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 186,
+    followers: 8760,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1523726491678-bf852e717f6a?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '应用界面' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '图标集' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1535223289827-42f1e9919769?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '数据界面' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1550439062-609e1531270e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '移动设计' }
+    ]
   },
   {
-    name: '插画师奈奈',
-    avatar: 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    bio: '日系插画师，曾为多家游戏公司绘制角色原画',
-    followers: '15.3k',
-    works: 124,
-    likes: '45.6k',
-    tags: ['插画', '角色设计', '动漫风格']
+    id: 3,
+    name: '插画师小红',
+    role: '创意插画师',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 324,
+    followers: 15320,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1563089145-599997674d42?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '城市插画' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '抽象创意' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '水彩作品' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1550859492-d5da9d7578e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '几何艺术' }
+    ]
+  },
+  {
+    id: 4,
+    name: '建筑摄影师张强',
+    role: '建筑摄影专家',
+    avatar: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 178,
+    followers: 9430,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '现代建筑' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '城市天际线' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1496564203457-11bb12075d90?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '地标建筑' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '古典建筑' }
+    ]
+  },
+  {
+    id: 5,
+    name: '摄影师李伟',
+    role: '风光摄影师',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 248,
+    followers: 12450,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '山间日出' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '海岸线' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '峡谷风光' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '雪山' }
+    ]
+  },
+  {
+    id: 6,
+    name: 'UI设计师王晓',
+    role: '资深界面设计师',
+    avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 186,
+    followers: 8760,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1523726491678-bf852e717f6a?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '应用界面' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '图标集' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1535223289827-42f1e9919769?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '数据界面' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1550439062-609e1531270e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '移动设计' }
+    ]
+  },
+  {
+    id: 7,
+    name: '插画师小红',
+    role: '创意插画师',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 324,
+    followers: 15320,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1563089145-599997674d42?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '城市插画' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '抽象创意' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '水彩作品' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1550859492-d5da9d7578e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '几何艺术' }
+    ]
+  },
+  {
+    id: 8,
+    name: '建筑摄影师张强',
+    role: '建筑摄影专家',
+    avatar: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
+    imageCount: 178,
+    followers: 9430,
+    featured: [
+      { id: 1, src: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '现代建筑' },
+      { id: 2, src: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '城市天际线' },
+      { id: 3, src: 'https://images.unsplash.com/photo-1496564203457-11bb12075d90?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '地标建筑' },
+      { id: 4, src: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80', title: '古典建筑' }
+    ]
   }
 ]);
 
-// 每日灵感数据
-const inspirationItems = ref([
+// 将创作者分页处理
+const creatorPages = computed(() => {
+  const chunks = [];
+  const chunkSize = window.innerWidth > 1200 ? 4 : window.innerWidth > 768 ? 2 : 1;
+
+  for (let i = 0; i < creators.length; i += chunkSize) {
+    chunks.push({
+      id: i,
+      creators: creators.slice(i, i + chunkSize)
+    });
+  }
+
+  return chunks;
+});
+
+// 活动挑战数据
+const activeAllenges = reactive([
   {
-    title: '极简主义办公空间',
-    category: '室内设计',
-    image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    id: 1,
+    title: '2024城市摄影大赛',
+    description: '用你的镜头捕捉城市的独特魅力，展示都市生活的精彩瞬间',
+    coverImage: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    endDate: '2024-06-15',
+    participants: 1458,
+    isActive: true,
+    isEnding: false
   },
   {
-    title: '创意海报设计',
-    category: '平面设计',
-    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    id: 2,
+    title: '创意UI设计挑战',
+    description: '设计一个具有未来感的音乐应用界面，体现科技与艺术的完美结合',
+    coverImage: 'https://images.unsplash.com/photo-1550439062-609e1531270e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    endDate: '2024-05-25',
+    participants: 862,
+    isActive: true,
+    isEnding: true
   },
   {
-    title: '自然风光摄影',
-    category: '摄影',
-    image: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    id: 3,
+    title: '自然风光壁纸征集',
+    description: '分享你拍摄的最美自然风光，入选作品将被收录到官方壁纸库',
+    coverImage: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    endDate: '2024-06-30',
+    participants: 2145,
+    isActive: true,
+    isEnding: false
   },
   {
-    title: '手绘角色插画',
-    category: '插画',
-    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    id: 4,
+    title: '自然风光壁纸征集',
+    description: '分享你拍摄的最美自然风光，入选作品将被收录到官方壁纸库',
+    coverImage: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    endDate: '2024-06-30',
+    participants: 2145,
+    isActive: true,
+    isEnding: false
   },
   {
-    title: '现代Web界面',
-    category: 'UI设计',
-    image: 'https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    id: 2,
+    title: '创意UI设计挑战',
+    description: '设计一个具有未来感的音乐应用界面，体现科技与艺术的完美结合',
+    coverImage: 'https://images.unsplash.com/photo-1550439062-609e1531270e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    endDate: '2024-05-25',
+    participants: 862,
+    isActive: true,
+    isEnding: true
   },
   {
-    title: '抽象艺术作品',
-    category: '艺术',
-    image: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+    id: 3,
+    title: '自然风光壁纸征集',
+    description: '分享你拍摄的最美自然风光，入选作品将被收录到官方壁纸库',
+    coverImage: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    endDate: '2024-06-30',
+    participants: 2145,
+    isActive: true,
+    isEnding: false
+  },
+  {
+    id: 4,
+    title: '自然风光壁纸征集',
+    description: '分享你拍摄的最美自然风光，入选作品将被收录到官方壁纸库',
+    coverImage: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    endDate: '2024-06-30',
+    participants: 2145,
+    isActive: true,
+    isEnding: false
   }
 ]);
 
-// 获取灵感项目的尺寸类名
-const getInspirationSize = (index: number) => {
-  // 第一个大尺寸，其他小尺寸
-  if (index === 0) return 'inspiration-large';
-  // 最后一个竖向尺寸
-  if (index === inspirationItems.value.length - 1) return 'inspiration-vertical';
-  // 其余为标准尺寸
-  return '';
+// 精选话题与灵感板
+const selectedCollectionType = ref('popular');
+const collections = reactive([
+  {
+    id: 1,
+    title: '极简主义设计',
+    description: '探索少即是多的设计理念，收集极简风格的优秀案例',
+    preview: [
+      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1517420704952-d9f39e95b43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 24,
+    author: {
+      name: '设计师小李',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'popular'
+  },
+  {
+    id: 2,
+    title: '创意插画集',
+    description: '精选各种风格的创意插画作品，为你的设计提供灵感',
+    preview: [
+      'https://images.unsplash.com/photo-1563089145-599997674d42?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1550859492-d5da9d7578e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 36,
+    author: {
+      name: '插画师小红',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'popular'
+  },
+  {
+    id: 1,
+    title: '极简主义设计',
+    description: '探索少即是多的设计理念，收集极简风格的优秀案例',
+    preview: [
+      'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1517420704952-d9f39e95b43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 24,
+    author: {
+      name: '设计师小李',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'popular'
+  },
+  {
+    id: 2,
+    title: '创意插画集',
+    description: '精选各种风格的创意插画作品，为你的设计提供灵感',
+    preview: [
+      'https://images.unsplash.com/photo-1563089145-599997674d42?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1536924940846-227afb31e2a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1550859492-d5da9d7578e4?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 36,
+    author: {
+      name: '插画师小红',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'popular'
+  },
+  {
+    id: 3,
+    title: '城市建筑摄影',
+    description: '记录世界各地的标志性建筑与城市风光',
+    preview: [
+      'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1496564203457-11bb12075d90?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1486325212027-8081e485255e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 42,
+    author: {
+      name: '建筑摄影师张强',
+      avatar: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'new'
+  },
+  {
+    id: 4,
+    title: '自然风光壁纸',
+    description: '高清自然风光摄影作品，完美适配各种设备壁纸',
+    preview: [
+      'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 56,
+    author: {
+      name: '风光摄影师李伟',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'popular'
+  },
+  {
+    id: 5,
+    title: '现代UI元素',
+    description: '收集当代UI设计中的常用元素与组件设计灵感',
+    preview: [
+      'https://images.unsplash.com/photo-1523726491678-bf852e717f6a?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1535223289827-42f1e9919769?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1550439062-609e1531270e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 32,
+    author: {
+      name: 'UI设计师王晓',
+      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'following'
+  },
+  {
+    id: 6,
+    title: '科技产品摄影',
+    description: '精美科技产品摄影与场景展示，适合电商与宣传素材',
+    preview: [
+      'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1629131726692-1accd0c53ce0?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80',
+      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
+    ],
+    totalItems: 28,
+    author: {
+      name: '产品摄影师小陈',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80'
+    },
+    type: 'new'
+  }
+]);
+
+// 根据选择筛选集合
+const visibleCollections = computed(() => {
+  return collections.filter(collection => collection.type === selectedCollectionType.value);
+});
+
+// 为标签生成不同的颜色
+const getTagColor = (tagName, useLighterColors = false) => {
+  // 标签颜色映射 - 浅色系列
+  const lighterColors = [
+    '#e6f7ff', '#f6ffed', '#fffbe6', '#fff7e6',
+    '#fff0f6', '#f9f0ff', '#f0f5ff', '#e6fffb'
+  ];
+
+  // 标签文字颜色映射 - 对应的深色
+  const textColors = [
+    '#1677ff', '#52c41a', '#faad14', '#fa8c16',
+    '#eb2f96', '#722ed1', '#2f54eb', '#13c2c2'
+  ];
+
+  // 使用标签名计算一个哈希值
+  const hashCode = tagName.split('').reduce((acc, char) => {
+    return acc + char.charCodeAt(0);
+  }, 0);
+
+  const index = hashCode % textColors.length;
+
+  // 如果需要浅色，返回背景色和文字色的组合
+  if (useLighterColors) {
+    return {
+      backgroundColor: lighterColors[index],
+      color: textColors[index]
+    };
+  }
+
+  // 否则返回普通的深色
+  return textColors[index];
 };
 
-// 刷新灵感内容
-const refreshInspiration = () => {
-  message.loading({ content: '正在刷新内容...', duration: 1 });
+// 添加查看全部的方法
+const viewAllCategories = () => {
+  // 这里可以添加跳转逻辑，例如：
+  // router.push('/categories');
+  // 或者显示更多分类的逻辑
+  console.log('查看全部专辑');
+  // 如果使用消息提示
+  message.info('正在跳转到全部专辑页面...');
+};
 
-  // 模拟API调用，真实场景应该调用后端接口
+// 格式化数字
+const formatNumber = (num) => {
+  if (!num && num !== 0) return 0;
+  return num > 1000 ? `${(num / 1000).toFixed(1)}k` : num;
+};
+
+// 应用快速筛选
+const applyQuickFilter = (tagId) => {
+  console.log('应用快速筛选:', tagId);
+  // 实际应用中，这里会根据选中的标签获取对应内容
+  message.success(`已筛选: ${quickTags.find(tag => tag.id === tagId).name}`);
+};
+
+// 智能推荐区域 - 使用来自My Space的图片数据作为示例
+const recommendedImages = reactive([]);
+
+// 刷新推荐
+const refreshRecommendations = () => {
+  message.loading('正在为您寻找新的推荐...');
+
+  // 模拟刷新推荐的过程
   setTimeout(() => {
-    // 这里只是简单地打乱当前数组顺序
-    inspirationItems.value = [...inspirationItems.value].sort(() => Math.random() - 0.5);
-    message.success('已刷新内容');
+    message.success('推荐已更新');
+    // 这里可以添加实际刷新逻辑
   }, 1000);
 };
 
-// 热门话题数据
-const hotTopics = ref([
-  {
-    title: '2025年UI设计趋势预测',
-    description: '探讨即将到来的2025年，UI设计领域的新趋势和创新方向，从色彩、排版到交互设计的全面解析。',
-    category: '设计讨论',
-    time: '3小时前',
-    comments: 45,
-    likes: 128,
-    views: 1240,
-    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80'
-  },
-  {
-    title: 'Vue 3.8新特性深度剖析',
-    description: '深入解析Vue 3.8版本带来的性能优化、Composition API增强以及工具链更新，助你快速掌握框架新动向。',
-    category: '技术分享',
-    time: '昨天',
-    comments: 67,
-    likes: 215,
-    views: 2360,
-    image: 'https://images.unsplash.com/photo-1555099962-4199c345e5dd?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80'
-  },
-  {
-    title: '如何提高作品曝光率和关注度',
-    description: '分享创作者如何在平台上提高作品可见性、获取更多关注的实用技巧和策略，助你的创意被更多人发现。',
-    category: '创作攻略',
-    time: '2天前',
-    comments: 32,
-    likes: 95,
-    views: 1580,
-    image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80'
+// 处理图片浏览 - 复用My Space中的函数
+const viewImage = (image) => {
+  // 更新浏览计数
+  if (typeof image.views === 'number') {
+    image.views += 1;
+  } else {
+    image.views = 1;
   }
-]);
+  message.info(`正在查看"${image.title}"`);
+};
 
 // 初始化
 onMounted(() => {
-  console.log('探索发现页面已加载');
+  // 导入推荐图片数据
+  // 在实际应用中，这里会从API获取个性化推荐
+  recommendedImages.push(...[
+    {
+      src: 'https://images.unsplash.com/photo-1481487196290-c152efe083f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+      title: '设计风格指南',
+      author: {
+        name: '程序员Leo',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
+      },
+      tags: [
+        { name: '海报', color: 'purple' },
+        { name: 'Mac壁纸', color: '' },
+      ],
+      liked: false,
+      views: 1250,
+      createTime: '2023-09-15T08:30:00.000Z',
+      aspectRatio: '16/9',
+    },
+    {
+      id: '1',
+      src: 'https://cdn.pixabay.com/photo/2016/11/23/14/37/coding-1853305_1280.jpg',
+      title: 'macbook-workspace',
+      author: {
+        name: '程序员Leo',
+        avatar: 'https://cdn.pixabay.com/photo/2016/11/18/23/38/child-1837375_1280.png',
+      },
+      category: '海报',
+      tags: [
+        {name: 'Mac壁纸', color: ''},
+        {name: '高清', color: ''},
+      ],
+      liked: false,
+      bookmarked: false,
+      createTime: '2023-09-15T08:30:00.000Z',
+      views: 1250,
+      likes: 520,
+      comments: 45,
+      aspectRatio: '1/1',
+    },
+    {
+      id: '2',
+      src: 'https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_1280.jpg',
+      title: '山脉风光摄影',
+      author: {
+        name: '摄影师小王',
+        avatar: 'https://cdn.pixabay.com/photo/2015/03/04/22/35/avatar-659651_1280.png',
+      },
+      category: '风景',
+      tags: [
+        {name: '高清', color: ''},
+        {name: '自然', color: ''},
+      ],
+      liked: false,
+      bookmarked: false,
+      createTime: '2023-10-10T14:20:00.000Z',
+      views: 3840,
+      likes: 1520,
+      comments: 120,
+      aspectRatio: '16/9',
+    },
+    {
+      id: '3',
+      src: 'https://cdn.pixabay.com/photo/2016/11/29/04/19/ocean-1867285_1280.jpg',
+      title: '城市夜景',
+      author: {
+        name: '城市摄影师',
+        avatar: 'https://cdn.pixabay.com/photo/2014/04/03/10/32/user-310807_1280.png',
+      },
+      category: '城市',
+      tags: [
+        {name: '夜景', color: ''},
+        {name: '建筑', color: ''},
+      ],
+      liked: true,
+      bookmarked: true,
+      createTime: '2023-11-15T20:30:00.000Z',
+      views: 4260,
+      likes: 2180,
+      comments: 235,
+      aspectRatio: '21/9',
+    }
+  ]);
+
+  // 初始化动画效果
+  // 这里可以添加额外的初始化逻辑
 });
 </script>
 
 <style scoped>
-.explore-page {
-  padding: 0 16px 40px;
+/* 探索发现页面基础样式 */
+.discovery-page {
+  padding: 1.5rem;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* 横幅区域样式 */
-.banner-container {
-  height: 200px;
-  margin-bottom: 32px;
-  border-radius: 16px;
+/* 顶部英雄区域 */
+.discovery-hero {
+  margin-bottom: 2.5rem;
+}
+
+.discovery-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #6B7280;
+}
+
+/* 轮播区域 */
+.featured-carousel {
+  border-radius: 12px;
   overflow: hidden;
+  height: 400px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.carousel-item {
+  height: 400px;
+}
+
+.carousel-content {
+  height: 100%;
+  background-size: cover;
+  background-position: center;
   position: relative;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.carousel-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.carousel-overlay h2 {
+  font-size: 2rem;
+  margin: 0;
+  color: white;
+}
+
+.carousel-overlay p {
+  font-size: 1rem;
+  max-width: 60%;
+  margin: 0;
+}
+
+/* 快速筛选标签 */
+.quick-filter-tags {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.banner-content {
-  text-align: center;
-  color: white;
-  z-index: 2;
+.filter-label {
+  font-weight: 500;
+  color: #4B5563;
+  white-space: nowrap;
 }
 
-.banner-title {
-  font-size: 36px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.tags-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.banner-desc {
-  font-size: 18px;
-  opacity: 0.9;
+.filter-tag {
+  cursor: pointer;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-/* 探索内容区布局 */
-.explore-content {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
+.hot-icon {
+  color: #F43F5E;
+  font-size: 0.75rem;
 }
 
-/* 区域标题通用样式 */
+/* 通用部分标题样式 */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 1.5rem;
 }
 
-.section-header.with-more {
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 12px;
-}
-
-.section-title {
-  font-size: 18px;
+.section-header h2 {
+  font-size: 1.5rem;
   font-weight: 600;
+  color: #111827;
   margin: 0;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
-.section-title .anticon {
-  margin-right: 8px;
-  color: #6366f1;
-}
-
-.view-more-btn {
-  font-size: 14px;
-  color: #6366f1;
-  padding: 0;
-  display: flex;
-  align-items: center;
-}
-
-.view-more-btn .anticon {
-  margin-left: 4px;
-  font-size: 12px;
-}
-
-.refresh-btn {
-  font-size: 14px;
-  color: #6366f1;
-  padding: 0;
-  display: flex;
-  align-items: center;
-}
-
-.refresh-btn .anticon {
-  margin-right: 4px;
-  font-size: 14px;
-}
-
-/* 趋势卡片样式 */
-.trends-card {
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  height: 100%;
-}
-
-.trends-container {
-  margin-top: 16px;
-}
-
-.trend-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  transition: all 0.3s;
-  background-color: #f9f9f9;
-}
-
-.trend-item:hover {
-  background-color: #f0f0f0;
-  transform: translateY(-2px);
-}
-
-.trend-rank {
-  font-size: 18px;
-  font-weight: 700;
-  color: #6366f1;
-  width: 30px;
-  text-align: center;
-}
-
-.trend-content {
-  flex: 1;
-  margin: 0 12px;
-}
-
-.trend-name {
-  font-weight: 500;
-  margin-top: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.trend-stats {
-  display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
-}
-
-.trend-stats span {
-  display: flex;
-  align-items: center;
-}
-
-.trend-stats .anticon {
-  margin-right: 4px;
-  font-size: 12px;
-}
-
-.trend-growth {
-  font-weight: 600;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-}
-
-.trend-growth.positive {
-  color: #52c41a;
-}
-
-.trend-growth.negative {
-  color: #f5222d;
-}
-
-.trend-growth .anticon {
-  margin-right: 2px;
-}
-
-/* 精选推荐区域样式 */
-.featured-list {
+/* 分类卡片样式 */
+.categories-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
 }
 
-.featured-item {
+.category-card {
+  background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s;
-  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.featured-item:hover {
+.category-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
 }
 
-.featured-img-container {
+.category-image {
+  height: 180px;
+  background-size: cover;
+  background-position: center;
   position: relative;
-  height: 160px;
-  overflow: hidden;
 }
 
-.featured-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s;
-}
-
-.featured-item:hover .featured-img {
-  transform: scale(1.05);
-}
-
-.featured-overlay {
+.category-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 12px;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4));
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease;
 }
 
-.featured-item:hover .featured-overlay {
+.category-card:hover .category-overlay {
   opacity: 1;
 }
 
-.featured-category {
-  background: rgba(99, 102, 241, 0.9);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+.category-stats {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
 }
 
-.view-btn {
-  background-color: white;
-  border: none;
-  width: 36px;
-  height: 36px;
+.category-stats .stat {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 20px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.category-info {
+  padding: 1rem;
+}
+
+.category-info h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.category-info p {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* 趋势内容区域样式 */
+.trending-section {
+  margin-bottom: 3rem;
+}
+
+.trending-icon {
+  color: #F43F5E;
+}
+
+.trending-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.trending-item {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.trending-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+}
+
+.trending-rank {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.view-btn:hover {
-  background-color: #6366f1;
-}
-
-.view-btn:hover .anticon {
-  color: white;
-}
-
-.featured-info {
-  padding: 16px;
-}
-
-.featured-title {
-  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 12px 0;
-  color: #333;
+  font-size: 0.875rem;
+  z-index: 2;
+}
+
+.trending-image {
+  height: 160px;
+  position: relative;
+  overflow: hidden;
+}
+
+.trending-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.trending-item:hover .trending-image img {
+  transform: scale(1.05);
+}
+
+.trending-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.5));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.trending-item:hover .trending-overlay {
+  opacity: 1;
+}
+
+.trending-stats {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trending-stats .stat {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 20px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.trending-info {
+  padding: 0.75rem;
+}
+
+.trending-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.featured-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.featured-author {
+.trending-author {
   display: flex;
   align-items: center;
-  font-size: 14px;
-  color: #666;
-}
-
-.featured-author span {
-  margin-left: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100px;
-}
-
-.featured-stats {
-  display: flex;
-  gap: 8px;
-  font-size: 12px;
-  color: #999;
-}
-
-.featured-stats span {
-  display: flex;
-  align-items: center;
-}
-
-.featured-stats .anticon {
-  margin-right: 3px;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #6B7280;
 }
 
 /* 创作者区域样式 */
-.creators-list {
+.creators-section {
+  margin-bottom: 3rem;
+}
+
+.creator-icon {
+  color: #FAAD14;
+}
+
+.creators-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding: 0.5rem;
 }
 
 .creator-card {
+  background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background: white;
-  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem;
+  transition: all 0.3s ease;
 }
 
 .creator-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
 }
 
 .creator-header {
-  position: relative;
-  height: 90px;
-}
-
-.creator-cover {
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-}
-
-.creator-avatar {
-  position: absolute;
-  bottom: -32px;
-  left: 24px;
-  border: 4px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .creator-info {
-  padding: 40px 20px 24px;
+  flex: 1;
 }
 
-.creator-name {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
+.creator-info h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+  color: #111827;
 }
 
-.creator-bio {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 16px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.creator-info p {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin: 0 0 0.5rem 0;
 }
 
 .creator-stats {
   display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  margin-bottom: 16px;
-  border-top: 1px solid #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 0.75rem;
 }
 
-.stat-item {
-  text-align: center;
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #999;
-  margin-top: 2px;
-}
-
-.creator-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.creator-tags :deep(.ant-tag) {
-  margin: 0;
-  font-size: 12px;
-}
-
-.follow-btn {
+.creator-stats .stat {
+  font-size: 0.75rem;
+  color: #6B7280;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 36px;
-  font-weight: 500;
-  border-color: #6366f1;
-  color: #6366f1;
+  gap: 0.25rem;
 }
 
-.follow-btn:hover {
-  background-color: #6366f1;
+.creator-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.gallery-preview {
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.gallery-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.creator-card:hover .gallery-preview img {
+  transform: scale(1.05);
+}
+
+/* 挑战区域样式 */
+.challenges-section {
+  margin-bottom: 3rem;
+}
+
+.challenge-icon {
+  color: #52C41A;
+}
+
+.challenges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.challenge-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.challenge-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+}
+
+.challenge-image {
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.challenge-status {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-active {
+  background-color: #52C41A;
   color: white;
 }
 
-.follow-btn .anticon {
-  font-size: 14px;
-  margin-right: 4px;
+.status-ending {
+  background-color: #FAAD14;
+  color: white;
 }
 
-/* 每日灵感区域样式 */
-.inspiration-grid {
+.challenge-content {
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.challenge-content h3 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0 0 0.75rem 0;
+  color: #111827;
+}
+
+.challenge-content p {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.challenge-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.meta-item {
+  font-size: 0.875rem;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.challenge-footer {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* 灵感板样式 */
+.collections-section {
+  margin-bottom: 3rem;
+}
+
+.collections-icon {
+  color: #6366F1;
+}
+
+.collections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.collection-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.collection-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+}
+
+.collection-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.preview-large {
+  height: 150px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.preview-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.collection-card:hover .preview-large img {
+  transform: scale(1.05);
+}
+
+.preview-small {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto auto;
-  gap: 20px;
+  gap: 0.25rem;
+  height: 70px;
 }
 
-@media (max-width: 992px) {
-  .inspiration-grid {
-    grid-template-columns: 1fr 1fr;
+.preview-item {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.collection-card:hover .preview-item img {
+  transform: scale(1.05);
+}
+
+.preview-more {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.collection-info {
+  padding: 1rem;
+}
+
+.collection-info h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.collection-info p {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.collection-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.collection-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .categories-grid,
+  .collections-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 
-  .inspiration-large {
-    grid-column: span 2;
+  .trending-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 
-  .inspiration-vertical {
-    grid-row: span 1;
+  .challenges-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   }
 }
 
-@media (max-width: 576px) {
-  .inspiration-grid {
+@media (max-width: 768px) {
+  .categories-grid,
+  .collections-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .trending-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  .challenges-grid {
     grid-template-columns: 1fr;
   }
 
-  .inspiration-large,
-  .inspiration-vertical {
-    grid-column: span 1;
-    grid-row: span 1;
+  .featured-carousel,
+  .carousel-item {
+    height: 300px;
   }
-}
 
-.inspiration-item {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  height: 220px;
-}
+  .carousel-overlay h2 {
+    font-size: 1.5rem;
+  }
 
-.inspiration-large {
-  grid-column: span 2;
-  grid-row: span 1;
-}
-
-.inspiration-vertical {
-  grid-column: span 1;
-  grid-row: span 2;
-  height: 100%;
-}
-
-.inspiration-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s;
-}
-
-.inspiration-item:hover .inspiration-img {
-  transform: scale(1.05);
-}
-
-.inspiration-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0) 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 20px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.inspiration-item:hover .inspiration-overlay {
-  opacity: 1;
-}
-
-.inspiration-info {
-  color: white;
-}
-
-.inspiration-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.inspiration-category {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 12px;
-}
-
-.inspiration-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.action-btn {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(2px);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: white;
-  transition: all 0.3s;
-}
-
-.action-btn:hover {
-  background: rgba(255, 255, 255, 0.4);
-  transform: scale(1.1);
-}
-
-.action-btn .anticon {
-  font-size: 16px;
-  color: white;
-}
-
-/* 热门话题区域样式 */
-.topics-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 24px;
-}
-
-.topic-card {
-  display: flex;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background: white;
-  transition: all 0.3s;
-}
-
-.topic-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.topic-content {
-  flex: 1;
-  padding: 20px;
-}
-
-.topic-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.topic-time {
-  font-size: 12px;
-  color: #999;
-}
-
-.topic-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 10px 0;
-  color: #333;
-}
-
-.topic-desc {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-.topic-stats {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: #999;
-}
-
-.topic-stat {
-  display: flex;
-  align-items: center;
-}
-
-.topic-stat .anticon {
-  margin-right: 4px;
-  font-size: 14px;
-}
-
-.topic-image {
-  width: 120px;
-  overflow: hidden;
-}
-
-.topic-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s;
-}
-
-.topic-card:hover .topic-image img {
-  transform: scale(1.05);
+  .carousel-overlay p {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 576px) {
-  .topic-card {
-    flex-direction: column;
+  .categories-grid,
+  .collections-grid,
+  .trending-grid {
+    grid-template-columns: 1fr;
   }
 
-  .topic-image {
-    width: 100%;
-    height: 160px;
-    order: -1;
-  }
-}
-
-/* 动画效果 */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5); }
-  70% { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-}
-
-/* 波纹按钮效果 - 同主页效果保持一致 */
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.7);
-  transform: scale(0);
-  animation: ripple-effect 0.6s linear;
-  pointer-events: none;
-}
-
-@keyframes ripple-effect {
-  to {
-    transform: scale(2.5);
-    opacity: 0;
+  .featured-carousel,
+  .carousel-item {
+    height: 250px;
   }
 }
 
-@media (min-width: 992px) {
-  .explore-content {
-    grid-template-columns: 300px 1fr;
-    gap: 32px;
+/* 暗黑模式适配 */
+@media (prefers-color-scheme: dark) {
+  .discovery-page {
+    background-color: #1f1f1f;
+    color: #e0e0e0;
   }
 
-  .trends-card {
-    grid-column: 1;
-    grid-row: 1 / span 2;
+  .page-title,
+  .section-header h2 {
+    color: #f0f0f0;
   }
 
-  .featured-section {
-    grid-column: 2;
-    grid-row: 1;
+  .subtitle {
+    color: #a0a0a0;
   }
 
-  .creators-section {
-    grid-column: 1;
-    grid-row: 3;
+  .quick-filter-tags,
+  .category-card,
+  .trending-item,
+  .creator-card,
+  .challenge-card,
+  .collection-card {
+    background-color: #2a2a2a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
-  .daily-inspiration {
-    grid-column: 2;
-    grid-row: 2;
+  .filter-label {
+    color: #c0c0c0;
   }
 
-  .topics-section {
-    grid-column: 1 / span 2;
-    grid-row: 4;
+  .category-info h3,
+  .trending-title,
+  .creator-info h4,
+  .challenge-content h3,
+  .collection-info h3 {
+    color: #f0f0f0;
+  }
+
+  .category-info p,
+  .creator-info p,
+  .challenge-content p,
+  .collection-info p,
+  .trending-author,
+  .creator-stats .stat,
+  .collection-author,
+  .meta-item {
+    color: #a0a0a0;
   }
 }
 
-@media (min-width: 1400px) {
-  .explore-content {
-    grid-template-columns: 320px 1fr 320px;
-  }
+/* 修改轮播图按钮样式 */
+.carousel-overlay .action-btn {
+  width: 120px; /* 设置固定宽度 */
+  margin-top: 1rem;
+  align-self: flex-start; /* 按钮左对齐 */
+  background-color: #6366F1;
+  border-color: #6366F1;
+}
 
-  .trends-card {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
+.carousel-overlay .action-btn:hover {
+  background-color: #4F46E5;
+  border-color: #4F46E5;
+}
 
-  .featured-section {
-    grid-column: 2;
-    grid-row: 1;
-  }
+/* 添加或修改以下样式来提高按钮文字可读性 */
+.follow-btn {
+  background-color: #6366F1;  /* 保持主题紫色 */
+  border-color: #6366F1;
+  color: white;              /* 确保文字为白色 */
+  font-weight: 500;          /* 增加字体粗细 */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* 添加文字阴影增强对比度 */
+  padding: 0 12px;           /* 调整内边距使按钮更宽 */
+  height: 28px;              /* 调整高度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .creators-section {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-  }
+.follow-btn:hover {
+  background-color: #4F46E5;
+  border-color: #4F46E5;
+}
 
-  .daily-inspiration {
-    grid-column: 2;
-    grid-row: 2;
-  }
+/* 确保创作者卡片中的其他元素布局合理 */
+.creator-card {
+  /* 保留原有样式 */
+}
 
-  .topics-section {
-    grid-column: 1 / span 3;
-    grid-row: 3;
-  }
+.creator-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.creator-info {
+  flex: 1;
+}
+
+/* 确保在solid模式下，选中的单选按钮具有白色文字 */
+.ant-radio-group-solid .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important; /* 强制文字为白色 */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); /* 添加文字阴影增强可读性 */
+}
+
+/* 强制特异性，确保样式应用 */
+html body .ant-radio-group-solid .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+  color: white !important;
+  background-color: var(--primary-color) !important;
+}
+
+/* 修复选择器中的热门、最新、关注按钮样式 */
+.collections-section .ant-radio-group .ant-radio-button-wrapper-checked {
+  color: white !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* 为按钮添加过渡效果使颜色变化更平滑 */
+.ant-radio-button-wrapper {
+  transition: all 0.3s ease !important;
 }
 </style>
