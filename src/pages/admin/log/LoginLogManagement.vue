@@ -652,6 +652,7 @@ import {
   CalendarOutlined,
   UnorderedListOutlined,
   GlobalOutlined,
+  AppleOutlined,
   TeamOutlined,
   EnvironmentOutlined,
   HistoryOutlined,
