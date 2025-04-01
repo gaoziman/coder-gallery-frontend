@@ -65,7 +65,7 @@
       <!-- 右侧用户信息 -->
       <div class="user-actions">
         <!-- 上传按钮 -->
-        <a-button type="primary" class="upload-button" :disabled="!userStore.isLoggedIn" @click="handleUploadClick">
+        <a-button type="primary"  :disabled="!userStore.isLoggedIn" @click="handleUploadClick">
           <template #icon>
             <upload-outlined/>
           </template>
@@ -113,9 +113,7 @@
         <template v-else>
           <!-- 登录按钮 -->
           <a-button
-              class="login-button"
               type="primary"
-              ghost
               @click="openAuthModal"
           >
             <template #icon>
@@ -192,6 +190,16 @@ const navItems = ref([
       {key: 'settings', path: '/admin/storage', title: '存储管理', icon: CloudOutlined},
     ]
   },
+  {
+    key: 'logs',
+    title: '日志管理',
+    icon: LoginOutlined,
+    active: false,
+    children: [
+      {key: 'login_log', path: '/admin/login_log', title: '登录日志管理', icon: LoginOutlined},
+      {key: 'operation_log', path: '/admin/operation_log', title: '操作日志管理', icon: LoginOutlined},
+    ]
+  },
 ]);
 
 // 过滤菜单项，根据用户角色显示或隐藏管理员菜单
@@ -212,14 +220,14 @@ const filteredNavItems = computed(() => {
 });
 
 // 更新导航项激活状态 - 需要在watch之前定义
-const updateNavItemsActiveState = (activeKeys) => {
+const updateNavItemsActiveState = (activeKeys :any) => {
   navItems.value.forEach(item => {
     item.active = activeKeys.includes(item.key);
   });
 };
 
 
-const isParentActive = (item) => {
+const isParentActive = (item  :any) => {
   // 如果没有子菜单，直接返回 false
   if (!item.children) return false;
 
@@ -236,7 +244,7 @@ watch(() => menuStore.topSelectedKeys, (newKeys) => {
 }, {deep: true, immediate: true});
 
 // 导航项点击处理
-const handleNavItemClick = (item) => {
+const handleNavItemClick = (item  :any) => {
   if (item.path) {
     menuStore.activateTopMenu(item.key);
     router.push(item.path);
@@ -245,7 +253,7 @@ const handleNavItemClick = (item) => {
 
 
 // 子菜单项点击处理
-const handleSubItemClick = (child) => {
+const handleSubItemClick = (child :any) => {
   if (child.path) {
     menuStore.updateMenuByPath(child.path);
     router.push(child.path);
@@ -254,7 +262,7 @@ const handleSubItemClick = (child) => {
 
 // 处理鼠标悬停效果
 const hoveredIndex = ref(null);
-const onHover = (index) => {
+const onHover = (index  :any) => {
   hoveredIndex.value = index;
 };
 const onLeave = () => {
@@ -263,7 +271,7 @@ const onLeave = () => {
 
 // 处理下拉菜单的显示/隐藏
 const activeDropdown = ref(null);
-const onDropdownHover = (index) => {
+const onDropdownHover = (index  :any) => {
   activeDropdown.value = index;
 };
 const onDropdownLeave = () => {
@@ -351,15 +359,18 @@ onMounted(() => {
   position: fixed;
   top: 0;
   right: 0;
-  z-index: 1001; /* 提高z-index，确保高于侧边栏 */
+  z-index: 999; /* 降低z-index，确保低于模态框遮罩层 */
   padding: 0;
   height: 64px;
   line-height: 64px;
   margin: 0;
-  /* 修改这里，根据侧边栏宽度调整左侧位置 */
-  left: 240px; /* 默认侧边栏宽度 */
-  width: calc(100% - 240px); /* 计算宽度，减去侧边栏宽度 */
-  transition: left 0.3s, width 0.3s; /* 添加过渡效果 */
+  left: 240px;
+  width: calc(100% - 240px);
+  transition: left 0.3s, width 0.3s;
+}
+
+body.modal-open .header {
+  z-index: 900; /* 当模态框打开时进一步降低z-index */
 }
 
 /* 添加侧边栏折叠状态的样式 */

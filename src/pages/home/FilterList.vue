@@ -1,7 +1,7 @@
 <!-- components/filter/FilterList.vue -->
 <template>
   <a-dropdown :trigger="['click']" placement="bottomRight">
-    <a-button class="filter-list-btn" :class="{ 'filter-btn-pulse': showPulse }">
+    <a-button :class="{ 'filter-btn-pulse': showPulse }">
       <template #icon><filter-outlined /></template>
       我的筛选器
       <a-badge v-if="filters.length > 0" :count="filters.length" :offset="[5, -5]" />
@@ -90,12 +90,6 @@ const onCreateFilter = () => {
 </script>
 
 <style scoped>
-.filter-list-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 38px;
-}
 
 .filter-menu {
   min-width: 200px;
