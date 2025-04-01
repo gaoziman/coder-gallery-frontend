@@ -145,12 +145,6 @@ const menuGroups = [
         path: '/favorites'
       },
       {
-        key: 'recommendation',
-        icon: BookOutlined,
-        label: '智能推荐',
-        path: '/recommendation'
-      },
-      {
         key: 'history',
         icon: ClockCircleOutlined,
         label: '最近浏览',

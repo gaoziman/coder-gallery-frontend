@@ -32,11 +32,12 @@ export const useMenuStore = defineStore('menu', () => {
         '/admin/tags': { top: ['content-management', 'tags'], side: '' },
         '/admin/comments': { top: ['content-management', 'comments'], side: '' },
         '/admin/storage': { top: ['system-settings', 'storage'], side: '' },
+        '/admin/login_log': { top: ['logs', 'loginlogs'], side: '' },
+        '/admin/operation_log': { top: ['logs', 'operationlogs'], side: '' },
         '/favorites': { top: '', side: 'favorites' },
-        '/recommendation': { top: '', side: 'recommendation' },
         '/history': { top: '', side: 'history' },
         '/team': { top: '', side: 'team' },
-        '/team/create': { top: '', side: 'team' }, // 添加创建团队路径
+        '/team/create': { top: '', side: 'team' },
         '/explore': { top: '', side: 'explore' }
     });
 
@@ -50,7 +51,7 @@ export const useMenuStore = defineStore('menu', () => {
 
         // 如果没有精确匹配，尝试查找前缀匹配
         if (!mapping) {
-            // 查找最长前缀匹配
+            // 查找最长前缀匹配login_log
             const matchedPath = Object.keys(pathKeyMap.value)
                 .filter(p => p !== '/' && path.startsWith(p))
                 .sort((a, b) => b.length - a.length)[0];

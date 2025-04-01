@@ -55,15 +55,6 @@ const routes: Array<RouteRecordRaw> = [
                 },
             },
             {
-                path: '/recommendation',
-                name: 'RecommendationPage',
-                component: () => import('@/pages/other/RecommendationPage.vue'),
-                meta: {
-                    title: '智能推荐 - 智能云图库',
-                    requiresAuth: true
-                },
-            },
-            {
                 path: '/history',
                 name: 'HistoryPage',
                 component: () => import('@/pages/other/HistoryPage.vue'),
@@ -109,7 +100,7 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'dashboard',
                         name: 'AdminDashboard',
-                        component: () => import('@/pages/admin/DashboardPage.vue'),
+                        component: () => import('@/pages/admin/content/DashboardPage.vue'),
                         meta: {
                             title: '管理仪表盘 - 智能云图库',
                             requiresAuth: true,
@@ -119,7 +110,7 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'users',
                         name: 'UsersManagement',
-                        component: () => import('@/pages/admin/UsersManagement.vue'),
+                        component: () => import('@/pages/admin/content/UsersManagement.vue'),
                         meta: {
                             title: '用户管理 - 智能云图库',
                             requiresAuth: true,
@@ -129,7 +120,7 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'images',
                         name: 'PictureManagement',
-                        component: () => import('@/pages/admin/PictureManagement.vue'),
+                        component: () => import('@/pages/admin/content/PictureManagement.vue'),
                         meta: {
                             title: '图片管理 - 智能云图库',
                             requiresAuth: true,
@@ -139,7 +130,7 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'spaces',
                         name: 'SpaceManagement',
-                        component: () => import('@/pages/admin/SpaceManagement.vue'),
+                        component: () => import('@/pages/admin/content/SpaceManagement.vue'),
                         meta: {
                             title: '空间管理 - 智能云图库',
                             requiresAuth: true,
@@ -149,7 +140,7 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'categories',
                         name: 'CategoryManagement',
-                        component: () => import('@/pages/admin/CategoryManagement.vue'),
+                        component: () => import('@/pages/admin/content/CategoryManagement.vue'),
                         meta: {
                             title: '分类管理 - 智能云图库',
                             requiresAuth: true,
@@ -159,7 +150,7 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'tags',
                         name: 'TagsManagement',
-                        component: () => import('@/pages/admin/TagsManagement.vue'),
+                        component: () => import('@/pages/admin/content/TagsManagement.vue'),
                         meta: {
                             title: '标签管理 - 智能云图库',
                             requiresAuth: true,
@@ -169,7 +160,7 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'comments',
                         name: 'CommentsManagement',
-                        component: () => import('@/pages/admin/CommentsManagement.vue'),
+                        component: () => import('@/pages/admin/content/CommentsManagement.vue'),
                         meta: {
                             title: '评论管理 - 智能云图库',
                             requiresAuth: true,
@@ -179,9 +170,29 @@ const routes: Array<RouteRecordRaw> = [
                     {
                         path: 'storage',
                         name: 'StorageManagement',
-                        component: () => import('@/pages/admin/StorageManagement.vue'),
+                        component: () => import('@/pages/admin/storage/StorageManagement.vue'),
                         meta: {
                             title: '存储管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
+                    {
+                        path: 'login_log',
+                        name: 'LoginLogManagement',
+                        component: () => import('@/pages/admin/log/LoginLogManagement.vue'),
+                        meta: {
+                            title: '登录日志管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        },
+                    },
+                    {
+                        path: 'operation_log',
+                        name: 'OperationLogManagement',
+                        component: () => import('@/pages/admin/log/OperationLogManagement.vue'),
+                        meta: {
+                            title: '操作日志管理 - 智能云图库',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
