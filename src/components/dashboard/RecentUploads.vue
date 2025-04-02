@@ -1,82 +1,47 @@
-// components/dashboard/RecentUploads.vue
 <template>
   <a-card
       class="recent-uploads-card"
       :bordered="false"
       title="最近上传图片"
   >
-    <!-- 修复卡片右上角内容 -->
+    <!-- 卡片右上角内容 -->
     <template #extra>
-      <a href="javascript:void(0);" class="extra-link">查看全部</a>
+      <router-link to="/uploads" class="extra-link">查看全部</router-link>
     </template>
 
     <a-spin :spinning="loading">
-      <!-- 图片网格 -->
-      <div class="uploads-grid">
-        <div
-            v-for="item in recentUploads"
-            :key="item.id"
-            class="upload-item"
-        >
-          <div class="image-wrapper">
-            <img :src="item.url" :alt="item.title" class="upload-image" />
-            <div class="image-overlay">
-              <div class="overlay-actions">
-                <a-button
-                    type="primary"
-                    shape="circle"
-                    class="action-button"
-                >
-                  <EyeOutlined />
-                </a-button>
-                <a-button
-                    type="primary"
-                    shape="circle"
-                    class="action-button"
-                >
-                  <DownloadOutlined />
-                </a-button>
-                <a-button
-                    type="primary"
-                    shape="circle"
-                    class="action-button"
-                >
-                  <HeartOutlined />
-                </a-button>
-              </div>
-            </div>
-          </div>
+      <!-- 使用 ImageGallery 组件替换原有的上传网格 -->
+      <div v-if="recentUploads.length > 0" class="uploads-container">
+        <image-gallery
+            :images="formatUploadsToGalleryImages(recentUploads)"
+            empty-text="暂无上传图片"
+            @view="viewImage"
+            @download="downloadImage"
+            @like="toggleLike"
+            @bookmark="addToFavorites"
+            @share="shareImage"
+            @delete="confirmDelete"
+            @navigate-to-detail="navigateToDetail"
+            @refresh="refreshUploads"
+        />
+      </div>
 
-          <div class="upload-info">
-            <div class="upload-title" :title="item.title">{{ item.title }}</div>
-            <div class="upload-meta">
-              <a-avatar :src="item.uploader.avatar" :size="20" />
-              <span class="uploader-name">{{ item.uploader.name }}</span>
-              <span class="upload-time">{{ formatDate(item.uploadTime) }}</span>
-            </div>
-            <div class="upload-stats">
-              <div class="stat-item">
-                <EyeOutlined />
-                <span>{{ item.views }}</span>
-              </div>
-              <div class="stat-item">
-                <HeartOutlined />
-                <span>{{ item.likes }}</span>
-              </div>
-              <div class="stat-item">
-                <DownloadOutlined />
-                <span>{{ item.downloads }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- 空状态 -->
+      <div v-else class="empty-uploads">
+        <a-empty description="暂无上传图片">
+          <template #extra>
+            <a-button type="primary" @click="goToUploadPage">开始上传</a-button>
+          </template>
+        </a-empty>
       </div>
 
       <div class="card-footer">
-        <a-button type="link" class="view-more-btn">
-          查看更多上传
-          <RightOutlined />
-        </a-button>
+        <router-link to="/uploads" class="view-more-btn">
+          <a-button type="link">
+            查看更多上传
+            <right-outlined />
+          </a-button>
+        </router-link>
       </div>
     </a-spin>
   </a-card>
@@ -84,6 +49,8 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { message, Modal } from 'ant-design-vue';
 import {
   EyeOutlined,
   HeartOutlined,
@@ -93,10 +60,13 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
+import ImageGallery from '@/components/common/ImageGallery.vue';
 
 // 配置dayjs
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
+
+const router = useRouter();
 
 // 模拟加载状态
 const loading = ref(false);
@@ -114,7 +84,13 @@ const recentUploads = ref([
     },
     views: 128,
     likes: 43,
-    downloads: 18
+    downloads: 18,
+    category: '风景',
+    tags: [
+      {name: '春天', color: 'green'},
+      {name: '花海', color: 'pink'},
+    ],
+    aspectRatio: '16/9',
   },
   {
     id: 2,
@@ -127,7 +103,13 @@ const recentUploads = ref([
     },
     views: 89,
     likes: 32,
-    downloads: 14
+    downloads: 14,
+    category: '设计',
+    tags: [
+      {name: 'UI设计', color: 'blue'},
+      {name: '创意', color: 'purple'},
+    ],
+    aspectRatio: '4/3',
   },
   {
     id: 3,
@@ -140,7 +122,13 @@ const recentUploads = ref([
     },
     views: 76,
     likes: 28,
-    downloads: 9
+    downloads: 9,
+    category: '城市',
+    tags: [
+      {name: '夜景', color: ''},
+      {name: '摄影', color: ''},
+    ],
+    aspectRatio: '16/9',
   },
   {
     id: 4,
@@ -153,13 +141,125 @@ const recentUploads = ref([
     },
     views: 65,
     likes: 21,
-    downloads: 7
+    downloads: 7,
+    category: '插画',
+    tags: [
+      {name: '简约', color: ''},
+      {name: '现代', color: ''},
+    ],
+    aspectRatio: '3/4',
   }
 ]);
 
 // 格式化日期，显示为相对时间（例如：3小时前）
 const formatDate = (dateString) => {
   return dayjs(dateString).fromNow();
+};
+
+// 将上传数据格式化为图片库组件需要的格式
+const formatUploadsToGalleryImages = (uploads) => {
+  return uploads.map(item => {
+    return {
+      id: item.id,
+      src: item.url,
+      title: item.title,
+      author: item.uploader,
+      category: item.category || '',
+      tags: item.tags || [],
+      createTime: item.uploadTime,
+      viewTime: item.uploadTime,
+      // 其他属性
+      views: item.views,
+      likes: item.likes,
+      comments: Math.floor(item.views * 0.1),
+      bookmarked: false,
+      liked: false,
+      aspectRatio: item.aspectRatio || '16/9',
+    };
+  });
+};
+
+// 查看图片
+const viewImage = (image) => {
+  navigateToDetail(image);
+};
+
+// 下载图片
+const downloadImage = (image) => {
+  message.success('图片下载中...');
+
+  // 实际下载逻辑
+  const a = document.createElement('a');
+  a.href = image.src;
+  a.download = image.title || 'download-image';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+// 点赞或取消点赞
+const toggleLike = (image) => {
+  // 找到原始数据中的项目
+  const uploadItem = recentUploads.value.find(item => item.id.toString() === image.id.toString());
+  if (uploadItem) {
+    // 这里仅做示意，实际应用中应该调用API
+    uploadItem.likes = uploadItem.likes + (image.liked ? 1 : -1);
+  }
+
+  message.success(image.liked ? '已添加到喜欢' : '已取消喜欢');
+};
+
+// 添加到收藏夹
+const addToFavorites = (image) => {
+  message.success(`已将"${image.title}"添加到收藏`);
+};
+
+// 分享图片
+const shareImage = (image) => {
+  message.success(`分享"${image.title}"的链接已复制到剪贴板`);
+};
+
+// 确认删除
+const confirmDelete = (image) => {
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除"${image.title}"吗？删除后将无法恢复。`,
+    okText: '确定',
+    cancelText: '取消',
+    onOk: () => {
+      // 实际删除逻辑
+      const index = recentUploads.value.findIndex(item => item.id.toString() === image.id.toString());
+      if (index !== -1) {
+        recentUploads.value.splice(index, 1);
+        message.success('删除成功');
+      }
+    },
+  });
+};
+
+// 导航到详情页
+const navigateToDetail = (image) => {
+  router.push({
+    name: 'PictureDetail',
+    params: { id: image.id },
+    state: { imageData: image }
+  });
+};
+
+// 刷新上传列表
+const refreshUploads = () => {
+  loading.value = true;
+
+  // 模拟API请求
+  setTimeout(() => {
+    loading.value = false;
+    message.success('已刷新上传列表');
+  }, 1000);
+};
+
+// 跳转到上传页面
+const goToUploadPage = () => {
+  router.push('/upload');
 };
 </script>
 
@@ -176,118 +276,31 @@ const formatDate = (dateString) => {
   font-size: 14px;
 }
 
-.uploads-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+.uploads-container {
+  margin-bottom: 16px;
 }
 
-.upload-item {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s;
+/* 自定义瀑布流样式，使其适应仪表盘卡片 */
+.uploads-container :deep(.masonry-gallery) {
+  column-count: 2;
+  column-gap: 16px;
 }
 
-.upload-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+@media (max-width: 1400px) {
+  .uploads-container :deep(.masonry-gallery) {
+    column-count: 2;
+  }
 }
 
-.image-wrapper {
-  position: relative;
-  height: 150px;
-  overflow: hidden;
+@media (max-width: 576px) {
+  .uploads-container :deep(.masonry-gallery) {
+    column-count: 1;
+  }
 }
 
-.upload-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s;
-}
-
-.upload-item:hover .upload-image {
-  transform: scale(1.05);
-}
-
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.upload-item:hover .image-overlay {
-  opacity: 1;
-}
-
-.overlay-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-button {
-  color: white;
-  background: rgba(97, 81, 230, 0.8);
-  border: none;
-}
-
-.action-button:hover {
-  background: #6151e6;
-}
-
-.upload-info {
-  padding: 12px;
-}
-
-.upload-title {
-  font-weight: 500;
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.upload-meta {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.uploader-name {
-  margin-left: 6px;
-  margin-right: 8px;
-}
-
-.upload-time {
-  flex: 1;
-  text-align: right;
-}
-
-.upload-stats {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-}
-
-.stat-item span {
-  margin-left: 4px;
+.empty-uploads {
+  text-align: center;
+  padding: 40px 0;
 }
 
 .card-footer {
@@ -299,11 +312,10 @@ const formatDate = (dateString) => {
 
 .view-more-btn {
   color: #6151e6;
+  text-decoration: none;
 }
 
-@media (max-width: 576px) {
-  .uploads-grid {
-    grid-template-columns: 1fr;
-  }
+.view-more-btn:hover {
+  opacity: 0.8;
 }
 </style>

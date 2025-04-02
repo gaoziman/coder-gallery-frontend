@@ -6,23 +6,21 @@
     <!-- 数据概览卡片 -->
     <StatisticsCards />
 
-    <!-- 用户增长趋势和系统状态 -->
-    <div class="chart-container">
-      <UserGrowthTrend />
-      <SystemStatus />
+    <!-- 用户活跃度分析组件 -->
+    <div class="activity-analysis">
+      <UserActivityChart />
     </div>
 
-    <!-- 最近活动模块 -->
-    <div class="recent-activities">
-      <RecentUsers />
-      <RecentUploads />
-    </div>
-
-    <!-- 流量分析和热门标签 -->
+    <!-- 热门标签和分类 -->
     <div class="analytics-container">
-      <TrafficAnalysis />
       <HotTags />
       <HotCategory />
+    </div>
+
+    <!-- 最近活动模块（已调整顺序，确保上移） -->
+    <div class="recent-activities">
+      <RecentUploads class="recent-uploads-container" />
+      <RecentUsers />
     </div>
   </div>
 </template>
@@ -31,13 +29,11 @@
 import { onMounted } from 'vue';
 import WelcomePanel from '@/components/dashboard/WelcomePanel.vue';
 import StatisticsCards from '@/components/dashboard/StatisticsCards.vue';
-import UserGrowthTrend from '@/components/dashboard/UserGrowthTrend.vue';
-import SystemStatus from '@/components/dashboard/SystemStatus.vue';
 import RecentUsers from '@/components/dashboard/RecentUsers.vue';
 import RecentUploads from '@/components/dashboard/RecentUploads.vue';
-import TrafficAnalysis from '@/components/dashboard/TrafficAnalysis.vue';
 import HotTags from '@/components/dashboard/HotTags.vue';
 import HotCategory from '@/components/dashboard/HotCategory.vue';
+import UserActivityChart from "@/components/dashboard/UserActivityChart.vue";
 
 // 页面加载时可以在这里获取仪表盘所需的数据
 onMounted(() => {
@@ -61,24 +57,48 @@ const fetchDashboardData = async () => {
 .dashboard-container {
   padding: 24px;
   min-height: calc(100vh - 64px); /* 减去头部导航的高度 */
-}
-
-.chart-container {
-  display: flex;
-  margin-top: 24px;
-  gap: 24px;
-}
-
-.recent-activities {
-  display: flex;
-  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
 .analytics-container {
   display: flex;
-  margin-top: 24px;
   gap: 24px;
+}
+
+.recent-activities {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* 图片区域占2/3，用户区域占1/3 */
+  gap: 24px;
+  align-items: flex-start; /* 确保从顶部对齐 */
+}
+
+.recent-uploads-container {
+  height: auto; /* 自适应高度，不设置固定高度 */
+  min-height: 400px; /* 最小高度确保内容空间足够 */
+  max-height: none; /* 取消最大高度限制 */
+  overflow: visible; /* 内容不截断 */
+}
+
+/* 滚动条样式保持不变 */
+.recent-uploads-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.recent-uploads-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.recent-uploads-container::-webkit-scrollbar-thumb {
+  background: rgba(97, 81, 230, 0.3);
+  border-radius: 3px;
+}
+
+.recent-uploads-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(97, 81, 230, 0.5);
 }
 
 /* 定制滚动条样式 */
@@ -103,22 +123,24 @@ const fetchDashboardData = async () => {
 
 /* 响应式布局调整 */
 @media (max-width: 1200px) {
-  .chart-container,
-  .recent-activities,
   .analytics-container {
     flex-direction: column;
+  }
+
+  .recent-activities {
+    grid-template-columns: 1fr; /* 单列布局 */
   }
 }
 
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 16px;
+    gap: 16px;
   }
 
-  .chart-container,
-  .recent-activities,
-  .analytics-container {
-    margin-top: 16px;
+  .activity-analysis,
+  .analytics-container,
+  .recent-activities {
     gap: 16px;
   }
 }

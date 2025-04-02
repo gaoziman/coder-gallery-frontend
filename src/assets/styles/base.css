@@ -830,9 +830,10 @@ textarea.ant-input:focus,
 }
 
 .ant-radio-group-solid .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important; /* 强制文字为白色 */
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); /* 添加文字阴影增强可读性 */
 }
 
 .ant-radio-group-solid .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):hover {
@@ -3394,6 +3395,148 @@ th.ant-table-column-sort {
 .ant-table-column-sorter:hover .ant-table-column-sorter-inner {
     color: var(--primary-hover) !important;
 }
+
+
+/* ================= 表格操作按钮优化 ================= */
+/* 移除链接按钮边框和背景，优化悬停效果 */
+.ant-table-wrapper .ant-btn-link,
+html body .ant-table-wrapper .ant-btn-link {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 4px 8px !important;
+    height: auto !important;
+    border-radius: 4px !important;
+    transition: background-color 0.2s, color 0.2s !important;
+}
+
+/* 链接按钮悬停时改为背景色变化而非边框 */
+.ant-table-wrapper .ant-btn-link:hover,
+.ant-table-wrapper .ant-btn-link:focus,
+html body .ant-table-wrapper .ant-btn-link:hover,
+html body .ant-table-wrapper .ant-btn-link:focus {
+    color: var(--primary-color) !important;
+    background-color: var(--primary-color-bg) !important;
+    border-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 带有危险标识的链接按钮悬停样式 */
+.ant-table-wrapper .ant-btn-link.ant-btn-dangerous:hover,
+.ant-table-wrapper .ant-btn-link.ant-btn-dangerous:focus,
+html body .ant-table-wrapper .ant-btn-link.ant-btn-dangerous:hover,
+html body .ant-table-wrapper .ant-btn-link.ant-btn-dangerous:focus {
+    color: var(--error-color) !important;
+    background-color: #fff1f0 !important;
+    border-color: transparent !important;
+}
+
+/* 按钮激活点击时的样式 */
+.ant-table-wrapper .ant-btn-link:active,
+html body .ant-table-wrapper .ant-btn-link:active {
+    color: var(--primary-active) !important;
+    background-color: rgba(101, 84, 192, 0.15) !important;
+    border-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 危险按钮激活样式 */
+.ant-table-wrapper .ant-btn-link.ant-btn-dangerous:active,
+html body .ant-table-wrapper .ant-btn-link.ant-btn-dangerous:active {
+    color: #cf1322 !important;
+    background-color: rgba(245, 34, 45, 0.15) !important;
+}
+
+/* 修复表格操作列中的按钮组间距 */
+.ant-table-wrapper .ant-space {
+    gap: 0 !important;
+}
+
+/* 按钮内的图标和文字间距调整 */
+.ant-table-wrapper .ant-btn-link .anticon + span,
+.ant-table-wrapper .ant-btn-link span + .anticon {
+    margin-left: 4px !important;
+}
+
+/* 禁用状态下的按钮样式 */
+.ant-table-wrapper .ant-btn-link[disabled],
+.ant-table-wrapper .ant-btn-link[disabled]:hover,
+.ant-table-wrapper .ant-btn-link[disabled]:focus,
+.ant-table-wrapper .ant-btn-link[disabled]:active {
+    color: var(--text-disabled) !important;
+    background: transparent !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+/* 确保按钮在多场景下风格一致 */
+.ant-popconfirm .ant-btn-link,
+.ant-dropdown-menu .ant-btn-link,
+.ant-modal-body .ant-btn-link,
+.ant-drawer-body .ant-btn-link {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* 确保按钮在小尺寸下仍然美观 */
+.ant-table-wrapper .ant-btn-link.ant-btn-sm {
+    font-size: 12px !important;
+    padding: 2px 6px !important;
+}
+
+/* 增强单选按钮样式特异性，确保覆盖默认样式 */
+.ant-modal-body .ant-radio-inner,
+html body .ant-radio-inner,
+html body .ant-modal .ant-radio-inner {
+    border-color: #d9d9d9 !important;
+    background-color: #fff !important;
+}
+
+.ant-modal-body .ant-radio:hover .ant-radio-inner,
+html body .ant-radio:hover .ant-radio-inner,
+html body .ant-modal .ant-radio:hover .ant-radio-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-modal-body .ant-radio-checked .ant-radio-inner,
+html body .ant-radio-checked .ant-radio-inner,
+html body .ant-modal .ant-radio-checked .ant-radio-inner {
+    border-color: var(--primary-color) !important;
+}
+
+.ant-modal-body .ant-radio-checked .ant-radio-inner::after,
+html body .ant-radio-checked .ant-radio-inner::after,
+html body .ant-modal .ant-radio-checked .ant-radio-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* 强制覆盖筛选器弹窗中的单选按钮样式 */
+.ant-modal.filter-modal .ant-radio-inner,
+.ant-modal.filter-modal .ant-radio-checked .ant-radio-inner,
+.ant-modal.filter-modal .ant-radio-checked .ant-radio-inner::after {
+    border-color: var(--primary-color) !important;
+    background-color: var(--primary-color) !important;
+}
+
+/* 确保选中状态的单选按钮使用正确的颜色 */
+.ant-modal-body .ant-radio-wrapper-checked .ant-radio-inner::after,
+html body .ant-radio-wrapper-checked .ant-radio-inner::after,
+.ant-radio-checked .ant-radio-inner::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* 单选按钮激活效果 */
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+/* 确保点击状态下的Focus环也使用正确的颜色 */
+.ant-radio-wrapper .ant-radio-checked::after {
+    border-color: var(--primary-color) !important;
+}
+
 
 /* 响应式布局 */
 @media (max-width: 992px) {

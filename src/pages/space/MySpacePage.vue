@@ -333,162 +333,22 @@
       </div>
     </a-card>
 
-    <!-- 瀑布流图片展示 - 修改图片卡片样式与主页一致 -->
-    <div class="masonry-gallery"
-         :initial="{ opacity: 0 }"
-         :enter="{ opacity: 1, transition: { delay: 800, duration: 800 } }">
-      <template v-if="galleryImages.length > 0">
-        <div
-            v-for="(image, index) in galleryImages"
-            :key="index"
-            class="masonry-item"
-            v-motion
-            :initial="{ opacity: 0, y: 50 }"
-            :enter="{
-              opacity: 1,
-              y: 0,
-              transition: {
-                delay: 1000 + (index * 100),
-                duration: 500,
-                ease: 'easeOut'
-              }
-            }"
-        >
-          <div class="image-card" @click="viewImage(image)">
-            <div class="image-cover-container" :style="{ aspectRatio: image.aspectRatio || '16/9' }">
-              <!-- 图片 -->
-              <img
-                  :src="image.src"
-                  :alt="image.title"
-                  class="gallery-image loaded"
-              />
-
-              <!-- 图片右上角的统计信息 -->
-              <div class="image-stats-overlay">
-                <div class="stat-badge views-badge">
-                  <eye-outlined />
-                  <span>{{ formatNumber(image.views || 0) }}</span>
-                </div>
-                <div class="stat-badge likes-badge" :class="{ 'liked': image.liked }">
-                  <heart-filled v-if="image.liked" />
-                  <heart-outlined v-else />
-                  <span>{{ formatNumber(image.likes || Math.floor((image.views || 0) * 0.4)) }}</span>
-                </div>
-              </div>
-
-              <!-- 悬停时显示的信息遮罩层 -->
-              <div class="image-hover-overlay">
-                <div class="image-meta-info">
-                  <div class="meta-item">
-                    <clock-circle-outlined />
-                    <span>{{ formatDate(image.createTime || new Date()) }}</span>
-                  </div>
-                  <div class="meta-item">
-                    <eye-outlined />
-                    <span>{{ formatNumber(image.views || 0) }} 浏览</span>
-                  </div>
-                </div>
-
-                <div class="image-actions">
-                  <a-button type="primary" shape="circle" class="action-btn view-btn" @click.stop="viewImage(image)">
-                    <template #icon><eye-outlined /></template>
-                  </a-button>
-                  <a-button type="primary" shape="circle" class="action-btn download-btn" @click.stop="downloadImage(image)">
-                    <template #icon><download-outlined /></template>
-                  </a-button>
-                  <a-button type="primary" shape="circle" class="action-btn delete-btn" @click.stop="confirmDelete(image)">
-                    <template #icon><delete-outlined /></template>
-                  </a-button>
-                </div>
-              </div>
-
-              <!-- 图片右下角的热门标签 -->
-              <div v-if="isPopular(image)" class="hot-badge">
-                <fire-outlined />
-                <span>热门</span>
-              </div>
-            </div>
-
-            <div class="image-info">
-              <!-- 标题和收藏按钮并排 -->
-              <div class="image-header">
-                <div class="image-title">{{ image.title }}</div>
-                <div class="bookmark-btn" @click.stop="toggleBookmark(image)">
-                  <star-filled v-if="image.bookmarked" class="bookmarked" />
-                  <star-outlined v-else />
-                </div>
-              </div>
-
-              <!-- 作者信息和时间 -->
-              <div class="image-author-row">
-                <div class="image-author">
-                  <a-avatar :src="image.author.avatar" :size="24"/>
-                  <span class="author-name">{{ image.author.name }}</span>
-                </div>
-                <div class="image-date">
-                  <clock-circle-outlined />
-                  <span>{{ formatShortDate(image.createTime || new Date()) }}</span>
-                </div>
-              </div>
-
-              <!-- 分类和标签区域 -->
-              <div class="image-taxonomy">
-                <!-- 单个分类标签 - 使用更深的颜色 -->
-                <a-tag v-if="getImageCategory(image)" class="image-category" :color="getCategoryColor(getImageCategory(image))">
-                  {{ getImageCategory(image) }}
-                </a-tag>
-
-                <!-- 标签 - 使用浅色背景和深色文字 -->
-                <a-tag
-                    v-for="(tag, tagIndex) in getImageTags(image).slice(0, 3)"
-                    :key="tagIndex"
-                    class="image-tag"
-                    :style="{
-                      backgroundColor: getTagColor(tag.name || tag, true).backgroundColor,
-                      color: getTagColor(tag.name || tag, true).color,
-                      borderColor: 'transparent'
-                    }"
-                >
-                  {{ tag.name || tag }}
-                </a-tag>
-
-                <!-- 如果标签过多，显示还有更多 -->
-                <a-tag v-if="getImageTags(image).length > 3" class="image-more-tag">
-                  +{{ getImageTags(image).length - 3 }}
-                </a-tag>
-              </div>
-
-              <!-- 图片底部的互动区域 -->
-              <div class="image-interaction">
-                <div class="interaction-stat">
-                  <eye-outlined />
-                  <span>{{ formatNumber(image.views || 0) }}</span>
-                </div>
-                <div class="interaction-stat" :class="{ 'active': image.liked }" @click.stop="toggleLike(image)">
-                  <heart-outlined v-if="!image.liked" />
-                  <heart-filled v-else />
-                  <span>{{ formatNumber(image.likes || Math.floor((image.views || 0) * 0.4)) }}</span>
-                </div>
-                <div class="interaction-stat">
-                  <message-outlined />
-                  <span>{{ formatNumber(image.comments || Math.floor((image.views || 0) * 0.1)) }}</span>
-                </div>
-                <div class="interaction-share" @click.stop="shareImage(image)">
-                  <share-alt-outlined />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-      <div v-else class="empty-gallery">
-        <a-empty description="加载中...">
-          <template #extra>
-            <a-button type="primary" @click="handleClearFilter">重新加载</a-button>
-          </template>
-        </a-empty>
-      </div>
-    </div>
+    <!-- ImageGallery组件 -->
+    <image-gallery
+        :images="galleryImages"
+        empty-text="暂无图片"
+        v-motion
+        :initial="{ opacity: 0 }"
+        :enter="{ opacity: 1, transition: { delay: 800, duration: 800 } }"
+        @view="viewImage"
+        @download="downloadImage"
+        @like="toggleLike"
+        @bookmark="toggleBookmark"
+        @share="shareImage"
+        @delete="confirmDelete"
+        @navigate-to-detail="navigateToDetail"
+        @refresh="handleClearFilter"
+    />
 
     <!-- 加载更多 -->
     <div class="load-more">
@@ -504,39 +364,20 @@
 <script setup lang="ts">
 import {ref, reactive, onMounted, watch, computed} from 'vue';
 import {
-  UploadOutlined,
-  EditOutlined,
-  BarChartOutlined,
+  DownOutlined,
   FolderOutlined,
   FolderOpenOutlined,
   FolderAddOutlined,
   BulbOutlined,
-  DownOutlined,
-  EyeOutlined,
-  DownloadOutlined,
-  DeleteOutlined,
-  CheckOutlined,
-  HeartOutlined,
-  HeartFilled,
-  ClockCircleOutlined,
-  StarOutlined,
-  StarFilled,
-  FireOutlined,
-  MessageOutlined,
-  ShareAltOutlined,
-  LinkOutlined,
-  WechatOutlined,
-  WeiboOutlined,
-  QqOutlined,
   PictureOutlined,
   TeamOutlined
 } from '@ant-design/icons-vue';
 import {message, Modal} from 'ant-design-vue';
 import {DatePicker} from 'ant-design-vue';
-import {useIntersectionObserver} from "@vueuse/core";
 import {useFilterStore} from "@/stores/filterStore";
 import 'animate.css';
-import dayjs from 'dayjs';
+import ImageGallery from '@/components/common/ImageGallery.vue';
+import router from '@/router';
 
 const {RangePicker} = DatePicker;
 
@@ -599,30 +440,40 @@ const userInfo = reactive({
 // 使用筛选器Store
 const filterStore = useFilterStore();
 
-// 格式化创建时间
-const formatDate = (timestamp) => {
-  if (!timestamp) return '未知时间';
-  return dayjs(timestamp).format('YYYY-MM-DD');
+// 导航到图片详情页
+const navigateToDetail = (image) => {
+  // 假设image对象有id属性，如果没有可以使用其他唯一标识
+  const imageId = image.id || '';
+  router.push({
+    name: 'PictureDetail',
+    params: {id: imageId},
+    // 可以通过state传递一些数据，避免重新加载
+    state: {imageData: image}
+  });
 };
 
-// 格式化短日期（仅显示月和日）
-const formatShortDate = (timestamp) => {
-  if (!timestamp) return '未知';
-  return dayjs(timestamp).format('MM-DD');
+// 处理图片浏览
+const viewImage = (image) => {
+  // 更新浏览计数
+  if (typeof image.views === 'number') {
+    image.views += 1;
+  } else {
+    image.views = 1;
+  }
+  // 导航到详情页
+  navigateToDetail(image);
 };
 
-// 格式化浏览量，如果超过1000则显示为1k+
-const formatNumber = (num) => {
-  if (!num && num !== 0) return 0;
-  return num > 1000 ? `${(num / 1000).toFixed(1)}k` : num;
-};
-
-// 判断图片是否为热门
-const isPopular = (image) => {
-  // 根据浏览量或其他指标判断是否热门
-  const views = image.views || 0;
-  const likes = image.likes || Math.floor(views * 0.4);
-  return (views > 3000 || likes > 500);
+// 处理图片下载
+const downloadImage = (image) => {
+  message.success('图片下载中...');
+  // 实际下载逻辑
+  const a = document.createElement('a');
+  a.href = image.src;
+  a.download = image.title || 'download-image';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 };
 
 // 切换图片收藏状态
@@ -639,35 +490,38 @@ const toggleBookmark = (image) => {
 
 // 分享图片
 const shareImage = (image) => {
-  // 创建分享选项
-  Modal.info({
-    title: '分享图片',
-    content: (h) => h('div', [
-      h('p', `分享"${image.title}"到:`),
-      h('div', {
-        style: 'display: flex; justify-content: space-around; margin-top: 16px;'
-      }, [
-        h('div', { class: 'share-option' }, [
-          h(WechatOutlined, { style: 'font-size: 24px; color: #07C160;' }),
-          h('p', '微信')
-        ]),
-        h('div', { class: 'share-option' }, [
-          h(WeiboOutlined, { style: 'font-size: 24px; color: #E6162D;' }),
-          h('p', '微博')
-        ]),
-        h('div', { class: 'share-option' }, [
-          h(QqOutlined, { style: 'font-size: 24px; color: #12B7F5;' }),
-          h('p', 'QQ')
-        ]),
-        h('div', { class: 'share-option' }, [
-          h(LinkOutlined, { style: 'font-size: 24px; color: #6554C0;' }),
-          h('p', '复制链接')
-        ])
-      ])
-    ]),
-    okText: '取消',
-    icon: createVNode(ShareAltOutlined),
-  });
+  message.success(`已打开"${image.title}"的分享选项`);
+};
+
+// 确认删除图片
+const confirmDelete = (image) => {
+  // 从图库中移除该图片
+  const index = galleryImages.findIndex(item => item.src === image.src);
+  if (index !== -1) {
+    galleryImages.splice(index, 1);
+  }
+  message.success('图片已删除');
+
+  // 更新存储使用量
+  updateStorageUsed(-1 * 1024 * 1024 * 100); // 假设每张图片大约100MB
+};
+
+// 更新存储使用量
+const updateStorageUsed = (changeInBytes) => {
+  storageUsed.value = Math.max(0, storageUsed.value + changeInBytes);
+  // 确保不超过总容量
+  storageUsed.value = Math.min(storageUsed.value, storageTotal.value);
+};
+
+// 点赞或取消点赞
+const toggleLike = (image) => {
+  image.liked = !image.liked;
+  if (image.liked) {
+    image.likes = (image.likes || 0) + 1;
+  } else if (image.likes > 0) {
+    image.likes -= 1;
+  }
+  message.success(image.liked ? '已添加到喜欢' : '已取消喜欢');
 };
 
 // 分类数据
@@ -684,68 +538,6 @@ const categories = reactive([
   { name: '壁纸', active: false },
   { name: '动漫', active: false },
 ]);
-
-// 分类颜色映射表
-const categoryColors = {
-  '全部': '#6554C0', // 主题紫色
-  '个人': '#1677ff', // 深蓝色
-  '星球': '#389e0d', // 深绿色
-  '面试题': '#d48806', // 深黄色
-  '表情包': '#c41d7f', // 深粉色
-  '素材': '#08979c', // 深青色
-  '学习': '#1d39c4', // 深靛青色
-  'Bugs': '#d4380d', // 深橙色
-  '海报': '#531dab', // 深紫色
-  '壁纸': '#c41d7f', // 深品红色
-  '动漫': '#d46b08',  // 深橙黄色
-  '风景': '#08979c',  // 深青色
-  '城市': '#1d39c4',  // 深靛青色
-  '时尚': '#c41d7f',  // 深粉色
-  '校园': '#389e0d',  // 深绿色
-  '美食': '#d46b08',  // 深橙黄色
-  '建筑': '#531dab',  // 深紫色
-  '艺术': '#08979c',  // 深青色
-  '户外': '#389e0d',  // 深绿色
-  '生活': '#1677ff',  // 深蓝色
-};
-
-// 获取分类颜色 - 更深的颜色
-const getCategoryColor = (category) => {
-  return categoryColors[category] || '#6554C0'; // 默认使用主题紫色
-};
-
-// 为标签生成不同的颜色 - 根据参数决定是否使用浅色
-const getTagColor = (tagName, useLighterColors = false) => {
-  // 标签颜色映射 - 浅色系列
-  const lighterColors = [
-    '#e6f7ff', '#f6ffed', '#fffbe6', '#fff7e6',
-    '#fff0f6', '#f9f0ff', '#f0f5ff', '#e6fffb'
-  ];
-
-  // 标签文字颜色映射 - 对应的深色
-  const textColors = [
-    '#1677ff', '#52c41a', '#faad14', '#fa8c16',
-    '#eb2f96', '#722ed1', '#2f54eb', '#13c2c2'
-  ];
-
-// 使用标签名计算一个哈希值
-  const hashCode = tagName.split('').reduce((acc, char) => {
-    return acc + char.charCodeAt(0);
-  }, 0);
-
-  const index = hashCode % textColors.length;
-
-  // 如果需要浅色，返回背景色和文字色的组合
-  if (useLighterColors) {
-    return {
-      backgroundColor: lighterColors[index],
-      color: textColors[index]
-    };
-  }
-
-  // 否则返回普通的深色
-  return textColors[index];
-};
 
 // 标签数据
 const tags = reactive([
@@ -812,6 +604,30 @@ const getImageCategory = (image) => {
   return '素材'; // 默认分类
 };
 
+// 分类颜色映射表
+const categoryColors = {
+  '全部': '#6554C0', // 主题紫色
+  '个人': '#1677ff', // 深蓝色
+  '星球': '#389e0d', // 深绿色
+  '面试题': '#d48806', // 深黄色
+  '表情包': '#c41d7f', // 深粉色
+  '素材': '#08979c', // 深青色
+  '学习': '#1d39c4', // 深靛青色
+  'Bugs': '#d4380d', // 深橙色
+  '海报': '#531dab', // 深紫色
+  '壁纸': '#c41d7f', // 深品红色
+  '动漫': '#d46b08',  // 深橙黄色
+  '风景': '#08979c',  // 深青色
+  '城市': '#1d39c4',  // 深靛青色
+  '时尚': '#c41d7f',  // 深粉色
+  '校园': '#389e0d',  // 深绿色
+  '美食': '#d46b08',  // 深橙黄色
+  '建筑': '#531dab',  // 深紫色
+  '艺术': '#08979c',  // 深青色
+  '户外': '#389e0d',  // 深绿色
+  '生活': '#1677ff',  // 深蓝色
+};
+
 // 获取图片标签 - 处理不同格式的标签数据
 const getImageTags = (image) => {
   if (!image.tags) return [];
@@ -823,6 +639,18 @@ const getImageTags = (image) => {
 
   return image.tags;
 };
+
+// 扩展筛选条件
+const filterConditions = reactive({
+  imageName: '',
+  imageDesc: '',
+  minWidth: null,
+  maxWidth: null,
+  minHeight: null,
+  maxHeight: null,
+  category: '',
+  tags: []
+});
 
 // 图库数据
 const galleryImages = reactive([
@@ -838,8 +666,220 @@ const galleryImages = reactive([
       { name: 'Mac壁纸', color: '' },
     ],
     liked: false,
+    bookmarked: false,
     views: 1250,
+    likes: 520,
+    comments: 45,
     createTime: '2023-09-15T08:30:00.000Z',
+    aspectRatio: '16/9',
+  },
+  {
+    id: '3',
+    src: 'https://cdn.pixabay.com/photo/2016/11/29/04/19/ocean-1867285_1280.jpg',
+    title: '城市夜景',
+    author: {
+      name: '城市摄影师',
+      avatar: 'https://cdn.pixabay.com/photo/2014/04/03/10/32/user-310807_1280.png',
+    },
+    category: '城市',
+    tags: [
+      {name: '夜景', color: ''},
+      {name: '建筑', color: ''},
+    ],
+    liked: true,
+    bookmarked: true,
+    createTime: '2023-11-15T20:30:00.000Z',
+    views: 4260,
+    likes: 2180,
+    comments: 235,
+    aspectRatio: '21/9',
+  },
+  {
+    id: '4',
+    src: 'https://cdn.pixabay.com/photo/2023/05/15/18/13/boat-8036952_1280.jpg',
+    title: '二次元精选壁纸',
+    author: {
+      name: '动漫爱好者',
+      avatar: 'https://cdn.pixabay.com/photo/2016/08/20/05/38/avatar-1606916_1280.png',
+    },
+    category: '动漫',
+    tags: [
+      {name: '壁纸', color: ''},
+      {name: '绘画', color: ''},
+    ],
+    liked: false,
+    bookmarked: false,
+    createTime: '2023-08-05T18:45:00.000Z',
+    views: 4531,
+    likes: 1820,
+    comments: 156,
+    aspectRatio: '4/3',
+  },
+  {
+    id: '5',
+    src: 'https://cdn.pixabay.com/photo/2017/08/30/01/05/milky-way-2695569_1280.jpg',
+    title: '时尚模特写真',
+    author: {
+      name: '时尚摄影师',
+      avatar: 'https://cdn.pixabay.com/photo/2017/01/31/21/23/avatar-2027366_1280.png',
+    },
+    category: '时尚',
+    tags: [
+      {name: '模特', color: ''},
+      {name: '写真', color: ''},
+      {name: '人像', color: ''},
+    ],
+    liked: true,
+    bookmarked: true,
+    createTime: '2023-07-20T14:30:00.000Z',
+    views: 6720,
+    likes: 2760,
+    comments: 320,
+    aspectRatio: '2/3',
+  },
+  {
+    id: '6',
+    src: 'https://cdn.pixabay.com/photo/2016/03/04/19/36/beach-1236581_1280.jpg',
+    title: '校园风光集',
+    author: {
+      name: '校园摄影师',
+      avatar: 'https://cdn.pixabay.com/photo/2014/03/25/16/54/user-297566_1280.png',
+    },
+    category: '校园',
+    tags: [
+      {name: '风景', color: ''},
+      {name: '四季', color: ''},
+      {name: '摄影', color: ''},
+    ],
+    liked: false,
+    bookmarked: false,
+    createTime: '2023-09-20T16:10:00.000Z',
+    views: 1874,
+    likes: 756,
+    comments: 89,
+    aspectRatio: '4/3',
+  },
+  {
+    id: '7',
+    src: 'https://cdn.pixabay.com/photo/2019/11/25/16/30/mountains-4652248_1280.jpg',
+    title: '山脉日出',
+    author: {
+      name: '风景摄影师',
+      avatar: 'https://cdn.pixabay.com/photo/2016/11/18/23/38/child-1837375_1280.png',
+    },
+    category: '风景',
+    tags: [
+      {name: '山脉', color: ''},
+      {name: '日出', color: ''},
+      {name: '自然', color: ''},
+    ],
+    liked: true,
+    bookmarked: true,
+    createTime: '2023-05-15T05:40:00.000Z',
+    views: 8532,
+    likes: 3420,
+    comments: 412,
+    aspectRatio: '21/9',
+  },
+  {
+    id: '8',
+    src: 'https://cdn.pixabay.com/photo/2014/12/27/14/37/living-room-581073_1280.jpg',
+    title: '咖啡艺术',
+    author: {
+      name: '咖啡师',
+      avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
+    },
+    category: '美食',
+    tags: [
+      {name: '咖啡', color: ''},
+      {name: '艺术', color: ''},
+    ],
+    liked: false,
+    bookmarked: false,
+    createTime: '2023-11-08T09:15:00.000Z',
+    views: 2140,
+    likes: 845,
+    comments: 97,
+    aspectRatio: '1/1',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
+    title: 'Mac系统壁纸.jpg',
+    author: {
+      name: '设计师小李',
+      avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
+    },
+    category: '壁纸',
+    tags: [
+      { name: 'Mac壁纸', color: 'cyan' },
+      { name: '创意', color: '' },
+    ],
+    liked: false,
+    bookmarked: false,
+    views: 2140,
+    likes: 845,
+    comments: 97,
+    createTime: '2023-11-08T09:15:00.000Z',
+    aspectRatio: '16/9',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
+    title: '程序员壁纸.jpg',
+    author: {
+      name: '程序员Leo',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
+    },
+    category: '壁纸',
+    tags: [
+      { name: '代码', color: 'blue' },
+      { name: '壁纸', color: '' },
+    ],
+    liked: false,
+    bookmarked: false,
+    views: 3210,
+    likes: 1284,
+    comments: 156,
+    createTime: '2023-10-25T13:50:00.000Z',
+    aspectRatio: '16/9',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
+    title: 'UI组件库.png',
+    author: {
+      name: 'UI设计师小李',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
+    },
+    category: '素材',
+    tags: [
+      { name: '素材', color: 'green' },
+      { name: '创意', color: '' },
+    ],
+    liked: false,
+    bookmarked: false,
+    views: 1450,
+    likes: 625,
+    comments: 85,
+    createTime: '2023-11-05T11:20:00.000Z',
+    aspectRatio: '4/3',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
+    title: '城市夜景.jpg',
+    author: {
+      name: '摄影师王小明',
+      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
+    },
+    category: '城市',
+    tags: [
+      { name: '风景', color: 'blue' },
+      { name: '城市', color: '' },
+    ],
+    liked: true,
+    bookmarked: true,
+    views: 4260,
+    likes: 1780,
+    comments: 205,
+    createTime: '2023-11-15T20:30:00.000Z',
     aspectRatio: '16/9',
   },
   {
@@ -918,173 +958,17 @@ const galleryImages = reactive([
       { name: '海边', color: '' },
     ],
     liked: false,
+    bookmarked: false,
     views: 3840,
+    likes: 1520,
+    comments: 185,
     createTime: '2023-10-10T14:20:00.000Z',
     aspectRatio: '16/9',
   },
-  {
-    src: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: 'UI组件库.png',
-    author: {
-      name: 'UI设计师小李',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    category: '素材',
-    tags: [
-      { name: '素材', color: 'green' },
-      { name: '创意', color: '' },
-    ],
-    liked: false,
-    views: 1450,
-    createTime: '2023-11-05T11:20:00.000Z',
-    aspectRatio: '4/3',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '城市夜景.jpg',
-    author: {
-      name: '摄影师王小明',
-      avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    category: '城市',
-    tags: [
-      { name: '风景', color: 'blue' },
-      { name: '城市', color: '' },
-    ],
-    liked: true,
-    views: 4260,
-    createTime: '2023-11-15T20:30:00.000Z',
-    aspectRatio: '16/9',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '自然风光.jpg',
-    author: {
-      name: '摄影师小王',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    category: '风景',
-    tags: [
-      { name: '风景', color: 'blue' },
-      { name: '高清', color: '' },
-    ],
-    liked: false,
-    views: 3890,
-    createTime: '2023-07-12T08:40:00.000Z',
-    aspectRatio: '16/9',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: 'Mac系统壁纸.jpg',
-    author: {
-      name: '设计师小李',
-      avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    category: '壁纸',
-    tags: [
-      { name: 'Mac壁纸', color: 'cyan' },
-      { name: '创意', color: '' },
-    ],
-    liked: false,
-    views: 2140,
-    createTime: '2023-11-08T09:15:00.000Z',
-    aspectRatio: '16/9',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
-    title: '程序员壁纸.jpg',
-    author: {
-      name: '程序员Leo',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=100&h=100&q=80',
-    },
-    category: '壁纸',
-    tags: [
-      { name: '代码', color: 'blue' },
-      { name: '壁纸', color: '' },
-    ],
-    liked: false,
-    views: 3210,
-    createTime: '2023-10-25T13:50:00.000Z',
-    aspectRatio: '16/9',
-  }
 ]);
 
 // 原始图库数据（用于筛选）
 const originalGalleryImages = [...galleryImages];
-
-// 扩展筛选条件
-const filterConditions = reactive({
-  imageName: '',
-  imageDesc: '',
-  minWidth: null,
-  maxWidth: null,
-  minHeight: null,
-  maxHeight: null,
-  category: '',
-  tags: []
-});
-
-// 处理图片浏览
-const viewImage = (image) => {
-  // 更新浏览计数
-  if (typeof image.views === 'number') {
-    image.views += 1;
-  } else {
-    image.views = 1;
-  }
-  message.info(`正在查看"${image.title}"`);
-};
-
-// 处理图片下载
-const downloadImage = (image) => {
-  message.success('图片下载中...');
-  // 实际下载逻辑
-  const a = document.createElement('a');
-  a.href = image.src;
-  a.download = image.title || 'download-image';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-};
-
-// 确认删除图片
-const confirmDelete = (image) => {
-  Modal.confirm({
-    title: '确认删除',
-    content: '确定要删除这张图片吗？删除后将无法恢复。',
-    okText: '确定',
-    cancelText: '取消',
-    onOk: () => {
-      // 从图库中移除该图片
-      const index = galleryImages.findIndex(item => item.src === image.src);
-      if (index !== -1) {
-        galleryImages.splice(index, 1);
-      }
-      message.success('图片已删除');
-
-      // 更新存储使用量
-      updateStorageUsed(-1 * 1024 * 1024 * 100); // 假设每张图片大约100MB
-    }
-  });
-};
-
-// 更新存储使用量
-const updateStorageUsed = (changeInBytes) => {
-  storageUsed.value = Math.max(0, storageUsed.value + changeInBytes);
-  // 确保不超过总容量
-  storageUsed.value = Math.min(storageUsed.value, storageTotal.value);
-};
-
-// 点赞或取消点赞
-const toggleLike = (image) => {
-  image.liked = !image.liked;
-  if (image.liked) {
-    image.likes = (image.likes || 0) + 1;
-  } else if (image.likes > 0) {
-    image.likes -= 1;
-  }
-  message.success(image.liked ? '已添加到喜欢' : '已取消喜欢');
-};
 
 // 重置筛选器
 const resetFilters = () => {
@@ -1232,7 +1116,9 @@ onMounted(() => {
     }
 
     // 初始化收藏状态
-    image.bookmarked = false;
+    if (typeof image.bookmarked === 'undefined') {
+      image.bookmarked = false;
+    }
 
     // 确保有aspectRatio
     if (!image.aspectRatio) {
@@ -1243,27 +1129,6 @@ onMounted(() => {
   setTimeout(() => {
     galleryImages.splice(0, galleryImages.length, ...deepCopiedImages);
   }, 100);
-
-  // 添加滚动监听
-  setTimeout(() => {
-    const cards = document.querySelectorAll('.masonry-item');
-    console.log('找到瀑布流卡片数量:', cards.length);
-    cards.forEach((card, index) => {
-      // 添加可见性检查
-      const { stop } = useIntersectionObserver(
-          card,
-          ([{ isIntersecting }]) => {
-            if (isIntersecting) {
-              setTimeout(() => {
-                card.classList.add('animate__animated', 'animate__fadeInUp');
-              }, index * 100);
-              stop();
-            }
-          },
-          { threshold: 0.2 }
-      );
-    });
-  }, 800); // 给DOM渲染足够的时间
 
   // 计算初始存储使用量
   const averageImageSize = 0.1; // GB
@@ -1623,7 +1488,6 @@ onMounted(() => {
   }
 }
 
-
 .section-title h3 {
   font-size: 1rem;
   font-weight: 600;
@@ -1643,393 +1507,10 @@ onMounted(() => {
   border-radius: 3px;
 }
 
-
-/* ================ 瀑布流图片卡片样式 - 与主页一致 ================ */
-/* 瀑布流布局 */
-.masonry-gallery {
-  column-count: 1;
-  column-gap: 16px;
-  margin-bottom: 32px;
-  width: 100%;
-}
-
-@media (min-width: 576px) {
-  .masonry-gallery {
-    column-count: 2;
-    column-gap: 16px;
-  }
-}
-
-@media (min-width: 992px) {
-  .masonry-gallery {
-    column-count: 3;
-    column-gap: 20px;
-  }
-}
-
-@media (min-width: 1200px) {
-  .masonry-gallery {
-    column-count: 4;
-    column-gap: 24px;
-  }
-}
-
-/* 保证瀑布流元素不被打断 */
-.masonry-item {
-  break-inside: avoid;
-  page-break-inside: avoid;
-  margin-bottom: 16px;
-  display: inline-block;
-  width: 100%;
-}
-
-/* 图片卡片整体样式 */
-.image-card {
-  border-radius: 12px;
-  overflow: hidden;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
-  cursor: pointer;
-  position: relative;
-  height: 100%;
-  break-inside: avoid;
-  display: flex;
-  flex-direction: column;
-}
-
-.image-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-}
-
-/* 图片容器 - 动态宽高比 */
-.image-cover-container {
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px 12px 0 0;
-  width: 100%;
-  aspect-ratio: 16/9;
-  background-color: #f5f5f5; /* 添加背景色作为加载前的占位 */
-}
-
-.gallery-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.6s cubic-bezier(0.215, 0.61, 0.355, 1), opacity 0.3s ease;
-  opacity: 1; /* 默认显示 */
-}
-
-.image-card:hover .gallery-image {
-  transform: scale(1.05);
-}
-
-/* 右上角的统计信息 */
-.image-stats-overlay {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  gap: 8px;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.stat-badge {
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  border-radius: 20px;
-  padding: 2px 8px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  backdrop-filter: blur(3px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.views-badge {
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-.likes-badge {
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-.likes-badge.liked {
-  background-color: rgba(244, 63, 94, 0.8);
-}
-
-/* 悬停遮罩层 */
-.image-hover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 16px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  color: white;
-  z-index: 3;
-}
-
-.image-card:hover .image-hover-overlay {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* 右下角热门标签 */
-.hot-badge {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background-color: rgba(244, 63, 94, 0.9);
-  color: white;
-  border-radius: 20px;
-  padding: 2px 10px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  backdrop-filter: blur(3px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  z-index: 2;
-}
-
-/* 元数据信息 */
-.image-meta-info {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* 操作按钮区域 */
-.image-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.action-btn {
-  height: 36px !important;
-  width: 36px !important;
-  background-color: white !important;
-  border: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.3s ease;
-}
-
-.action-btn :deep(.anticon) {
-  color: #666 !important;
-  font-size: 16px;
-}
-
-/* 不同按钮悬停效果 */
-.view-btn:hover {
-  background-color: #6554C0 !important;
-}
-
-.download-btn:hover {
-  background-color: #10B981 !important;
-}
-
-.delete-btn:hover {
-  background-color: #EF4444 !important;
-}
-
-.like-btn:hover, .like-btn.liked {
-  background-color: #F43F5E !important;
-}
-
-.action-btn:hover :deep(.anticon) {
-  color: white !important;
-}
-
-/* 图片信息区域布局优化 */
-.image-info {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-/* 标题和收藏按钮 */
-.image-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.image-title {
-  font-size: 14px;
-  font-weight: 500;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bookmark-btn {
-  color: #999;
-  cursor: pointer;
-  padding: 4px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bookmark-btn:hover {
-  color: #6554C0;
-}
-
-.bookmark-btn .bookmarked {
-  color: #FAAD14;
-}
-
-/* 作者行 */
-.image-author-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.image-author {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.author-name {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-}
-
-.image-date {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #999;
-}
-
-/* 分类和标签区域 */
-.image-taxonomy {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 8px 0;
-}
-
-.image-category,
-.image-tag,
-.image-more-tag {
-  font-size: 11px;
-  padding: 1px 6px !important;
-  border-radius: 4px;
-  margin: 0 !important;
-  height: auto !important;
-  line-height: 1.6 !important;
-}
-
-/* 交互区域 */
-.image-interaction {
-  display: flex;
-  align-items: center;
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid #f5f5f5;
-}
-
-.interaction-stat {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #666;
-  font-size: 12px;
-  padding: 0 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.interaction-stat:hover, .interaction-stat.active {
-  color: #6554C0;
-}
-
-.interaction-stat.active {
-  color: #F43F5E;
-}
-
-.interaction-share {
-  margin-left: auto;
-  padding: 4px 8px;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-}
-
-.interaction-share:hover {
-  color: #6554C0;
-}
-
-/* 空状态样式 */
-.empty-gallery {
-  text-align: center;
-  padding: 60px 0;
-}
-
 /* 加载更多按钮 */
 .load-more {
   text-align: center;
   margin: 2.5rem 0;
-}
-
-/* 分享选项样式 */
-.share-option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.share-option:hover {
-  background-color: #f5f5f5;
-}
-
-.share-option p {
-  margin: 0;
-  font-size: 14px;
 }
 
 /* 暗模式兼容 */
@@ -2037,8 +1518,7 @@ onMounted(() => {
   .storage-overview-card,
   .profile-card,
   .space-card,
-  .filter-card,
-  .image-card {
+  .filter-card {
     background: #1f1f1f;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
@@ -2073,48 +1553,6 @@ onMounted(() => {
 
   .filter-label {
     color: #c0c0c0;
-  }
-
-  .image-title {
-    color: #f0f0f0;
-  }
-
-  .author-name {
-    color: #ccc;
-  }
-
-  .image-more-tag {
-    background-color: #2c2c2c;
-    color: #bbb;
-  }
-
-  .image-interaction {
-    border-top-color: #2a2a2a;
-  }
-
-  .interaction-stat,
-  .interaction-share {
-    color: #aaa;
-  }
-
-  .bookmark-btn {
-    color: #888;
-  }
-
-  .bookmark-btn:hover {
-    color: #8b7ae8;
-  }
-
-  .share-option:hover {
-    background-color: #2a2a2a;
-  }
-
-  .section-title h3 {
-    color: #e0e0e0;
-  }
-
-  .section-title h3::after {
-    background: linear-gradient(90deg, #8B5CF6 0%, transparent 100%);
   }
 
   .filter-input,
