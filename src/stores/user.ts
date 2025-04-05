@@ -3,22 +3,34 @@ import { ref, computed } from 'vue';
 
 export interface UserInfo {
     id: string;
+    account: string;
     username: string;
     avatar: string;
-    role: string;
-    isAdmin: boolean;
+    role: 'admin' | 'user' | 'superAdmin';
+    status: 'active' | 'inactive' | 'banned';
+    phone?: string;
+    email?: string;
+    salt?: string;
+    lastLoginTime?: string;
+    lastLoginIp?: string;
+    registerTime?: string;
+    remark?: string;
+    createTime?: string;
+    createBy?: string;
+    updateTime?: string;
+    updateBy?: string;
+    isDeleted?: boolean;
     token?: string;
-    // 根据需要添加其他用户信息
 }
 
 export const useUserStore = defineStore('user', () => {
     // 用户信息状态
     const userInfo = ref<UserInfo | null>(null);
 
-    // 新增：登录模态框状态
+    // 登录模态框状态
     const showLoginModal = ref(false);
 
-    // 新增：重定向路径
+    // 重定向路径
     const redirectPath = ref('');
 
     // 从 localStorage 初始化
@@ -40,7 +52,11 @@ export const useUserStore = defineStore('user', () => {
     // 计算属性：是否已登录
     const isLoggedIn = computed(() => !!userInfo.value);
 
-    const isAdmin = computed(() => userInfo.value?.role === 'admin');
+    // 计算属性：是否为管理员
+    const isAdmin = computed(() => userInfo.value?.role === 'admin' || userInfo.value?.role === 'superAdmin');
+
+    // 计算属性：是否为超级管理员
+    const isSuperAdmin = computed(() => userInfo.value?.role === 'superAdmin');
 
     // 登录操作
     function login(user: UserInfo) {
@@ -73,17 +89,17 @@ export const useUserStore = defineStore('user', () => {
         }
     }
 
-    // 新增：打开登录模态框
+    // 打开登录模态框
     function openLoginModal() {
         showLoginModal.value = true;
     }
 
-    // 新增：关闭登录模态框
+    // 关闭登录模态框
     function closeLoginModal() {
         showLoginModal.value = false;
     }
 
-    // 新增：设置重定向路径
+    // 设置重定向路径
     function setRedirectPath(path: string) {
         redirectPath.value = path;
     }
@@ -92,10 +108,10 @@ export const useUserStore = defineStore('user', () => {
         userInfo,
         isLoggedIn,
         isAdmin,
+        isSuperAdmin,
         login,
         logout,
         updateUserInfo,
-        // 新增返回的属性和方法
         showLoginModal,
         redirectPath,
         openLoginModal,

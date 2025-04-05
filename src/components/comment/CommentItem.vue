@@ -1,223 +1,156 @@
-<!-- src/components/comment/CommentItem.vue -->
+<!-- components/comment/CommentItem.vue -->
 <template>
-  <div class="comment-item">
-    <!-- 主评论内容 -->
+  <div class="comment-item-container">
+    <!-- 主评论 -->
     <div class="comment-main">
-      <a-avatar
-          :src="comment.author.avatar"
-          :size="40"
-          class="comment-avatar"
-      />
+      <a-avatar :src="comment.author?.avatar" :size="36" class="comment-avatar" />
+
       <div class="comment-content">
         <div class="comment-header">
-          <div class="author-info">
-            <router-link
-                :to="`/user/${comment.author.id}`"
-                class="author-name"
-            >
-              {{ comment.author.name }}
-            </router-link>
-            <span class="comment-time">{{ formatTime(comment.time) }}</span>
-          </div>
+          <span class="comment-author">{{ comment.author?.name || '未知用户' }}</span>
+          <span class="comment-time">{{ formatTime(comment.createTime) }}</span>
+        </div>
 
-          <div class="comment-actions">
-            <a-button
-                type="text"
-                class="action-btn reply-btn"
-                @click="$emit('reply', comment)"
-            >
-              <template #icon><comment-outlined /></template>
-              回复
-            </a-button>
-            <a-button
-                type="text"
-                class="action-btn like-btn"
-                :class="{ 'liked': comment.isLiked }"
-                @click="toggleLike(comment)"
-            >
-              <template #icon>
-                <like-filled v-if="comment.isLiked" />
-                <like-outlined v-else />
+        <div class="comment-text">{{ comment.content }}</div>
+
+        <div class="comment-actions">
+          <a-button
+              type="text"
+              size="small"
+              class="action-btn like-btn"
+              :class="{ 'liked': comment.liked }"
+              @click="handleLike"
+          >
+            <template #icon>
+              <template v-if="comment.liked">
+                <heart-filled />
               </template>
-              {{ comment.likes || 0 }}
-            </a-button>
-            <a-dropdown
-                v-if="isOwner(comment) || isAdmin"
-                :trigger="['click']"
-            >
-              <a-button type="text" class="action-btn more-btn">
-                <template #icon><more-outlined /></template>
-              </a-button>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item @click="deleteComment(comment)">
-                    <template #icon><delete-outlined /></template>
-                    删除
-                  </a-menu-item>
-                </a-menu>
+              <template v-else>
+                <heart-outlined />
               </template>
-            </a-dropdown>
-          </div>
+            </template>
+            {{ comment.likes || 0 }}
+          </a-button>
+
+          <a-button type="text" size="small"  @click="toggleReply">
+            <template #icon><message-outlined /></template>
+            回复
+          </a-button>
+
+          <a-button v-if="isCommentOwner" type="text" size="small"  @click="confirmDelete">
+            <template #icon><delete-outlined /></template>
+            删除
+          </a-button>
         </div>
 
-        <!-- 回复引用 -->
-        <div
-            v-if="comment.replyTo"
-            class="reply-quote"
-        >
-          回复 <span class="quote-author">@{{ comment.replyTo.name }}</span>: {{ getQuotedContent(comment) }}
-        </div>
-
-        <!-- 评论文本内容 -->
-        <div class="comment-text">
-          {{ comment.content }}
-        </div>
-
-        <!-- 评论中的图片附件 -->
-        <div
-            v-if="comment.images && comment.images.length > 0"
-            class="comment-images"
-        >
-          <a-image
-              v-for="(image, index) in comment.images"
-              :key="index"
-              :src="image"
-              :preview="{ src: image }"
-              class="comment-image"
+        <!-- 回复输入框 -->
+        <div v-if="showReplyInput" class="reply-input-container">
+          <a-textarea
+              v-model:value="replyContent"
+              placeholder="回复内容..."
+              :auto-size="{ minRows: 2, maxRows: 4 }"
+              class="reply-input"
           />
+          <div class="reply-tools">
+            <a-button class="comment-action-btn" @click="toggleReply">取消</a-button>
+            <a-button
+                type="primary"
+                class="comment-action-btn"
+                :disabled="!replyContent.trim()"
+                @click="submitReply"
+            >
+              发表回复
+            </a-button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 嵌套的回复 -->
-    <div
-        v-if="comment.replies && comment.replies.length > 0"
-        class="replies-container"
-    >
+    <!-- 回复列表 -->
+    <div v-if="comment.replies && comment.replies.length > 0" class="replies-container">
       <div
           v-for="reply in comment.replies"
           :key="reply.id"
           class="reply-item"
+          v-motion
+          :initial="{ opacity: 0, y: 10 }"
+          :enter="{ opacity: 1, y: 0, transition: { duration: 300 } }"
       >
-        <div class="reply-main">
-          <a-avatar
-              :src="reply.author.avatar"
-              :size="32"
-              class="reply-avatar"
-          />
-          <div class="reply-content">
-            <div class="reply-header">
-              <div class="author-info">
-                <router-link
-                    :to="`/user/${reply.author.id}`"
-                    class="author-name"
-                >
-                  {{ reply.author.name }}
-                </router-link>
-                <span class="reply-time">{{ formatTime(reply.time) }}</span>
-              </div>
-
-              <div class="reply-actions">
-                <a-button
-                    type="text"
-                    class="action-btn reply-btn"
-                    @click="$emit('reply', reply, comment)"
-                >
-                  <template #icon><comment-outlined /></template>
-                  回复
-                </a-button>
-                <a-button
-                    type="text"
-                    class="action-btn like-btn"
-                    :class="{ 'liked': reply.isLiked }"
-                    @click="toggleLike(reply)"
-                >
-                  <template #icon>
-                    <like-filled v-if="reply.isLiked" />
-                    <like-outlined v-else />
-                  </template>
-                  {{ reply.likes || 0 }}
-                </a-button>
-                <a-dropdown
-                    v-if="isOwner(reply) || isAdmin"
-                    :trigger="['click']"
-                >
-                  <a-button type="text" class="action-btn more-btn">
-                    <template #icon><more-outlined /></template>
-                  </a-button>
-                  <template #overlay>
-                    <a-menu>
-                      <a-menu-item @click="deleteComment(reply)">
-                        <template #icon><delete-outlined /></template>
-                        删除
-                      </a-menu-item>
-                    </a-menu>
-                  </template>
-                </a-dropdown>
-              </div>
-            </div>
-
-            <!-- 回复引用 -->
-            <div class="reply-to">
-              回复 <span class="quote-author">@{{ reply.replyTo.name }}</span>
-            </div>
-
-            <!-- 回复文本内容 -->
-            <div class="reply-text">
-              {{ reply.content }}
-            </div>
-
-            <!-- 回复中的图片附件 -->
-            <div
-                v-if="reply.images && reply.images.length > 0"
-                class="reply-images"
+        <a-avatar :src="reply.author?.avatar" :size="32" class="reply-avatar" />
+        <div class="reply-content">
+          <div class="reply-header">
+            <span class="reply-author">{{ reply.author?.name || '未知用户' }}</span>
+            <span class="reply-time">{{ formatTime(reply.createTime) }}</span>
+          </div>
+          <div class="reply-text">{{ reply.content }}</div>
+          <div class="reply-actions">
+            <a-button
+                type="text"
+                size="small"
+                class="action-btn like-btn"
+                :class="{ 'liked': reply.liked }"
+                @click="handleReplyLike(reply)"
             >
-              <a-image
-                  v-for="(image, index) in reply.images"
-                  :key="index"
-                  :src="image"
-                  :preview="{ src: image }"
-                  class="reply-image"
-              />
+              <template #icon>
+                <template v-if="reply.liked">
+                  <heart-filled />
+                </template>
+                <template v-else>
+                  <heart-outlined />
+                </template>
+              </template>
+              {{ reply.likes || 0 }}
+            </a-button>
+
+            <a-button type="text" size="small" class="action-btn reply-btn" @click="toggleReplyForReply(reply)">
+              <template #icon><message-outlined /></template>
+              回复
+            </a-button>
+
+            <a-button v-if="isReplyOwner(reply)" type="text" size="small" class="action-btn delete-btn" @click="confirmDeleteReply(reply)">
+              <template #icon><delete-outlined /></template>
+              删除
+            </a-button>
+          </div>
+
+          <!-- 添加回复输入框 - 新增部分 -->
+          <div v-if="replyInputMap[reply.id]" class="reply-input-container">
+            <a-textarea
+                v-model:value="replyContentForReplies[reply.id]"
+                placeholder="回复内容..."
+                :auto-size="{ minRows: 2, maxRows: 4 }"
+                class="reply-input"
+            />
+            <div class="reply-tools">
+              <a-button class="comment-action-btn" @click="toggleReplyForReply(reply)">取消</a-button>
+              <a-button
+                  type="primary"
+                  class="comment-action-btn"
+                  :disabled="!replyContentForReplies[reply.id] || !replyContentForReplies[reply.id].trim()"
+                  @click="submitReplyToReply(reply)"
+              >
+                发表回复
+              </a-button>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 展开更多回复 -->
-      <div
-          v-if="comment.replies.length > 2 && !showAllReplies"
-          class="load-more-replies"
-      >
-        <a-button type="link" @click="showAllReplies = true">
-          查看全部 {{ comment.replies.length }} 条回复
-          <template #icon><down-outlined /></template>
-        </a-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from 'vue';
-import {message, Modal} from 'ant-design-vue';
+import { ref, computed } from 'vue';
+import { message, Modal } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/zh-cn';
 import {
-  CommentOutlined,
-  LikeOutlined,
-  LikeFilled,
-  MoreOutlined,
-  DeleteOutlined,
-  DownOutlined
+  HeartOutlined,
+  HeartFilled,
+  MessageOutlined,
+  DeleteOutlined
 } from '@ant-design/icons-vue';
 
-// 日期格式化初始化
-dayjs.extend(relativeTime);
-dayjs.locale('zh-cn');
-
-// Props
+// 定义Props
 const props = defineProps({
   comment: {
     type: Object,
@@ -229,78 +162,155 @@ const props = defineProps({
   }
 });
 
-// Emits
+// 定义Emits
 const emit = defineEmits(['reply', 'delete', 'like']);
 
-// 是否展示所有回复
-const showAllReplies = ref(false);
+// 回复相关
+const showReplyInput = ref(false);
+const replyContent = ref('');
+
+const replyInputMap = ref({});  // 用于追踪每个回复的输入框显示状态
+const replyContentForReplies = ref({});  // 用于存储对回复的回复内容
+
+// 切换回复框
+const toggleReply = () => {
+  showReplyInput.value = !showReplyInput.value;
+  if (!showReplyInput.value) {
+    replyContent.value = '';
+  }
+};
+
+// 提交回复
+const submitReply = () => {
+  if (!replyContent.value.trim()) return;
+
+  emit('reply', props.comment);
+
+  // 发送回复数据到父组件
+  emit('reply', props.comment);
+
+  // 重置输入框
+  replyContent.value = '';
+  showReplyInput.value = false;
+
+  message.success('回复已发送');
+};
+
+
+// 切换对回复的回复框
+const toggleReplyForReply = (reply) => {
+  if (!replyInputMap.value[reply.id]) {
+    replyInputMap.value = {}; // 清除其他可能打开的回复框
+    replyContentForReplies.value[reply.id] = ''; // 初始化内容
+  }
+  replyInputMap.value[reply.id] = !replyInputMap.value[reply.id];
+
+  // 如果关闭了输入框，清除内容
+  if (!replyInputMap.value[reply.id]) {
+    replyContentForReplies.value[reply.id] = '';
+  }
+};
+
+// 提交对回复的回复
+const submitReplyToReply = (reply) => {
+  const content = replyContentForReplies.value[reply.id];
+  if (!content || !content.trim()) return;
+
+  // 发送回复事件到父组件
+  emit('reply', reply, props.comment);
+
+  // 清除输入内容和隐藏输入框
+  replyContentForReplies.value[reply.id] = '';
+  replyInputMap.value[reply.id] = false;
+
+  message.success('回复已发送');
+};
+
 
 // 格式化时间
-const formatTime = (time :any) => {
-  return dayjs(time).fromNow();
-};
+const formatTime = (timestamp) => {
+  if (!timestamp) return '未知时间';
 
-// 获取引用内容
-const getQuotedContent = (comment :any) => {
-  if (!comment.replyTo || !comment.replyToContent) {
-    return '';
+  const date = dayjs(timestamp);
+  const now = dayjs();
+  const diffMinutes = now.diff(date, 'minute');
+
+  if (diffMinutes < 1) {
+    return '刚刚';
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes}分钟前`;
+  } else if (diffMinutes < 24 * 60) {
+    return `${Math.floor(diffMinutes / 60)}小时前`;
+  } else if (diffMinutes < 7 * 24 * 60) {
+    return `${Math.floor(diffMinutes / (24 * 60))}天前`;
+  } else {
+    return date.format('YYYY-MM-DD HH:mm');
   }
-
-  // 截取内容，避免过长
-  let content = comment.replyToContent;
-  if (content.length > 20) {
-    content = content.substring(0, 20) + '...';
-  }
-
-  return content;
 };
 
-// 检查是否是评论所有者
-const isOwner = (comment:any) => {
-  return comment.author.id === props.currentUser.id;
-};
-
-// 是否是管理员
-const isAdmin = computed(() => {
-  // 这里可以根据实际情况判断当前用户是否是管理员
-  return false;
+// 检查用户是否是评论的所有者
+const isCommentOwner = computed(() => {
+  if (!props.comment.author || !props.currentUser) return false;
+  return props.comment.author.id === props.currentUser.id;
 });
 
-// 点赞或取消点赞
-const toggleLike = (comment :any) => {
-  const newLikedStatus = !comment.isLiked;
-
-  // 更新UI
-  comment.isLiked = newLikedStatus;
-  comment.likes = newLikedStatus ? (comment.likes || 0) + 1 : (comment.likes || 1) - 1;
-
-  // 发送事件
-  emit('like', { commentId: comment.id, liked: newLikedStatus });
+// 检查用户是否是回复的所有者
+const isReplyOwner = (reply) => {
+  if (!reply.author || !props.currentUser) return false;
+  return reply.author.id === props.currentUser.id;
 };
 
-// 删除评论
-const deleteComment = (comment :any) => {
-  // 确认对话框
+// 点赞评论
+const handleLike = () => {
+  const liked = !props.comment.liked;
+  emit('like', { commentId: props.comment.id, liked });
+};
+
+// 点赞回复
+const handleReplyLike = (reply) => {
+  const liked = !reply.liked;
+  emit('like', { commentId: reply.id, liked });
+};
+
+// 确认删除评论
+const confirmDelete = () => {
   Modal.confirm({
-    title: '确定要删除这条评论吗？',
-    content: '删除后无法恢复。',
-    okText: '确定',
+    title: '确认删除',
+    content: '确定要删除这条评论吗？删除后无法恢复。',
+    okText: '删除',
+    okType: 'danger',
     cancelText: '取消',
-    onOk: () => {
-      emit('delete', comment.id);
+    onOk() {
+      emit('delete', props.comment.id);
+      message.success('评论已删除');
+    }
+  });
+};
+
+// 确认删除回复
+const confirmDeleteReply = (reply) => {
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定要删除这条回复吗？删除后无法恢复。',
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk() {
+      emit('delete', { replyId: reply.id, commentId: props.comment.id });
+      message.success('回复已删除');
     }
   });
 };
 </script>
 
 <style scoped>
-.comment-item {
-  margin-bottom: 24px;
+.comment-item-container {
+  width: 100%;
 }
 
 .comment-main {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 
 .comment-avatar {
@@ -309,158 +319,174 @@ const deleteComment = (comment :any) => {
 
 .comment-content {
   flex: 1;
-  background: #f8f8f8;
-  border-radius: 8px;
-  padding: 16px;
 }
 
 .comment-header {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  align-items: center;
+  margin-bottom: 4px;
 }
 
-.author-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.author-name {
-  font-size: 15px;
-  font-weight: 500;
+.comment-author {
+  font-weight: 600;
+  font-size: 14px;
   color: #333;
-  text-decoration: none;
+  margin-right: 8px;
 }
 
-.author-name:hover {
-  color: var(--primary-color, #722ed1);
-}
-
-.comment-time, .reply-time {
+.comment-time {
   font-size: 12px;
-  color: #999;
-  margin-top: 2px;
+  color: #8c8c8c;
 }
 
-.comment-actions, .reply-actions {
+.comment-text {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.comment-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .action-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #999;
-  transition: all 0.3s;
+  font-size: 12px;
+  color: #8c8c8c;
+  padding: 0 4px;
+  height: 24px;
 }
 
-.action-btn:hover {
-  color: var(--primary-color, #722ed1);
-}
-
-.action-btn.liked {
+.like-btn.liked {
   color: #ff4d4f;
 }
 
-.comment-text, .reply-text {
-  font-size: 14px;
-  color: #333;
-  line-height: 1.6;
-  margin-bottom: 8px;
-}
-
-.comment-images, .reply-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.comment-image, .reply-image {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.reply-quote {
-  margin-bottom: 8px;
-  padding: 8px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #666;
-}
-
-.quote-author {
-  color: var(--primary-color, #722ed1);
-  font-weight: 500;
-}
-
+/* 回复区域 */
 .replies-container {
-  margin-left: 56px;
-  margin-top: 16px;
+  margin-top: 8px;
+  margin-left: 48px;
+  border-left: 2px solid #f0f0f0;
+  padding-left: 16px;
 }
 
 .reply-item {
-  margin-bottom: 16px;
-}
-
-.reply-main {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .reply-content {
   flex: 1;
-  background: #f8f8f8;
-  border-radius: 8px;
-  padding: 12px;
 }
 
 .reply-header {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
+  align-items: center;
+  margin-bottom: 4px;
 }
 
-.reply-to {
+.reply-author {
+  font-weight: 600;
   font-size: 13px;
-  color: #666;
+  color: #333;
+  margin-right: 8px;
+}
+
+.reply-time {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.reply-text {
+  font-size: 13px;
+  line-height: 1.5;
   margin-bottom: 6px;
 }
 
-.load-more-replies {
-  text-align: center;
-  margin-top: 12px;
+.reply-actions {
+  display: flex;
+  gap: 12px;
 }
 
-@media (max-width: 768px) {
-  .comment-main, .reply-main {
-    gap: 8px;
+/* 回复输入框 */
+.reply-input-container {
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.reply-input {
+  width: 100%;
+  border-radius: 6px;
+  font-size: 13px;
+  resize: none;
+}
+
+.reply-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reply-content .reply-input-container {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.reply-content .reply-input {
+  width: 100%;
+  border-radius: 6px;
+  font-size: 13px;
+  resize: none;
+}
+
+.reply-content .reply-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.comment-action-btn {
+  height: 36px;  /* 与主评论区域保持一致的高度 */
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+/* 主要按钮样式 */
+.reply-tools .ant-btn-primary {
+  background: var(--primary-color, #6366f1);
+  border: none;
+}
+
+/* 取消size="small"的影响 */
+.reply-tools .ant-btn {
+  padding: 0 15px;
+}
+
+/* 暗黑模式适配 */
+@media (prefers-color-scheme: dark) {
+  .comment-author,
+  .reply-author {
+    color: #e0e0e0;
+  }
+
+  .comment-time,
+  .reply-time,
+  .action-btn {
+    color: #a6a6a6;
+  }
+
+  .comment-text,
+  .reply-text {
+    color: #d9d9d9;
   }
 
   .replies-container {
-    margin-left: 32px;
-  }
-
-  .comment-content, .reply-content {
-    padding: 12px;
-  }
-
-  .comment-header, .reply-header {
-    flex-direction: column;
-  }
-
-  .comment-actions, .reply-actions {
-    margin-top: 8px;
-  }
-
-  .comment-image, .reply-image {
-    width: 60px;
-    height: 60px;
+    border-left-color: #333;
   }
 }
 </style>
