@@ -1,737 +1,717 @@
+<!-- pages/picture/CreatePicture.vue -->
 <template>
-  <div class="create-image-page">
-    <!-- 页面标题 -->
-    <div class="page-header" v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }">
-      <h1 class="page-title">创建图片</h1>
-      <p class="page-description">上传图片到您的云图库，开始构建您的知识体系</p>
+  <div class="create-picture-page">
+    <!-- 页面标题区域 -->
+    <div class="enhanced-page-header">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="title-container">
+            <h1 class="main-title">
+              <picture-outlined />
+              创建图片
+            </h1>
+            <p class="page-desc">上传您的图片作品，与更多人分享您的创意和视角</p>
+          </div>
+          <div class="statistics-container">
+            <div class="stat-item">
+              <upload-outlined />
+              <span>今日上传: <strong>253</strong></span>
+            </div>
+            <div class="stat-item">
+              <eye-outlined />
+              <span>昨日浏览: <strong>1.2万</strong></span>
+            </div>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="inspiration-container">
+            <div class="inspiration-text">今日灵感</div>
+            <div class="inspiration-quote">"摄影不只是记录现实，更是发现美的过程"</div>
+            <div class="inspiration-author">— 安塞尔·亚当斯</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 进度指示器 -->
+      <div class="upload-progress">
+        <div class="progress-steps">
+          <div class="step active">
+            <div class="step-icon">
+              <upload-outlined />
+            </div>
+            <div class="step-text">上传图片</div>
+          </div>
+          <div class="step-divider"></div>
+          <div class="step" :class="{ 'active': localPreviewUrl || linkPreviewUrl }">
+            <div class="step-icon">
+              <form-outlined />
+            </div>
+            <div class="step-text">填写信息</div>
+          </div>
+          <div class="step-divider"></div>
+          <div class="step">
+            <div class="step-icon">
+              <check-circle-outlined />
+            </div>
+            <div class="step-text">发布成功</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 装饰性图形元素 -->
+      <div class="decorative-elements">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+        <div class="square"></div>
+        <div class="triangle"></div>
+      </div>
     </div>
 
-    <!-- 步骤提示 -->
-    <div class="steps-container" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1, transition: { delay: 100 } }">
-      <div class="step" :class="{ 'active': currentStep >= 1 }">
-        <div class="step-icon">
-          <cloud-upload-outlined />
-        </div>
-        <div class="step-content">
-          <h3>上传图片</h3>
-          <p>选择图片或输入链接</p>
-        </div>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step" :class="{ 'active': currentStep >= 2 }">
-        <div class="step-icon">
-          <form-outlined />
-        </div>
-        <div class="step-content">
-          <h3>填写信息</h3>
-          <p>添加名称和描述</p>
-        </div>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step" :class="{ 'active': currentStep === 3 }">
-        <div class="step-icon">
-          <check-circle-outlined />
-        </div>
-        <div class="step-content">
-          <h3>完成创建</h3>
-          <p>保存到您的图库</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 上传区域卡片 -->
-    <a-card
-        class="upload-card"
-        :bordered="false"
-        v-motion
-        :initial="{ opacity: 0, y: 20 }"
-        :enter="{ opacity: 1, y: 0, transition: { delay: 200 } }"
-    >
-      <!-- 上传方式选择标签页 -->
-      <a-tabs v-model:activeKey="activeTab" class="upload-tabs">
+    <!-- 上传区域 -->
+    <a-card class="upload-card" :bordered="false">
+      <a-tabs v-model:activeKey="activeTabKey">
+        <!-- 本地上传选项卡 -->
         <a-tab-pane key="local" tab="本地上传">
-          <!-- 本地上传区域 -->
-          <div class="upload-area">
+          <div class="upload-area" v-if="!localPreviewUrl">
             <a-upload-dragger
-                v-model:fileList="fileList"
-                :customRequest="handleLocalUpload"
-                :beforeUpload="beforeUpload"
-                :showUploadList="false"
-                accept="image/*"
+                name="file"
                 :multiple="false"
-                @change="handleUploadChange"
-                class="custom-uploader"
+                :before-upload="beforeLocalUpload"
+                :show-upload-list="false"
+                accept="image/*"
             >
-              <div class="upload-content" v-if="!previewUrl">
-                <div class="upload-icon-wrapper">
-                  <cloud-upload-outlined class="upload-icon" />
-                </div>
-                <p class="upload-text">点击或拖拽图片到此区域上传</p>
-                <p class="upload-hint">支持 JPG、PNG、GIF 等格式图片，单个文件不超过 10MB</p>
-
-                <!-- 上传建议 -->
-                <div class="upload-suggestions">
-                  <h4>上传小贴士</h4>
-                  <ul>
-                    <li><check-outlined /> 高质量图片可提高识别准确率</li>
-                    <li><check-outlined /> 清晰的图片便于知识管理</li>
-                    <li><check-outlined /> 添加标签有助于快速检索</li>
-                  </ul>
-                </div>
-              </div>
-
-              <!-- 预览区域 -->
-              <div class="preview-container" v-else>
-                <img :src="previewUrl" class="preview-image" />
-                <div class="preview-actions">
-                  <a-button class="preview-action-btn" type="primary" shape="circle" @click.stop="zoomImage">
-                    <search-outlined />
-                  </a-button>
-                  <a-button class="preview-action-btn" type="primary" danger shape="circle" @click.stop="removeImage">
-                    <delete-outlined />
-                  </a-button>
-                </div>
-                <div class="image-info-overlay">
-                  <div class="image-format">
-                    {{ getImageFormat() }}
-                  </div>
-                </div>
+              <div class="upload-content">
+                <p class="upload-icon">
+                  <upload-outlined />
+                </p>
+                <p class="upload-text">点击或拖拽图片至此区域上传</p>
+                <p class="upload-hint">支持 JPG、PNG、WebP 等常见图片格式，文件大小不超过 10MB</p>
               </div>
             </a-upload-dragger>
           </div>
+          <div class="preview-area" v-else>
+            <div class="preview-image-wrapper">
+              <img :src="localPreviewUrl" alt="预览图" class="preview-image" />
+              <div class="preview-actions">
+                <a-button type="primary" @click="reuploadLocal">重新上传</a-button>
+              </div>
+            </div>
+          </div>
         </a-tab-pane>
 
-        <a-tab-pane key="url" tab="链接上传">
-          <!-- 链接上传区域 -->
-          <div class="url-upload-area">
-            <a-form layout="vertical">
-              <a-form-item label="图片链接" name="imageUrl">
+        <!-- 链接上传选项卡 -->
+        <a-tab-pane key="link" tab="链接上传">
+          <div class="link-upload-area" v-if="!linkPreviewUrl">
+            <a-form :model="linkForm" layout="vertical">
+              <a-form-item
+                  label="图片链接"
+                  name="imageUrl"
+                  :rules="[{ required: true, message: '请输入图片链接' }]">
                 <a-input
-                    v-model:value="imageUrl"
-                    placeholder="请输入图片URL，例如：https://example.com/image.jpg"
-                    class="url-input"
+                    v-model:value="linkForm.imageUrl"
+                    placeholder="输入图片URL链接，如 https://example.com/image.jpg"
+                    class="link-input"
                     allow-clear
-                    @pressEnter="fetchImageFromUrl"
                 >
-                  <template #prefix>
-                    <link-outlined />
-                  </template>
-                  <template #suffix>
-                    <a-button
-                        type="primary"
-                        size="small"
-                        class="fetch-btn"
-                        @click="fetchImageFromUrl"
-                        :disabled="!imageUrl"
-                    >
-                      获取
+                  <template #addonAfter v-if="linkForm.imageUrl">
+                    <a-button type="primary" size="small" @click="previewLink">
+                      预览
                     </a-button>
                   </template>
                 </a-input>
               </a-form-item>
             </a-form>
-
-            <!-- 使用示例 -->
-            <div class="url-examples" v-if="!previewUrl">
-              <h4>链接上传示例</h4>
-              <div class="example-links">
-                <div class="example-link" v-for="(example, index) in urlExamples" :key="index" @click="useExampleUrl(example)">
-                  <div class="example-icon">
-                    <img :src="example.thumbnail" alt="示例缩略图" class="example-thumbnail" />
-                  </div>
-                  <div class="example-info">
-                    <p class="example-title">{{ example.title }}</p>
-                    <a-tag color="#4F46E5">{{ example.format }}</a-tag>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 链接图片预览区 -->
-            <div class="url-preview-wrapper" v-if="previewUrl && activeTab === 'url'">
-              <div class="url-preview-container" v-motion :initial="{ opacity: 0, scale: 0.9 }" :enter="{ opacity: 1, scale: 1 }">
-                <img :src="previewUrl" class="preview-image" />
-                <div class="preview-actions">
-                  <a-button class="preview-action-btn" type="primary" shape="circle" @click.stop="zoomImage">
-                    <search-outlined />
-                  </a-button>
-                  <a-button class="preview-action-btn" type="primary" danger shape="circle" @click.stop="removeImage">
-                    <delete-outlined />
-                  </a-button>
-                </div>
-                <div class="image-info-overlay">
-                  <div class="image-format">
-                    {{ getImageFormat() }}
-                  </div>
-                </div>
+          </div>
+          <div class="preview-area" v-else>
+            <div class="preview-image-wrapper">
+              <img :src="linkPreviewUrl" alt="预览图" class="preview-image" />
+              <div class="preview-actions">
+                <a-button type="primary" @click="reuploadLink">重新上传</a-button>
               </div>
             </div>
           </div>
         </a-tab-pane>
       </a-tabs>
-
-      <!-- 图片信息设置 -->
-      <!-- 修改图片信息设置部分，添加分类选择 -->
-      <div class="image-settings" v-if="previewUrl" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1, transition: { delay: 300 } }">
-        <div class="settings-header">
-          <h3 class="settings-title">图片信息</h3>
-          <p class="settings-subtitle">添加详细信息让您的图片更易于管理和查找</p>
-        </div>
-
-        <a-form layout="vertical">
-          <a-row :gutter="16">
-            <a-col :span="24">
-              <a-form-item label="图片名称" name="imageName" required>
-                <a-input
-                    v-model:value="imageName"
-                    placeholder="请输入图片名称"
-                    class="input-field"
-                >
-                  <template #prefix>
-                    <edit-outlined />
-                  </template>
-                </a-input>
-              </a-form-item>
-            </a-col>
-          </a-row>
-
-          <a-row :gutter="16">
-            <a-col :span="24">
-              <a-form-item label="图片描述" name="imageDescription">
-                <a-textarea
-                    v-model:value="imageDescription"
-                    placeholder="请输入图片描述（可选）"
-                    :rows="3"
-                    class="input-field"
-                />
-              </a-form-item>
-            </a-col>
-          </a-row>
-
-          <!-- 添加分类选择 -->
-          <a-row :gutter="16">
-            <a-col :span="24">
-              <a-form-item label="分类" name="imageCategory" required>
-                <a-select
-                    v-model:value="imageCategory"
-                    placeholder="请选择一个分类"
-                    class="input-field category-select"
-                >
-                  <a-select-option v-for="category in categoryOptions" :key="category.value" :value="category.value">
-                    {{ category.label }}
-                  </a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-          </a-row>
-
-          <!-- 标签选择 -->
-          <a-row :gutter="16">
-            <a-col :span="24">
-              <a-form-item label="标签" name="imageTags">
-                <a-select
-                    v-model:value="imageTags"
-                    mode="tags"
-                    placeholder="请输入标签，回车确认"
-                    class="input-field tag-select"
-                >
-                  <a-select-option v-for="tag in suggestedTags" :key="tag" :value="tag">
-                    {{ tag }}
-                  </a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </a-form>
-      </div>
     </a-card>
 
-    <!-- 系统推荐区域 -->
-    <div class="recommendations" v-if="previewUrl" v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0, transition: { delay: 350 } }">
-      <a-card :bordered="false" class="recommendation-card">
-        <template #title>
-          <div class="recommendation-header">
-            <bulb-outlined class="recommendation-icon" />
-            <span>智能推荐</span>
-          </div>
-        </template>
-        <a-row :gutter="16">
-          <a-col :xs="24" :md="8">
-            <div class="recommendation-item">
-              <h4>推荐标签</h4>
-              <div class="recommendation-tags">
-                <a-tag
-                    v-for="tag in aiSuggestedTags"
-                    :key="tag"
-                    class="ai-tag"
-                    @click="addTag(tag)"
-                >
-                  {{ tag }}
-                </a-tag>
-              </div>
-            </div>
-          </a-col>
-          <a-col :xs="24" :md="8">
-            <div class="recommendation-item">
-              <h4>相关图片</h4>
-              <div class="related-images">
-                <div v-for="(img, index) in relatedImages" :key="index" class="related-image-item">
-                  <img :src="img.thumbnail" alt="相关图片" class="related-thumbnail" />
-                  <div class="related-image-title">{{ img.title }}</div>
-                </div>
-              </div>
-            </div>
-          </a-col>
-          <a-col :xs="24" :md="8">
-            <div class="recommendation-item">
-              <h4>内容识别</h4>
-              <div class="ai-analysis">
-                <p class="analysis-result"><scan-outlined /> {{ aiAnalysisResult }}</p>
-              </div>
-            </div>
-          </a-col>
-        </a-row>
-      </a-card>
-    </div>
+    <!-- 表单区域 - 仅当有预览图时显示 -->
+    <a-card
+        v-if="localPreviewUrl || linkPreviewUrl"
+        class="form-card"
+        :bordered="false"
+        v-motion
+        :initial="{ opacity: 0, y: 20 }"
+        :enter="{ opacity: 1, y: 0, transition: { delay: 300, duration: 500 } }"
+    >
+      <template #title>
+        <div class="form-card-title">
+          <form-outlined />
+          填写图片信息
+        </div>
+      </template>
 
-    <!-- 提交按钮 -->
-    <div class="action-buttons" v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0, transition: { delay: 400 } }">
-      <a-button @click="handleCancel" class="cancel-btn">取消</a-button>
-      <a-button
-          type="primary"
-          :disabled="!canSubmit"
-          :loading="uploading"
-          @click="handleSubmit"
-          class="submit-btn"
+      <a-form
+          :model="pictureForm"
+          layout="vertical"
+          :rules="formRules"
+          ref="pictureFormRef"
       >
-        保存图片
-      </a-button>
-    </div>
+        <!-- 基础信息区 -->
+        <div class="form-section">
+          <h3 class="section-title">基础信息</h3>
 
-    <!-- 图片预览弹窗 -->
-    <a-modal v-model:visible="previewModalVisible" :footer="null" class="preview-modal" width="auto">
-      <img :src="previewUrl" alt="图片预览" class="preview-modal-image" />
-    </a-modal>
+          <!-- 图片名称 -->
+          <a-form-item label="图片名称" name="title" required>
+            <a-input
+                v-model:value="pictureForm.title"
+                placeholder="为您的图片起个名称"
+                :maxLength="50"
+                show-count
+                allow-clear
+            />
+          </a-form-item>
+
+          <!-- 图片简介 -->
+          <a-form-item label="图片简介" name="description">
+            <a-textarea
+                v-model:value="pictureForm.description"
+                placeholder="描述一下您的图片内容、创作灵感或想法..."
+                :rows="4"
+                :maxLength="500"
+                show-count
+                allow-clear
+            />
+          </a-form-item>
+
+          <!-- 一行两列布局 -->
+          <a-row :gutter="16">
+            <a-col :span="12">
+              <!-- 图片分类 -->
+              <a-form-item label="图片分类" name="category" required>
+                <a-select
+                    v-model:value="pictureForm.category"
+                    placeholder="选择分类"
+                    :options="categoryOptions"
+                    :show-search="true"
+                    allow-clear
+                >
+                  <template #suffixIcon><appstore-outlined /></template>
+                </a-select>
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <!-- 图片标签 -->
+              <a-form-item label="图片标签" name="tags">
+                <a-select
+                    v-model:value="pictureForm.tags"
+                    mode="multiple"
+                    placeholder="选择或输入标签"
+                    :options="tagOptions"
+                    :max-tag-count="3"
+                    :max-tag-text-length="10"
+                    allow-clear
+                    :tokenSeparators="[',']"
+                >
+                  <template #suffixIcon><tags-outlined /></template>
+                </a-select>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </div>
+
+        <!-- 高级选项区域 -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">高级选项</h3>
+            <a-switch v-model:checked="showAdvanced" />
+          </div>
+
+          <div v-show="showAdvanced" class="advanced-options">
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <!-- 拍摄设备 -->
+                <a-form-item label="拍摄设备" name="device">
+                  <a-input
+                      v-model:value="pictureForm.device"
+                      placeholder="相机型号或手机型号等"
+                      allow-clear
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <!-- 拍摄地点 -->
+                <a-form-item label="拍摄地点" name="location">
+                  <a-input
+                      v-model:value="pictureForm.location"
+                      placeholder="拍摄的位置或地点"
+                      allow-clear
+                  >
+                    <template #prefix>
+                      <environment-outlined />
+                    </template>
+                  </a-input>
+                </a-form-item>
+              </a-col>
+            </a-row>
+
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <!-- 拍摄日期 -->
+                <a-form-item label="拍摄日期" name="shootDate">
+                  <a-date-picker
+                      v-model:value="pictureForm.shootDate"
+                      style="width: 100%"
+                      placeholder="选择拍摄日期"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <!-- 色彩模式 -->
+                <a-form-item label="色彩模式" name="colorMode">
+                  <a-select
+                      v-model:value="pictureForm.colorMode"
+                      placeholder="选择色彩模式"
+                      :options="colorModeOptions"
+                      allow-clear
+                  />
+                </a-form-item>
+              </a-col>
+            </a-row>
+
+            <!-- 故事背景 -->
+            <a-form-item label="故事背景" name="story">
+              <a-textarea
+                  v-model:value="pictureForm.story"
+                  placeholder="分享这张图片背后的故事、拍摄过程或创作灵感..."
+                  :rows="4"
+                  :maxLength="1000"
+                  show-count
+                  allow-clear
+              />
+            </a-form-item>
+          </div>
+        </div>
+
+        <!-- 隐私与权限区域 -->
+        <div class="form-section">
+          <h3 class="section-title">隐私与权限</h3>
+
+
+          <!-- 水印设置 -->
+          <a-form-item label="水印设置" name="watermark">
+            <div class="watermark-option">
+              <a-switch v-model:checked="pictureForm.enableWatermark" />
+              <span class="option-label">添加水印</span>
+            </div>
+            <div v-if="pictureForm.enableWatermark" class="watermark-settings">
+              <a-input
+                  v-model:value="pictureForm.watermarkText"
+                  placeholder="水印文字内容（如：您的用户名或网站名）"
+                  allow-clear
+              />
+            </div>
+          </a-form-item>
+        </div>
+
+        <!-- 提交按钮区域 -->
+        <div class="form-actions">
+          <a-button @click="resetForm">取消</a-button>
+          <a-button type="primary" @click="submitForm" :loading="submitting">
+            发布图片
+          </a-button>
+        </div>
+      </a-form>
+    </a-card>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+<script setup>
+import { ref, reactive, computed } from 'vue';
 import { message } from 'ant-design-vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import {
-  CloudUploadOutlined,
-  LinkOutlined,
-  DeleteOutlined,
-  CheckOutlined,
-  SearchOutlined,
+  PictureOutlined,
+  UploadOutlined,
   FormOutlined,
-  CheckCircleOutlined,
-  EditOutlined,
-  BulbOutlined,
-  ScanOutlined,
+  AppstoreOutlined,
+  TagsOutlined,
   LockOutlined,
+  GlobalOutlined,
   TeamOutlined,
-  GlobalOutlined
+  CopyrightOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons-vue';
-import { useUserStore } from '@/stores/user';
 
-// 路由和用户状态
 const router = useRouter();
-const route = useRoute();
-const userStore = useUserStore();
 
-// 上传相关状态
-const activeTab = ref('local');
-const fileList = ref<any[]>([]);
-const previewUrl = ref('');
-const imageName = ref('');
-const imageDescription = ref('');
-const imageTags = ref<string[]>([]);
-const imageUrl = ref('');
-const imagePermission = ref('private');
-const uploading = ref(false);
-const uploadedFile = ref<File | null>(null);
-const currentStep = ref(1);
-const previewModalVisible = ref(false);
-const imageCategory = ref('');
-const categoryOptions = [
-  { label: '个人收藏', value: 'personal' },
-  { label: '学习资料', value: 'study' },
-  { label: '工作项目', value: 'work' },
-  { label: '设计灵感', value: 'design' },
-  { label: '参考图', value: 'reference' },
-  { label: '其他', value: 'other' }
-];
+// 激活的标签页
+const activeTabKey = ref('local');
 
-// 推荐标签
-const suggestedTags = [
-  '知识笔记', '学习资料', '参考图', '教程', '设计灵感',
-  '重要文档', '工作资料', '个人收藏', '项目素材'
-];
+// 图片预览URL
+const localPreviewUrl = ref('');
+const linkPreviewUrl = ref('');
 
-// AI推荐标签 - 根据上传图片动态生成
-const aiSuggestedTags = ref(['教程资料', '技术文档', '前端开发', 'Vue框架', 'UI设计']);
-
-// AI内容识别结果
-const aiAnalysisResult = ref('图片可能包含网页或应用界面设计内容');
-
-// URL示例
-const urlExamples = [
-  {
-    title: '风景图示例',
-    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
-    thumbnail: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=100&h=100&fit=crop',
-    format: 'JPG'
-  },
-  {
-    title: '设计图示例',
-    url: 'https://images.unsplash.com/photo-1561070791-2526d30994b5',
-    thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=100&h=100&fit=crop',
-    format: 'PNG'
-  },
-  {
-    title: '图标示例',
-    url: 'https://cdn.pixabay.com/photo/2017/01/31/13/14/animal-2023924_640.png',
-    thumbnail: 'https://cdn.pixabay.com/photo/2017/01/31/13/14/animal-2023924_640.png',
-    format: 'PNG'
-  }
-];
-
-// 相关图片
-const relatedImages = [
-  {
-    title: '相似图片 1',
-    thumbnail: 'https://images.unsplash.com/photo-1593642532400-2682810df593?w=100&h=100&fit=crop'
-  },
-  {
-    title: '相似图片 2',
-    thumbnail: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=100&h=100&fit=crop'
-  },
-  {
-    title: '相似图片 3',
-    thumbnail: 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?w=100&h=100&fit=crop'
-  }
-];
-
-// 计算属性：是否可以提交
-const canSubmit = computed(() => {
-  return previewUrl.value && imageName.value.trim() !== '';
+// 链接表单
+const linkForm = reactive({
+  imageUrl: ''
 });
 
-// 使用示例URL
-const useExampleUrl = (example :any) => {
-  imageUrl.value = example.url;
-  fetchImageFromUrl();
+
+// 图片表单
+const pictureFormRef = ref(null);
+const pictureForm = reactive({
+  title: '',
+  description: '',
+  category: undefined,
+  tags: [],
+  device: '',
+  location: '',
+  shootDate: null,
+  colorMode: undefined,
+  story: '',
+  visibility: 'public',
+  copyright: 'cc-by',
+  enableWatermark: false,
+  watermarkText: ''
+});
+
+// 显示高级选项
+const showAdvanced = ref(false);
+
+// 提交状态
+const submitting = ref(false);
+
+// 表单验证规则
+const formRules = {
+  title: [
+    { required: true, message: '请输入图片名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '图片名称长度为2-50个字符', trigger: 'blur' }
+  ],
+  category: [
+    { required: true, message: '请选择图片分类', trigger: 'change' }
+  ]
 };
 
-// 监听文件变化，自动设置图片名称
-watch(fileList, (newFileList) => {
-  if (newFileList.length > 0 && newFileList[0].name && !imageName.value) {
-    // 从文件名中提取名称（去除扩展名）
-    const fileName = newFileList[0].name;
-    const dotIndex = fileName.lastIndexOf('.');
-    imageName.value = dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
-  }
+// 分类选项
+const categoryOptions = [
+  { value: 'portrait', label: '人像' },
+  { value: 'landscape', label: '风景' },
+  { value: 'architecture', label: '建筑' },
+  { value: 'animals', label: '动物' },
+  { value: 'food', label: '美食' },
+  { value: 'sports', label: '运动' },
+  { value: 'street', label: '街拍' },
+  { value: 'still_life', label: '静物' },
+  { value: 'abstract', label: '抽象' },
+  { value: 'documentary', label: '纪实' },
+  { value: 'other', label: '其他' }
+];
 
-  // 如果有文件，更新当前步骤
-  if (newFileList.length > 0) {
-    currentStep.value = 2;
-  }
-}, { deep: true });
+// 标签选项
+const tagOptions = [
+  { value: 'macro', label: '微距' },
+  { value: 'bw', label: '黑白' },
+  { value: 'nature', label: '自然' },
+  { value: 'city', label: '城市' },
+  { value: 'creative', label: '创意' },
+  { value: 'portrait', label: '人像' },
+  { value: 'wallpaper', label: '壁纸' },
+  { value: 'night', label: '夜景' },
+  { value: 'vintage', label: '复古' },
+  { value: 'water', label: '水景' },
+  { value: 'art', label: '艺术' },
+  { value: 'minimalism', label: '极简' }
+];
 
-// 监听预览URL变化，更新步骤
-watch(previewUrl, (newUrl) => {
-  if (newUrl) {
-    currentStep.value = 2;
-  } else {
-    currentStep.value = 1;
-  }
-});
+// 色彩模式选项
+const colorModeOptions = [
+  { value: 'color', label: '彩色' },
+  { value: 'bw', label: '黑白' },
+  { value: 'sepia', label: '棕褐色' },
+  { value: 'vintage', label: '复古' }
+];
 
-// 监听表单完成状态，更新步骤
-watch([imageName, imageTags], ([newName, newTags]) => {
-  if (previewUrl.value && newName && newTags.length > 0) {
-    currentStep.value = 3;
-  } else if (previewUrl.value) {
-    currentStep.value = 2;
-  }
-}, { deep: true });
+// 版权选项
+const copyrightOptions = [
+  { value: 'cc-by', label: 'CC BY - 署名' },
+  { value: 'cc-by-sa', label: 'CC BY-SA - 署名-相同方式共享' },
+  { value: 'cc-by-nd', label: 'CC BY-ND - 署名-禁止演绎' },
+  { value: 'cc-by-nc', label: 'CC BY-NC - 署名-非商业性使用' },
+  { value: 'cc-by-nc-sa', label: 'CC BY-NC-SA - 署名-非商业性使用-相同方式共享' },
+  { value: 'cc-by-nc-nd', label: 'CC BY-NC-ND - 署名-非商业性使用-禁止演绎' },
+  { value: 'all-rights-reserved', label: '保留所有权利' }
+];
 
-// 图片上传前验证
-const beforeUpload = (file: File) => {
+// 本地上传图片前处理
+const beforeLocalUpload = (file) => {
   // 检查文件类型
   const isImage = file.type.startsWith('image/');
   if (!isImage) {
-    message.error('只能上传图片文件！');
+    message.error('只能上传图片文件!');
     return false;
   }
 
-  // 检查文件大小（10MB = 10 * 1024 * 1024 bytes）
-  const isLessThan10M = file.size / 1024 / 1024 < 10;
-  if (!isLessThan10M) {
-    message.error('图片必须小于 10MB！');
+  // 检查文件大小
+  const isLt10M = file.size / 1024 / 1024 < 10;
+  if (!isLt10M) {
+    message.error('图片大小不能超过10MB!');
     return false;
   }
 
-  return isImage && isLessThan10M;
-};
-
-// 处理本地上传
-const handleLocalUpload = ({ file }: any) => {
-  uploadedFile.value = file;
-
-  // 创建预览URL
+  // 预览图片
   const reader = new FileReader();
   reader.readAsDataURL(file);
-  reader.onload = (e) => {
-    previewUrl.value = e.target?.result as string;
-    // 模拟AI分析
-    simulateAiAnalysis();
+  reader.onload = () => {
+    localPreviewUrl.value = reader.result;
   };
+
+  // 阻止自动上传
+  return false;
 };
 
-// 处理上传状态变化
-const handleUploadChange = (info: any) => {
-  fileList.value = info.fileList.slice(-1); // 只保留最后上传的一个文件
-};
-
-// 从URL获取图片
-const fetchImageFromUrl = async () => {
-  if (!imageUrl.value) {
-    message.warning('请输入图片链接');
+// 预览链接图片
+const previewLink = () => {
+  if (!linkForm.imageUrl) {
+    message.error('请输入图片链接');
     return;
   }
 
+  // 简单验证URL格式
+  const isValidUrl = /^(https?:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z0-9]{2,}(\/[^\s]*)?$/.test(linkForm.imageUrl);
+  if (!isValidUrl) {
+    message.error('请输入有效的图片链接');
+    return;
+  }
+
+  // 设置预览URL
+  linkPreviewUrl.value = linkForm.imageUrl;
+
+  // 设置默认标题（如果未设置）
+  if (!pictureForm.title) {
+    const filename = linkForm.imageUrl.split('/').pop().split('?')[0];
+    pictureForm.title = filename;
+  }
+};
+
+// 重新上传本地图片
+const reuploadLocal = () => {
+  localPreviewUrl.value = '';
+};
+
+// 重新上传链接图片
+const reuploadLink = () => {
+  linkPreviewUrl.value = '';
+  linkForm.imageUrl = '';
+};
+
+// 重置表单
+const resetForm = () => {
+  // 重置图片预览
+  localPreviewUrl.value = '';
+  linkPreviewUrl.value = '';
+  linkForm.imageUrl = '';
+
+  // 重置表单字段
+  pictureFormRef.value?.resetFields();
+
+  // 重置高级选项
+  showAdvanced.value = false;
+
+  // 重置其他字段
+  Object.assign(pictureForm, {
+    title: '',
+    description: '',
+    category: undefined,
+    tags: [],
+    device: '',
+    location: '',
+    shootDate: null,
+    colorMode: undefined,
+    story: '',
+    visibility: 'public',
+    copyright: 'cc-by',
+    enableWatermark: false,
+    watermarkText: ''
+  });
+
+  message.info('表单已重置');
+};
+
+// 提交表单
+const submitForm = async () => {
+  // 表单验证
   try {
-    // 验证URL是否为图片
-    const isValidImageUrl = /\.(jpeg|jpg|gif|png|webp|bmp)(\?.*)?$/i.test(imageUrl.value);
-    if (!isValidImageUrl) {
-      message.warning('请输入有效的图片链接，支持 jpg、png、gif 等格式');
+    await pictureFormRef.value.validate();
+
+    // 检查是否有图片
+    if (!localPreviewUrl.value && !linkPreviewUrl.value) {
+      message.error('请上传图片');
       return;
     }
 
-    previewUrl.value = imageUrl.value;
+    // 设置提交中状态
+    submitting.value = true;
 
-    // 从URL中提取文件名作为默认图片名称
-    if (!imageName.value) {
-      const urlParts = imageUrl.value.split('/');
-      let fileName = urlParts[urlParts.length - 1];
-      // 移除查询参数
-      fileName = fileName.split('?')[0];
-      // 移除扩展名
-      const dotIndex = fileName.lastIndexOf('.');
-      imageName.value = dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
-    }
-
-    message.success('成功获取图片');
-
-    // 模拟AI分析
-    simulateAiAnalysis();
-  } catch (error) {
-    message.error('获取图片失败，请检查链接是否有效');
-    console.error('获取图片失败:', error);
-  }
-};
-
-// 模拟AI分析
-const simulateAiAnalysis = () => {
-  // 模拟加载
-  setTimeout(() => {
-    // 随机生成一些标签建议
-    const possibleTags = [
-      '网页设计', 'UI/UX', '应用界面', '用户界面',
-      '前端开发', 'Vue组件', '设计模式', '交互设计',
-      '响应式布局', '移动应用', '界面原型', '设计稿'
-    ];
-
-    // 随机选择3-5个标签
-    const count = Math.floor(Math.random() * 3) + 3;
-    const selectedTags = [];
-    for (let i = 0; i < count; i++) {
-      const randomIndex = Math.floor(Math.random() * possibleTags.length);
-      selectedTags.push(possibleTags[randomIndex]);
-      possibleTags.splice(randomIndex, 1);
-    }
-
-    aiSuggestedTags.value = selectedTags;
-
-    // 随机选择一个分析结果
-    const possibleResults = [
-      '图片可能包含网页或应用界面设计内容',
-      '检测到UI设计元素，可能是一个应用原型',
-      '识别为前端界面设计图，包含多个交互组件',
-      '检测到这可能是一个Vue应用的页面截图'
-    ];
-
-    const randomResultIndex = Math.floor(Math.random() * possibleResults.length);
-    aiAnalysisResult.value = possibleResults[randomResultIndex];
-  }, 800);
-};
-
-// 添加AI推荐的标签
-const addTag = (tag: string) => {
-  if (!imageTags.value.includes(tag)) {
-    imageTags.value.push(tag);
-    message.success(`已添加标签: ${tag}`);
-  }
-};
-
-// 移除图片
-const removeImage = () => {
-  previewUrl.value = '';
-  fileList.value = [];
-  uploadedFile.value = null;
-
-  // 如果是在URL标签页，也清空URL输入
-  if (activeTab.value === 'url') {
-    imageUrl.value = '';
-  }
-
-  // 重置步骤
-  currentStep.value = 1;
-};
-
-// 放大预览图片
-const zoomImage = () => {
-  previewModalVisible.value = true;
-};
-
-// 获取图片格式
-const getImageFormat = () => {
-  if (!previewUrl.value) return '';
-
-  if (activeTab.value === 'local' && uploadedFile.value) {
-    const type = uploadedFile.value.type;
-    return type.split('/')[1].toUpperCase();
-  } else {
-    const url = previewUrl.value;
-    const match = url.match(/\.([a-zA-Z0-9]+)(\?|$)/);
-    return match ? match[1].toUpperCase() : '未知格式';
-  }
-};
-
-// 处理提交
-// 修改处理提交函数，添加分类处理
-const handleSubmit = async () => {
-  if (!previewUrl.value) {
-    message.warning('请先上传或提供图片');
-    return;
-  }
-
-  if (!imageName.value.trim()) {
-    message.warning('请输入图片名称');
-    return;
-  }
-
-  if (!imageCategory.value) {
-    message.warning('请选择图片分类');
-    return;
-  }
-
-  uploading.value = true;
-
-  try {
-    // 模拟上传API调用
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // 创建图片对象
-    const imageData = {
-      id: Date.now().toString(),
-      name: imageName.value,
-      description: imageDescription.value,
-      category: imageCategory.value, // 添加分类
-      tags: imageTags.value,
-      url: previewUrl.value,
-      uploadType: activeTab.value,
-      permission: imagePermission.value,
-      uploadTime: new Date().toISOString(),
-      userId: userStore.userInfo?.id
+    // 构建提交数据
+    const formData = {
+      ...pictureForm,
+      imageSource: localPreviewUrl.value ? 'local' : 'link',
+      imageUrl: localPreviewUrl.value || linkPreviewUrl.value
     };
 
-    console.log('上传图片数据:', imageData);
+    // 模拟API提交
+    console.log('提交的表单数据:', formData);
 
-    // 成功提示
-    message.success('图片上传成功！');
+    // 模拟提交延迟
+    setTimeout(() => {
+      // 提交完成
+      submitting.value = false;
 
-    // 重置表单
-    previewUrl.value = '';
-    imageName.value = '';
-    imageDescription.value = '';
-    imageCategory.value = ''; // 重置分类
-    imageTags.value = [];
-    fileList.value = [];
-    imageUrl.value = '';
-    uploadedFile.value = null;
-    currentStep.value = 1;
+      // 提示成功
+      message.success('图片发布成功');
 
-    // 导航到图片列表或详情页
-    router.push('/space');
+      // 跳转到图片详情页面
+      router.push('/picture/detail/123');
+    }, 1500);
+
   } catch (error) {
-    message.error('图片上传失败，请稍后重试');
-    console.error('上传失败:', error);
-  } finally {
-    uploading.value = false;
+    console.error('表单验证失败:', error);
+    message.error('请检查表单是否填写正确');
   }
 };
-
-// 取消上传
-const handleCancel = () => {
-  router.back();
-};
-
-onMounted(() => {
-  // 修复导航高亮问题 - 找到HeaderBar组件中的导航项
-  const updateNavActiveState = () => {
-    // 发送一个自定义事件，通知HeaderBar更新导航激活状态
-    window.dispatchEvent(new CustomEvent('update-nav-active', {
-      detail: { path: route.path }
-    }));
-  };
-
-  // 延迟执行，确保HeaderBar组件已经挂载
-  setTimeout(updateNavActiveState, 100);
-});
 </script>
 
 <style scoped>
-.create-image-page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
+.create-picture-page {
+  padding: 24px;
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 64px);
 }
 
-.page-header {
-  text-align: center;
-  margin-bottom: 30px;
+/* 增强版页面头部样式 */
+.enhanced-page-header {
+  margin-bottom: 32px;
+  padding: 32px 24px 24px;
+  background: linear-gradient(135deg, #4a6bef 0%, #7e3ef5 100%);
+  border-radius: 16px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(122, 79, 245, 0.2);
 }
 
-.page-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: #1f2937;
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 60%;
+}
+
+.title-container {
   margin-bottom: 8px;
 }
 
-.page-description {
-  font-size: 16px;
-  color: #6b7280;
+.main-title {
+  font-size: 28px;
+  font-weight: 600;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-/* 步骤流程样式 */
-.steps-container {
+.page-desc {
+  margin: 12px 0 0;
+  font-size: 15px;
+  opacity: 0.9;
+  max-width: 90%;
+  color: white;
+  line-height: 1.6;
+}
+
+.statistics-container {
   display: flex;
-  justify-content: center;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.stat-item {
+  display: flex;
   align-items: center;
-  margin-bottom: 32px;
-  padding: 20px;
-  background: #f9fafb;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.inspiration-container {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  padding: 16px;
   border-radius: 12px;
+  max-width: 280px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.inspiration-text {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.inspiration-quote {
+  font-size: 15px;
+  line-height: 1.5;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.inspiration-author {
+  font-size: 13px;
+  text-align: right;
+  opacity: 0.7;
+}
+
+/* 进度指示器 */
+.upload-progress {
+  margin-top: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.progress-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .step {
   display: flex;
+  flex-direction: column;
   align-items: center;
   opacity: 0.6;
   transition: all 0.3s ease;
@@ -742,822 +722,374 @@ onMounted(() => {
 }
 
 .step-icon {
+  background-color: rgba(255, 255, 255, 0.2);
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  color: #6b7280;
-  margin-right: 12px;
+  margin-bottom: 8px;
   transition: all 0.3s ease;
 }
 
 .step.active .step-icon {
-  background-color: #4F46E5;
-  color: white;
-  transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+  background-color: white;
+  color: #5d54f5;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.step-content h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 4px;
-}
-
-.step-content p {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
-}
-
-.step-divider {
-  flex-grow: 0;
-  width: 60px;
-  height: 2px;
-  background-color: #e5e7eb;
-  margin: 0 8px;
-}
-
-.upload-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  margin-bottom: 30px;
-}
-
-.upload-tabs :deep(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
-  color: #4F46E5 !important;
+.step-text {
+  font-size: 13px;
   font-weight: 500;
 }
 
-.upload-tabs :deep(.ant-tabs-ink-bar) {
-  background-color: #4F46E5 !important;
-}
-.upload-area, .url-upload-area {
-  padding: 10px 0;
-}
-
-/* 自定义上传组件样式 */
-.custom-uploader :deep(.ant-upload-drag) {
-  border-color: #e5e7eb;
-  background: #f9fafb;
-  border-radius: 12px;
-  transition: all 0.3s ease;
+.step-divider {
+  width: 60px;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.3);
+  margin: 0 8px;
 }
 
-.custom-uploader :deep(.ant-upload-drag:hover) {
-  border-color: #4F46E5;
-  background: rgba(79, 70, 229, 0.02);
+/* 装饰性元素 */
+.decorative-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.custom-uploader :deep(.ant-upload-drag-container) {
-  padding: 24px;
-}
-
-/* 上传内容区域 */
-.upload-content {
-  padding: 32px;
-  text-align: center;
-}
-
-.upload-icon-wrapper {
-  background: rgba(79, 70, 229, 0.1);
-  width: 80px;
-  height: 80px;
+.circle {
+  position: absolute;
   border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+}
+
+.circle-1 {
+  width: 200px;
+  height: 200px;
+  top: -80px;
+  right: 10%;
+}
+
+.circle-2 {
+  width: 300px;
+  height: 300px;
+  bottom: -150px;
+  left: -50px;
+}
+
+.circle-3 {
+  width: 120px;
+  height: 120px;
+  top: 20%;
+  right: 20%;
+}
+
+.square {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background-color: rgba(255, 255, 255, 0.05);
+  transform: rotate(45deg);
+  bottom: 20px;
+  right: 15%;
+}
+
+.triangle {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 50px solid transparent;
+  border-right: 50px solid transparent;
+  border-bottom: 86px solid rgba(255, 255, 255, 0.05);
+  top: 10%;
+  left: 20%;
+  transform: rotate(20deg);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .enhanced-page-header {
+    padding: 24px 16px 20px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .header-left {
+    max-width: 100%;
+  }
+
+  .main-title {
+    font-size: 24px;
+  }
+
+  .header-right {
+    justify-content: flex-start;
+  }
+
+  .inspiration-container {
+    max-width: 100%;
+  }
+
+  .statistics-container {
+    flex-wrap: wrap;
+  }
+
+  .progress-steps {
+    padding: 12px 8px;
+  }
+
+  .step-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .step-text {
+    font-size: 12px;
+  }
+
+  .step-divider {
+    width: 30px;
+  }
+}
+
+/* 暗黑模式适配 */
+@media (prefers-color-scheme: dark) {
+  .enhanced-page-header {
+    background: linear-gradient(135deg, #3a59c7 0%, #5d3eae 100%);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 卡片样式 */
+.upload-card,
+.form-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: white;
+  overflow: hidden;
+}
+
+.form-card {
+  padding: 0;
+}
+
+.form-card-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-  transition: all 0.3s ease;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* 上传区域样式 */
+.upload-area {
+  padding: 20px 0;
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
 }
 
 .upload-icon {
-  font-size: 40px;
-  color: #4F46E5;
-}
-
-.upload-icon-wrapper:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
+  font-size: 48px;
+  color: #6366f1;
+  margin-bottom: 16px;
 }
 
 .upload-text {
   font-size: 16px;
-  font-weight: 500;
-  color: #1f2937;
+  color: #262626;
   margin-bottom: 8px;
 }
 
 .upload-hint {
-  font-size: 14px;
-  color: #6b7280;
-  margin-bottom: 24px;
+  font-size: 12px;
+  color: #8c8c8c;
 }
 
-/* 上传建议区域 */
-.upload-suggestions {
-  margin-top: 24px;
-  background: #f3f4f7;
-  border-radius: 8px;
-  padding: 16px;
-  text-align: left;
-  border-left: 3px solid #4F46E5;
+/* 预览区域样式 */
+.preview-area {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
 }
 
-.upload-suggestions h4 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 15px;
-  color: #4F46E5;
-}
-
-.upload-suggestions ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.upload-suggestions li {
-  margin-bottom: 6px;
-  font-size: 14px;
-  color: #4b5563;
-}
-
-/* 预览容器 */
-.preview-container {
+.preview-image-wrapper {
   position: relative;
-  width: 100%;
-  height: 300px;
+  max-width: 500px;
   overflow: hidden;
   border-radius: 8px;
-  background-color: #f3f4f6;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.preview-container:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .preview-image {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  display: block;
 }
 
 .preview-actions {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.preview-container:hover .preview-actions {
-  opacity: 1;
-}
-
-.preview-action-btn {
-  background: #4F46E5 !important;
-  border-color: #4F46E5 !important;
-}
-
-.preview-action-btn:hover {
-  background: #4338ca !important;
-  border-color: #4338ca !important;
-  transform: scale(1.1);
-}
-
-.image-info-overlay {
-  position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%;
-  padding: 8px 16px;
-  background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
-  color: white;
+  right: 0;
+  padding: 12px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  display: flex;
+  justify-content: center;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s;
 }
 
-.preview-container:hover .image-info-overlay {
+.preview-image-wrapper:hover .preview-actions {
   opacity: 1;
 }
 
-.image-format {
+/* 链接上传区域 */
+.link-upload-area {
+  padding: 40px 20px;
+}
+
+.link-input {
   font-size: 14px;
-  font-weight: 500;
 }
 
-/* 修改链接上传区域样式 */
-.url-input {
-  height: 44px;
-  border-radius: 8px;
-}
-
-/* 修改链接输入框的样式 */
-.url-input :deep(.ant-input-affix-wrapper) {
-  border-color: #e5e7eb;
-  transition: all 0.3s ease;
-}
-
-.url-input :deep(.ant-input-affix-wrapper:hover) {
-  border-color: #4F46E5;
-}
-
-.url-input :deep(.ant-input-affix-wrapper:focus),
-.url-input :deep(.ant-input-affix-wrapper-focused) {
-  border-color: #4F46E5 !important;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
-}
-
-/* 修改标签切换样式 */
-.upload-tabs :deep(.ant-tabs-tab) {
-  color: #6b7280;
-  transition: all 0.3s ease;
-}
-
-.upload-tabs :deep(.ant-tabs-tab:hover) {
-  color: #4F46E5;
-}
-
-.upload-tabs :deep(.ant-tabs-tab-active) {
-  color: #4F46E5;
-}
-
-/* 添加分类选择器样式 */
-.category-select :deep(.ant-select-selector) {
-  border-radius: 8px !important;
-}
-
-.category-select :deep(.ant-select-selector:hover) {
-  border-color: #4F46E5 !important;
-}
-
-.category-select :deep(.ant-select-focused .ant-select-selector) {
-  border-color: #4F46E5 !important;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
-}
-
-/* 标签选择器的项目样式 */
-.tag-select :deep(.ant-select-selection-item) {
-  background-color: #4F46E5 !important;
-  color: white !important;
-  border-color: #4F46E5 !important;
-  border-radius: 4px !important;
-}
-
-/* 修改链接示例悬停样式 */
-.example-link {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border-radius: 8px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: calc(33.333% - 8px);
-}
-
-.example-link:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: #4F46E5;
-  color: #4F46E5;
-}
-
-/* 链接文字颜色样式 */
-a {
-  color: #4F46E5;
-  transition: all 0.3s ease;
-}
-
-a:hover {
-  color: #4338ca;
-  text-decoration: none;
-}
-
-/* URL示例 */
-.url-examples {
-  margin-top: 24px;
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.url-examples h4 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 16px;
-  color: #1f2937;
-}
-
-.example-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.example-link {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border-radius: 8px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: calc(33.333% - 8px);
-}
-
-.example-link:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: #4F46E5;
-}
-
-.example-icon {
-  width: 40px;
-  height: 40px;
-  overflow: hidden;
-  border-radius: 4px;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-.example-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.example-info {
-  flex-grow: 1;
-}
-
-.example-title {
-  font-size: 14px;
-  margin: 0 0 4px;
-  color: #1f2937;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* URL预览区域 */
-.url-preview-wrapper {
-  margin-top: 24px;
-}
-
-.url-preview-container {
-  position: relative;
-  width: 100%;
-  height: 300px;
-  overflow: hidden;
-  border-radius: 8px;
-  background-color: #f3f4f6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* 图片信息设置区域 */
-.image-settings {
-  padding-top: 24px;
-  margin-top: 32px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.settings-header {
+/* 表单区域样式 */
+.form-section {
   margin-bottom: 24px;
+  padding: 0 24px;
 }
 
-.settings-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 6px;
-}
-
-.settings-subtitle {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
-}
-
-.input-field {
-  border-radius: 8px;
-}
-
-.input-field:hover {
-  border-color: #4F46E5;
-}
-
-.input-field:focus {
-  border-color: #4F46E5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-}
-
-/* 标签选择器样式 */
-.tag-select :deep(.ant-select-selection-item) {
-  background-color: #4F46E5 !important;
-  color: white !important;
-  border-color: #4F46E5 !important;
-}
-
-/* 权限选择组 */
-.permission-group {
-  width: 100%;
+.section-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.permission-option {
-  flex: 1;
-  text-align: center;
+.section-title {
+  font-size: 16px;
+  color: #262626;
+  margin: 0 0 16px 0;
+  font-weight: 500;
 }
 
-.permission-option :deep(.ant-radio-button-wrapper-checked) {
-  background: #4F46E5 !important;
-  border-color: #4F46E5 !important;
-  color: white !important;
+.advanced-options {
+  background-color: #f9f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #f0f0f0;
 }
 
-.permission-option :deep(.ant-radio-button-wrapper-checked::before) {
-  background-color: #4F46E5 !important;
-}
-
-.permission-option :deep(.ant-radio-button-wrapper:hover) {
-  color: #4F46E5 !important;
-}
-
-.permission-option :deep(.ant-radio-button-wrapper-checked:hover) {
-  color: white !important;
-}
-
-/* 智能推荐区域 */
-.recommendations {
-  margin-bottom: 30px;
-}
-
-.recommendation-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-.recommendation-header {
+/* 水印选项 */
+.watermark-option {
   display: flex;
   align-items: center;
-}
-
-.recommendation-icon {
-  color: #4F46E5;
-  margin-right: 8px;
-  font-size: 20px;
-}
-
-.recommendation-item {
-  margin-bottom: 20px;
-}
-
-.recommendation-item h4 {
-  font-size: 16px;
-  font-weight: 500;
-  color: #1f2937;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
-.recommendation-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.option-label {
+  color: #262626;
 }
 
-.ai-tag {
-  cursor: pointer;
-  background: rgba(79, 70, 229, 0.1);
-  color: #4F46E5;
-  border-color: rgba(79, 70, 229, 0.2);
-  border-radius: 4px;
-  transition: all 0.2s ease;
+.watermark-settings {
+  margin-top: 12px;
 }
 
-.ai-tag:hover {
-  transform: translateY(-2px);
-  background: rgba(79, 70, 229, 0.2);
-  box-shadow: 0 3px 6px rgba(79, 70, 229, 0.1);
-}
-
-.related-images {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.related-image-item {
-  position: relative;
-  border-radius: 4px;
-  overflow: hidden;
-  cursor: pointer;
-  height: 70px;
-  transition: all 0.3s ease;
-}
-
-.related-image-item:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.related-thumbnail {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.related-image-title {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 4px 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ai-analysis {
-  background: #f3f4f7;
-  border-radius: 8px;
-  padding: 16px;
-  border-left: 3px solid #4F46E5;
-}
-
-.analysis-result {
-  margin: 0;
-  color: #4b5563;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 操作按钮 */
-.action-buttons {
+/* 按钮区域 */
+.form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 24px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
 }
 
-.cancel-btn {
-  border-radius: 8px;
-}
-
-.submit-btn {
-  border-radius: 8px;
-  background: #4F46E5;
-  border-color: #4F46E5;
-  color: white;
-  font-weight: 500;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
-  transition: all 0.3s ease;
-}
-
-.submit-btn:not(:disabled):hover {
-  background: #4338ca;
-  border-color: #4338ca;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-
-.submit-btn:disabled {
-  background: #e5e7eb;
-  color: #9ca3af;
-  border-color: #e5e7eb;
-  cursor: not-allowed;
-}
-
-/* 图片预览弹窗 */
-.preview-modal :deep(.ant-modal-content) {
-  padding: 8px;
-  background-color: rgba(0, 0, 0, 0.85);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.preview-modal-image {
-  max-width: 90vw;
-  max-height: 80vh;
-  display: block;
-  margin: 0 auto;
-}
-
-/* 响应式设计 */
+/* 响应式调整 */
 @media (max-width: 768px) {
-  .create-image-page {
-    padding: 16px;
+  .create-picture-page {
+    padding: 16px 12px;
   }
 
-  .page-title {
-    font-size: 24px;
+  .page-title h1 {
+    font-size: 20px;
   }
 
-  .steps-container {
-    flex-direction: column;
-    padding: 12px;
+  .upload-content {
+    padding: 30px 0;
   }
 
-  .step {
-    margin-bottom: 16px;
+  .upload-icon {
+    font-size: 40px;
   }
 
-  .step-divider {
-    width: 2px;
-    height: 20px;
-    margin: 8px 0;
+  .preview-image-wrapper {
+    max-width: 100%;
   }
 
-  .preview-container, .url-preview-container {
-    height: 220px;
-  }
-
-  .example-link {
-    width: 100%;
-  }
-
-  .related-images {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* 深色模式适配 */
-:global([data-theme="dark"]) .page-title {
-  color: #f3f4f6;
-}
-
-:global([data-theme="dark"]) .page-description {
-  color: #9ca3af;
-}
-
-:global([data-theme="dark"]) .steps-container {
-  background: #1a1e24;
-}
-
-:global([data-theme="dark"]) .step-icon {
-  background-color: #374151;
-  color: #9ca3af;
-}
-
-:global([data-theme="dark"]) .step.active .step-icon {
-  background-color: #4F46E5;
-  color: white;
-}
-
-:global([data-theme="dark"]) .step-content h3 {
-  color: #f3f4f6;
-}
-
-:global([data-theme="dark"]) .step-content p {
-  color: #9ca3af;
-}
-
-:global([data-theme="dark"]) .step-divider {
-  background-color: #374151;
-}
-
-:global([data-theme="dark"]) .upload-card {
-  background-color: #1f2937;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-:global([data-theme="dark"]) .custom-uploader :deep(.ant-upload-drag) {
-  background: #2d3748;
-  border-color: #4b5563;
-}
-
-:global([data-theme="dark"]) .custom-uploader :deep(.ant-upload-drag:hover) {
-  border-color: #6366F1;
-  background: rgba(99, 102, 241, 0.1);
-}
-
-:global([data-theme="dark"]) .upload-icon-wrapper {
-  background: rgba(99, 102, 241, 0.2);
-}
-
-:global([data-theme="dark"]) .upload-icon {
-  color: #6366F1;
-}
-
-:global([data-theme="dark"]) .upload-text {
-  color: #f3f4f6;
-}
-
-:global([data-theme="dark"]) .upload-hint {
-  color: #9ca3af;
-}
-
-:global([data-theme="dark"]) .upload-suggestions {
-  background: #2d3748;
-  border-left-color: #6366F1;
-}
-
-:global([data-theme="dark"]) .upload-suggestions h4 {
-  color: #818cf8;
-}
-
-:global([data-theme="dark"]) .upload-suggestions li {
-  color: #d1d5db;
-}
-
-:global([data-theme="dark"]) .preview-container,
-:global([data-theme="dark"]) .url-preview-container {
-  background-color: #374151;
-}
-
-:global([data-theme="dark"]) .settings-title {
-  color: #f3f4f6;
-}
-
-:global([data-theme="dark"]) .settings-subtitle {
-  color: #9ca3af;
-}
-
-:global([data-theme="dark"]) .image-settings {
-  border-top-color: #374151;
-}
-
-:global([data-theme="dark"]) .url-examples {
-  background: #2d3748;
-}
-
-:global([data-theme="dark"]) .url-examples h4 {
-  color: #f3f4f6;
-}
-
-:global([data-theme="dark"]) .example-link {
-  background: #1f2937;
-  border-color: #4b5563;
-}
-
-:global([data-theme="dark"]) .example-link:hover {
-  border-color: #6366F1;
-}
-
-:global([data-theme="dark"]) .example-title {
-  color: #f3f4f6;
-}
-
-:global([data-theme="dark"]) .ai-analysis {
-  background: #2d3748;
-  border-left-color: #6366F1;
-}
-
-:global([data-theme="dark"]) .analysis-result {
-  color: #d1d5db;
-}
-
-:global([data-theme="dark"]) .ai-tag {
-  background: rgba(99, 102, 241, 0.2);
-  color: #818cf8;
-  border-color: rgba(99, 102, 241, 0.3);
-}
-
-:global([data-theme="dark"]) .ai-tag:hover {
-  background: rgba(99, 102, 241, 0.3);
-}
-
-/* 添加动画效果 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
+  .preview-actions {
     opacity: 1;
   }
 }
 
-@keyframes slideInUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
+/* 暗黑模式适配 */
+@media (prefers-color-scheme: dark) {
+  .create-picture-page {
+    background-color: #121212;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+
+  .page-title h1 {
+    color: #e0e0e0;
+  }
+
+  .page-desc {
+    color: #a6a6a6;
+  }
+
+  .upload-card,
+  .form-card {
+    background-color: #1f1f1f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .upload-text {
+    color: #e0e0e0;
+  }
+
+  .upload-hint {
+    color: #a6a6a6;
+  }
+
+  .section-title {
+    color: #e0e0e0;
+  }
+
+  .advanced-options {
+    background-color: #2a2a2a;
+    border-color: #333;
+  }
+
+  .option-label {
+    color: #e0e0e0;
+  }
+
+  .form-actions {
+    border-top-color: #333;
   }
 }
 
-.upload-card {
-  animation: slideInUp 0.5s ease-out;
-}
 </style>

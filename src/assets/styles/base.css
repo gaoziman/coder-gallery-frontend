@@ -3538,6 +3538,53 @@ html body .ant-radio-wrapper-checked .ant-radio-inner::after,
 }
 
 
+.ant-upload-drag,
+html body .ant-upload-drag {
+    border: 2px dashed #e6e8ff !important;
+    border-radius: 8px !important;
+    transition: all 0.3s !important;
+}
+
+.ant-upload-drag:hover,
+html body .ant-upload-drag:hover,
+.ant-upload-drag-hover,
+html body .ant-upload-drag-hover {
+    border-color: var(--primary-color, #6554C0) !important;
+    background-color: rgba(101, 84, 192, 0.02) !important;
+}
+
+.ant-upload-drag:focus,
+html body .ant-upload-drag:focus,
+.ant-upload-drag.ant-upload-drag-hover,
+html body .ant-upload-drag.ant-upload-drag-hover {
+    border-color: var(--primary-color, #6554C0) !important;
+    box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 标签页样式优化 */
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn,
+html body .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: var(--primary-color, #6554C0) !important;
+}
+
+.ant-tabs-ink-bar,
+html body .ant-tabs-ink-bar {
+    background-color: var(--primary-color, #6554C0) !important;
+}
+
+.ant-tabs-tab:hover,
+html body .ant-tabs-tab:hover,
+.ant-tabs-tab:hover .ant-tabs-tab-btn,
+html body .ant-tabs-tab:hover .ant-tabs-tab-btn {
+    color: var(--primary-hover, #7C68EE) !important;
+}
+
+/* 确保标签页底部线条使用主题色 */
+html body .ant-tabs-top > .ant-tabs-nav::before,
+html body .ant-tabs-top > div > .ant-tabs-nav::before {
+    border-bottom: 1px solid #f0f0f0 !important;
+}
+
 /* 响应式布局 */
 @media (max-width: 992px) {
     .page-header-wrapper {

@@ -154,6 +154,14 @@
             <delete-outlined/>
             批量删除
           </a-button>
+          <a-button type="primary" @click="navigateToCreatePicture">
+            <picture-outlined/>
+            创建图片
+          </a-button>
+          <a-button type="primary" @click="navigateToBatchCreatePicture">
+            <file-add-outlined/>
+            批量创建图片
+          </a-button>
         </a-space>
       </div>
 
@@ -777,6 +785,7 @@ import {
   AppstoreOutlined,
   UnorderedListOutlined,
   FileOutlined,
+  FileAddOutlined,
   LinkOutlined,
   MoreOutlined,
   InboxOutlined,
@@ -794,6 +803,9 @@ import {
 } from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
+import {useRouter} from "vue-router";
+
+const router = useRouter();
 
 // 表格列定义
 const columns = [
@@ -1462,6 +1474,15 @@ function getFormatColor(format) {
     gif: '#FAAD14'
   };
   return colorMap[format.toLowerCase()] || 'default';
+}
+
+// 添加导航函数
+function navigateToCreatePicture() {
+  router.push('/create-picture');
+}
+
+function navigateToBatchCreatePicture() {
+  router.push('/create-batch-picture');
 }
 
 // 获取状态类型
