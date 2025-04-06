@@ -617,8 +617,7 @@ const isOwner = computed(() => {
 
 // 编辑图片信息
 const editImage = () => {
-  message.info('编辑图片信息功能即将上线...');
-  // router.push({ name: 'EditPicture', params: { id: imageId.value } });
+  router.push({ name: 'EditPicture', params: { id: imageId.value } });
 };
 
 // 模拟评论数据

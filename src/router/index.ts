@@ -64,11 +64,20 @@ const routes: Array<RouteRecordRaw> = [
                 },
             },
             {
-                path: '/create-image',
-                name: 'CreateImage',
+                path: '/create-picture',
+                name: 'CreatePicture',
                 component: () => import('@/pages/picture/CreatePicture.vue'),
                 meta: {
                     title: '创建图片 - 智能云图库',
+                    requiresAuth: true
+                },
+            },
+            {
+                path: '/create-batch-picture',
+                name: 'BatchCreatePicture',
+                component: () => import('@/pages/picture/BatchCreatePicture.vue'),
+                meta: {
+                    title: '批量创建图片 - 智能云图库',
                     requiresAuth: true
                 },
             },
@@ -82,8 +91,8 @@ const routes: Array<RouteRecordRaw> = [
                 },
             },
             {
-                path: '/edit-image/:id',
-                name: 'EditImage',
+                path: '/edit-picture/:id',
+                name: 'EditPicture',
                 component: () => import('@/pages/picture/EditPicture.vue'),
                 meta: {
                     title: '编辑图片 - 智能云图库',

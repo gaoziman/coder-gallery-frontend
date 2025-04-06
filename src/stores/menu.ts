@@ -21,7 +21,7 @@ export const useMenuStore = defineStore('menu', () => {
     // 修改路径映射，确保子菜单路径能正确映射到父菜单
     const pathKeyMap = ref<PathKeyMapType>({
         '/': { top: 'home', side: 'public-gallery' },
-        '/create-image': { top: 'create-image', side: '' },
+        '/create-picture': { top: 'create-picture', side: '' },
         '/space': { top: '', side: 'my-space' },
         // 管理员路径，修改为数组形式，允许同时选中多个菜单项
         '/admin/dashboard': { top: ['content-management', 'dashboard'], side: '' },

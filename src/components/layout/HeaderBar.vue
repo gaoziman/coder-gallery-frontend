@@ -165,7 +165,7 @@ const menuStore = useMenuStore();
 // 导航菜单数据
 const navItems = ref([
   {key: 'home', path: '/', title: '主页', icon: HomeOutlined, active: false},
-  {key: 'create-image', path: '/create-image', title: '创建图片', icon: PlusOutlined, active: false},
+  {key: 'create-picture', path: '/create-picture', title: '创建图片', icon: PlusOutlined, active: false},
   {
     key: 'content-management',
     title: '内容管理',
@@ -292,7 +292,7 @@ const handleUploadClick = () => {
     message.warning('请先登录后再进行上传');
     openAuthModal();
   } else {
-    router.push('/create-image');
+    router.push('/create-picture');
   }
 };
 
