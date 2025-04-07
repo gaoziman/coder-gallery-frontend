@@ -265,8 +265,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted, onUnmounted } from 'vue';
-import { message } from 'ant-design-vue';
+import {computed, reactive, ref, onMounted, onUnmounted} from 'vue';
+import {message} from 'ant-design-vue';
 import {
   UserOutlined,
   LockOutlined,
@@ -278,8 +278,9 @@ import {
   GiftOutlined,
   SafetyOutlined
 } from '@ant-design/icons-vue';
-import { useUserStore } from '@/stores/user';
+import {UserInfo, useUserStore} from '@/stores/user';
 import emitter from '@/utils/eventBus';
+import {userLoginUsingPost, userRegisterUsingPost} from "@/api/dengluguanli";
 
 // 获取用户状态存储
 const userStore = useUserStore();
@@ -321,28 +322,70 @@ const validateConfirmPassword = async (_rule: any, value: string) => {
 const handleLogin = async () => {
   loading.value = true;
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // 模拟成功的响应
-    const userData = {
-      id: '1',
-      username: loginForm.username,
-      role: 'admin',
-      isAdmin: true,
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      token: 'mock-jwt-token'
+    // 创建登录请求数据
+    const loginRequest: API.UserLoginRequest = {
+      account: loginForm.username,
+      password: loginForm.password
     };
 
-    // 保存到状态管理
-    userStore.login(userData);
+    // 调用登录API
+    const response = await userLoginUsingPost(loginRequest);
 
-    message.success('登录成功，欢迎回来！');
-    // 修改：使用 store 中的方法关闭模态框
-    userStore.closeLoginModal();
+    // 正确获取返回数据
+    const result = response.data;
+
+    if (result.code === 200 && result.data) {
+      // 提取用户信息
+      const userData: UserInfo = {
+        id: String(result.data.id) || '',
+        account: result.data.account || '',
+        username: result.data.username || loginForm.username,
+        avatar: result.data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${loginForm.username}`,
+        role: (result.data.role as 'admin' | 'user' | 'superAdmin') || 'user',
+        status: 'active', // 假设状态是活跃的
+        lastLoginTime: result.data.lastLoginTime,
+        lastLoginIp: result.data.lastLoginIp,
+        // token相关信息
+        token: result.data.tokenValue,
+        tokenName: result.data.tokenName || 'Authorization',
+        tokenTimeout: result.data.tokenTimeout
+      };
+
+      // 登录成功，保存用户信息到store
+      userStore.login(userData);
+
+      // 记住我功能
+      if (rememberMe.value) {
+        localStorage.setItem('remembered_username', loginForm.username);
+      } else {
+        localStorage.removeItem('remembered_username');
+      }
+
+      message.success('登录成功，欢迎回来！');
+      userStore.closeLoginModal();
+
+      // 清空表单
+      loginForm.password = '';
+
+      // 触发登录成功事件
+      window.dispatchEvent(new CustomEvent('userLoggedIn', {
+        detail: {
+          username: userData.username,
+          avatar: userData.avatar
+        }
+      }));
+
+      // 延迟刷新页面以确保UI更新
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } else {
+      // 登录失败
+      message.error(result.message || '登录失败，请检查用户名和密码');
+    }
   } catch (error) {
-    message.error('登录失败，请检查用户名和密码');
     console.error('Login error:', error);
+    message.error('登录请求失败，请检查网络连接');
   } finally {
     loading.value = false;
   }
@@ -352,28 +395,37 @@ const handleLogin = async () => {
 const handleRegister = async () => {
   loading.value = true;
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // 模拟成功的响应
-    const userData = {
-      id: Date.now().toString(),
-      username: registerForm.username,
-      role: 'admin',
-      isAdmin: true,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${registerForm.username}`,
-      token: 'mock-jwt-token'
+    // 创建注册请求数据
+    const registerRequest: API.UserRegisterRequest = {
+      account: registerForm.username,
+      password: registerForm.password,
+      checkPassword: registerForm.confirmPassword
     };
 
-    // 保存到状态管理
-    userStore.login(userData);
+    // 调用注册API
+    const response = await userRegisterUsingPost(registerRequest);
 
-    message.success('注册成功！');
-    // 修改：使用 store 中的方法关闭模态框
-    userStore.closeLoginModal();
+    // 正确获取返回数据
+    const result = response.data;
+
+    if (result.code === 200) {
+      message.success('注册成功！请登录');
+
+      // 自动填充登录表单
+      loginForm.username = registerForm.username;
+      registerForm.username = '';
+      registerForm.password = '';
+      registerForm.confirmPassword = '';
+
+      // 切换到登录选项卡
+      activeTab.value = 'login';
+    } else {
+      // 注册失败
+      message.error(result.message || '注册失败，请稍后再试');
+    }
   } catch (error) {
-    message.error('注册失败，请稍后再试');
     console.error('Register error:', error);
+    message.error('注册请求失败，请检查网络连接');
   } finally {
     loading.value = false;
   }
@@ -395,11 +447,15 @@ const open = () => {
 onMounted(() => {
   // 监听事件总线事件
   emitter.on('openLoginModal', handleOpenLoginModal);
-
-  // 同时监听自定义事件，保持兼容性
   window.addEventListener('openLoginModal', handleOpenLoginModal);
-});
 
+  // 加载记住的用户名
+  const rememberedUsername = localStorage.getItem('remembered_username');
+  if (rememberedUsername) {
+    loginForm.username = rememberedUsername;
+    rememberMe.value = true;
+  }
+});
 onUnmounted(() => {
   // 移除事件监听
   emitter.off('openLoginModal', handleOpenLoginModal);

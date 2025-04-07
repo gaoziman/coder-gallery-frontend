@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import { resolve } from 'path';
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, 'src'),
     },
   },
   css: {
@@ -35,6 +35,10 @@ export default defineConfig({
   },
   server: {
     port: 3003,
-    open: true,
+    host: '0.0.0.0', // 确保外部可以访问
+    open: 'http://localhost',
+    proxy: {
+      '/api': process.env.VITE_API_URL || 'http://localhost:18888', // 使用环境变量来设置代理地址
+    }
   },
 });

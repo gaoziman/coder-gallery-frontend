@@ -1945,10 +1945,25 @@ onMounted(() => {
 <style scoped>
 /* 基础页面样式 */
 .favorite-page {
-  padding: 16px;
-  max-width: 1400px;
+  padding: 16px 2vw; /* 使用相对单位减少两侧空白 */
+  max-width: 1600px; /* 增加最大宽度适应大屏 */
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  width: 100%;
+}
+
+/* 优化卡片网格布局 - 瀑布流列数调整 */
+@media (min-width: 1400px) {
+  .favorite-page .masonry-gallery {
+    column-count: 5; /* 大屏增加列数 */
+    column-gap: 20px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .favorite-page .masonry-gallery {
+    column-count: 6; /* 超宽屏幕显示更多列 */
+    column-gap: 24px;
+  }
 }
 
 /* 页面标题和统计区域 */

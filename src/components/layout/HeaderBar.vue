@@ -65,7 +65,7 @@
       <!-- 右侧用户信息 -->
       <div class="user-actions">
         <!-- 上传按钮 -->
-        <a-button type="primary"  :disabled="!userStore.isLoggedIn" @click="handleUploadClick">
+        <a-button type="primary" :disabled="!userStore.isLoggedIn" @click="handleUploadClick">
           <template #icon>
             <upload-outlined/>
           </template>
@@ -81,30 +81,38 @@
           </a-button>
         </a-badge>
 
+
         <!-- 用户头像或登录按钮 -->
         <template v-if="userStore.isLoggedIn">
           <!-- 用户头像及下拉菜单 -->
-          <a-dropdown :trigger="['click']">
-            <a-avatar
-                :src="userStore.userInfo?.avatar"
-                class="user-avatar"
-            />
+          <a-dropdown :trigger="['click']" placement="bottomRight" :getPopupContainer="triggerNode => triggerNode.parentNode">
+            <div class="user-avatar-container">
+              <a-badge :dot="hasNotifications" color="#52c41a">
+                <a-avatar
+                    :src="userStore.userInfo?.avatar || defaultAvatar"
+                    class="user-avatar"
+                    :size="36"
+                />
+              </a-badge>
+              <span class="username-text">
+      {{ userStore.userInfo?.username || userStore.userInfo?.account || '用户' }}
+    </span>
+            </div>
 
-            <!-- 自定义下拉菜单，更紧凑的版本 -->
+            <!-- 自定义下拉菜单 -->
             <template #overlay>
-              <div class="custom-dropdown-menu">
-                <a href="/profile" class="custom-menu-item">
-                  <div class="menu-icon">
-                    <user-outlined/>
-                  </div>
-                  <span class="menu-text">个人资料</span>
-                </a>
-                <div class="menu-divider"></div>
-                <a @click="handleLogout" class="custom-menu-item">
-                  <div class="menu-icon">
-                    <logout-outlined/>
-                  </div>
-                  <span class="menu-text">退出登录</span>
+              <div class="user-dropdown-menu">
+                <router-link to="/profile" class="dropdown-item">
+                  <user-outlined class="item-icon" />
+                  <span>个人资料</span>
+                </router-link>
+                <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="dropdown-item">
+                  <dashboard-outlined class="item-icon" />
+                  <span>管理控制台</span>
+                </router-link>
+                <a @click="handleLogout" class="dropdown-item">
+                  <logout-outlined class="item-icon" />
+                  <span>退出登录</span>
                 </a>
               </div>
             </template>
@@ -114,6 +122,7 @@
           <!-- 登录按钮 -->
           <a-button
               type="primary"
+              class="login-button"
               @click="openAuthModal"
           >
             <template #icon>
@@ -131,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, watch, computed} from 'vue';
+import { ref, onMounted, watch, computed, nextTick, onUnmounted } from 'vue';
 import {useRouter, useRoute} from 'vue-router';
 import {useMotion} from '@vueuse/motion';
 import {useUserStore} from '@/stores/user';
@@ -150,7 +159,6 @@ import {
   DownOutlined,
   DashboardOutlined,
   CommentOutlined,
-  SafetyCertificateOutlined,
   SettingOutlined,
   LoginOutlined,
   LogoutOutlined, CloudOutlined, CrownOutlined, FolderOpenOutlined,
@@ -161,6 +169,31 @@ const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 const menuStore = useMenuStore();
+
+
+// 添加这些变量和计算属性
+const hasNotifications = ref(false); // 是否有通知，可以根据实际情况修改
+const isMobile = ref(window.innerWidth <= 768); // 是否是移动设备
+
+// 默认头像
+const defaultAvatar = computed(() => {
+  const username = userStore.userInfo?.username || userStore.userInfo?.account || 'user';
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+});
+
+// 用户角色显示
+const userRoleDisplay = computed(() => {
+  if (!userStore.userInfo) return '用户';
+
+  switch (userStore.userInfo.role) {
+    case 'admin':
+      return '管理员';
+    case 'superAdmin':
+      return '超级管理员';
+    default:
+      return '普通用户';
+  }
+});
 
 // 导航菜单数据
 const navItems = ref([
@@ -202,6 +235,13 @@ const navItems = ref([
   },
 ]);
 
+
+// 用户显示名称
+const userDisplayName = computed(() => {
+  return userStore.userInfo?.username || userStore.userInfo?.account || '用户';
+});
+
+
 // 过滤菜单项，根据用户角色显示或隐藏管理员菜单
 const filteredNavItems = computed(() => {
   // 如果是管理员，显示所有菜单项
@@ -220,14 +260,14 @@ const filteredNavItems = computed(() => {
 });
 
 // 更新导航项激活状态 - 需要在watch之前定义
-const updateNavItemsActiveState = (activeKeys :any) => {
+const updateNavItemsActiveState = (activeKeys: any) => {
   navItems.value.forEach(item => {
     item.active = activeKeys.includes(item.key);
   });
 };
 
 
-const isParentActive = (item  :any) => {
+const isParentActive = (item: any) => {
   // 如果没有子菜单，直接返回 false
   if (!item.children) return false;
 
@@ -243,8 +283,15 @@ watch(() => menuStore.topSelectedKeys, (newKeys) => {
   updateNavItemsActiveState(newKeys);
 }, {deep: true, immediate: true});
 
+
+watch(() => userStore.userInfo, (newVal) => {
+  // 用户信息变化时，强制视图更新
+  nextTick();
+}, { deep: true });
+
+
 // 导航项点击处理
-const handleNavItemClick = (item  :any) => {
+const handleNavItemClick = (item: any) => {
   if (item.path) {
     menuStore.activateTopMenu(item.key);
     router.push(item.path);
@@ -253,7 +300,7 @@ const handleNavItemClick = (item  :any) => {
 
 
 // 子菜单项点击处理
-const handleSubItemClick = (child :any) => {
+const handleSubItemClick = (child: any) => {
   if (child.path) {
     menuStore.updateMenuByPath(child.path);
     router.push(child.path);
@@ -262,7 +309,7 @@ const handleSubItemClick = (child :any) => {
 
 // 处理鼠标悬停效果
 const hoveredIndex = ref(null);
-const onHover = (index  :any) => {
+const onHover = (index: any) => {
   hoveredIndex.value = index;
 };
 const onLeave = () => {
@@ -271,7 +318,7 @@ const onLeave = () => {
 
 // 处理下拉菜单的显示/隐藏
 const activeDropdown = ref(null);
-const onDropdownHover = (index  :any) => {
+const onDropdownHover = (index: any) => {
   activeDropdown.value = index;
 };
 const onDropdownLeave = () => {
@@ -307,6 +354,16 @@ const handleLogout = () => {
 onMounted(() => {
   // 初始化导航状态
   menuStore.updateMenuByPath(route.path);
+
+  // 检查登录状态
+  if (userStore.isLoggedIn) {
+    userStore.validateToken();
+  }
+
+  window.addEventListener('user-info-updated', () => {
+    // 强制刷新组件
+    nextTick();
+  });
 
   // 监听全局事件
   window.addEventListener('openLoginModal', () => {
@@ -347,6 +404,11 @@ onMounted(() => {
     });
   }
 });
+
+onUnmounted(() => {
+  window.removeEventListener('resize', () => {});
+  window.removeEventListener('userLoggedIn', () => {});
+});
 </script>
 
 <style scoped>
@@ -378,6 +440,7 @@ body.modal-open .header {
   left: 80px; /* 折叠后的侧边栏宽度 */
   width: calc(100% - 80px);
 }
+
 /* 修改header-content样式 */
 .header-content {
   display: flex;
@@ -503,17 +566,6 @@ body.modal-open .header {
   margin-right: 8px;
 }
 
-/* 下拉菜单动画 */
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: opacity 0.3s, transform 0.3s;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
 
 .user-actions {
   display: flex;
@@ -739,5 +791,120 @@ body.modal-open .header {
 
 :global([data-theme="dark"]) .menu-divider {
   background-color: #4b5563;
+}
+
+
+/* 用户头像容器 - 精简版 */
+.user-avatar-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.user-avatar-container:hover {
+  opacity: 0.85;
+}
+
+.user-avatar {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.user-avatar-container:hover .user-avatar {
+  transform: scale(1.05);
+}
+
+.username-text {
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 下拉菜单 - 精简版 */
+.user-dropdown-menu {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  width: 160px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 4px;
+  margin-top: 4px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  color: #4b5563;
+  font-size: 14px;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  margin-bottom: 2px;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(79, 70, 229, 0.06);
+  color: #4F46E5;
+}
+
+.dropdown-item:active {
+  background-color: rgba(79, 70, 229, 0.1);
+}
+
+.item-icon {
+  font-size: 16px;
+  margin-right: 8px;
+  color: #6b7280;
+}
+
+.dropdown-item:hover .item-icon {
+  color: #4F46E5;
+}
+
+/* 移动设备适配 */
+@media (max-width: 768px) {
+  .username-text {
+    display: none;
+  }
+
+  .user-dropdown-menu {
+    width: 140px;
+  }
+}
+
+/* 深色模式适配 */
+:global([data-theme="dark"]) .user-dropdown-menu {
+  background: #1f2937;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"]) .username-text {
+  color: #e5e7eb;
+}
+
+:global([data-theme="dark"]) .dropdown-item {
+  color: #e5e7eb;
+}
+
+:global([data-theme="dark"]) .dropdown-item:hover {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+:global([data-theme="dark"]) .item-icon {
+  color: #9ca3af;
+}
+
+:global([data-theme="dark"]) .dropdown-item:hover .item-icon {
+  color: #818cf8;
 }
 </style>

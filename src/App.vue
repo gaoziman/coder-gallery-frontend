@@ -4,7 +4,21 @@
 </template>
 
 <script setup lang="ts">
-// 根组件，仅包含路由视图
+import {onMounted} from "vue";
+import {useUserStore} from "@/stores/user";
+const userStore = useUserStore();
+
+onMounted(() => {
+  // 检查登录状态的一致性
+  const storedUser = localStorage.getItem('cloudgallery_user');
+  if (!storedUser && userStore.isLoggedIn) {
+    // 如果本地存储被清除但状态未更新，强制更新状态
+    userStore.userInfo = null;
+
+    // 可选：重新加载页面以确保所有组件都获得正确的状态
+    window.location.reload();
+  }
+});
 </script>
 
 <style>

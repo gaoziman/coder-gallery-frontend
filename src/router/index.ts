@@ -212,7 +212,7 @@ const routes: Array<RouteRecordRaw> = [
                         component: () => import('@/pages/user/UserProfile.vue'),
                         meta: {
                             title: '个人资料 - 智能云图库',
-                            requiresAuth: true
+                            requiresAuth: false
                         },
                     }
                 ]
