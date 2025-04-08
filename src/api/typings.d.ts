@@ -1,4 +1,97 @@
 declare namespace API {
+  type AdminResetPasswordRequest = {
+    /** 确认密码 */
+    checkPassword: string;
+    /** 新密码 */
+    newPassword: string;
+    /** 用户ID */
+    userId: number;
+  };
+
+  type AdminUserAddRequest = {
+    /** 用户账号 */
+    account: string;
+    /** 用户头像URL */
+    avatar?: string;
+    /** 用户密码 */
+    password: string;
+    /** 用户手机号 */
+    phone?: string;
+    /** 用户角色 */
+    role?: string;
+    /** 用户状态 */
+    status?: string;
+    /** 用户简介 */
+    userProfile?: string;
+    /** 用户名 */
+    username?: string;
+  };
+
+  type AdminUserUpdateRequest = {
+    /** 用户头像URL */
+    avatar?: string;
+    /** 用户ID */
+    id: number;
+    /** 用户手机号 */
+    phone?: string;
+    /** 备注 */
+    remark?: string;
+    /** 用户角色 */
+    role?: string;
+    /** 用户状态 */
+    status?: string;
+    /** 用户名 */
+    username?: string;
+  };
+
+  type banUserUsingPOSTParams = {
+    /** id */
+    id: number;
+  };
+
+  type BatchDeleteRequest = {
+    /** ID列表 */
+    ids: number[];
+  };
+
+  type deleteUserUsingDELETEParams = {
+    /** ID */
+    id: number;
+  };
+
+  type getUserByIdUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
+  type getUserVOByIdUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
+  type listUserByPageUsingGETParams = {
+    /** 用户账号 */
+    account?: string;
+    /** 用户ID */
+    id?: number;
+    /** 当前页码 */
+    pageNum?: number;
+    /** 每页记录数 */
+    pageSize?: number;
+    /** 用户手机号 */
+    phone?: string;
+    /** 注册时间范围-结束 */
+    registerTimeEnd?: string;
+    /** 注册时间范围-开始 */
+    registerTimeStart?: string;
+    /** 用户角色 */
+    role?: string;
+    /** 用户状态 */
+    status?: string;
+    /** 用户名 */
+    username?: string;
+  };
+
   type LoginUserVO = {
     account?: string;
     avatar?: string;
@@ -94,6 +187,16 @@ declare namespace API {
     viewName?: string;
   };
 
+  type PageResultUserVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: UserVO[];
+    total?: number;
+  };
+
   type ResultBoolean_ = {
     code?: number;
     data?: boolean;
@@ -112,21 +215,57 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultPageResultUserVO_ = {
+    code?: number;
+    data?: PageResultUserVO_;
+    message?: string;
+  };
+
+  type ResultUserStatisticsVO_ = {
+    code?: number;
+    data?: UserStatisticsVO;
+    message?: string;
+  };
+
   type ResultUserVO_ = {
     code?: number;
     data?: UserVO;
     message?: string;
   };
 
+  type unbanUserUsingPOSTParams = {
+    /** id */
+    id: number;
+  };
+
   type UserLoginRequest = {
-    account?: string;
-    password?: string;
+    /** 用户名 */
+    account: string;
+    /** 密码 */
+    password: string;
   };
 
   type UserRegisterRequest = {
-    account?: string;
-    checkPassword?: string;
-    password?: string;
+    /** 用户名 */
+    account: string;
+    /** 确认密码 */
+    checkPassword: string;
+    /** 密码 */
+    password: string;
+  };
+
+  type UserStatisticsVO = {
+    activeGrowth?: number;
+    activeUserRatio?: number;
+    bannedUsers?: number;
+    newUserGrowth?: number;
+    newUsersThisMonth?: number;
+    newUsersThisWeek?: number;
+    todayLoginUsers?: number;
+    totalUserGrowth?: number;
+    totalUsers?: number;
+    vipUserGrowth?: number;
+    vipUsers?: number;
   };
 
   type UserUpdatePasswordRequest = {
@@ -152,12 +291,16 @@ declare namespace API {
   type UserVO = {
     account?: string;
     avatar?: string;
+    createTime?: string;
     id?: number;
+    lastLoginIp?: string;
     lastLoginTime?: string;
     phone?: string;
     registerTime?: string;
+    remark?: string;
     role?: string;
     status?: string;
+    updateTime?: string;
     userProfile?: string;
     username?: string;
   };

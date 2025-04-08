@@ -20,28 +20,28 @@
 
         <div class="um-header-right">
           <div class="um-metrics">
-            <div class="um-metric-item">
+            <div class="um-metric-item today-logins">
               <div class="um-metric-label">
                 <calendar-outlined/>
                 今日登录
               </div>
-              <div class="um-metric-value">48</div>
+              <div class="um-metric-value">{{ stats.todayLoginUsers || 0 }}</div>
             </div>
             <div class="um-divider"></div>
-            <div class="um-metric-item">
+            <div class="um-metric-item week-new-users">
               <div class="um-metric-label">
                 <user-add-outlined/>
                 本周新增
               </div>
-              <div class="um-metric-value">26</div>
+              <div class="um-metric-value">{{ stats.newUsersThisWeek || 0 }}</div>
             </div>
             <div class="um-divider"></div>
-            <div class="um-metric-item">
+            <div class="um-metric-item banned-users">
               <div class="um-metric-label">
-                <safety-outlined/>
-                待审核
+                <warning-outlined/>
+                禁用账户
               </div>
-              <div class="um-metric-value">12</div>
+              <div class="um-metric-value">{{ stats.bannedUsers || 0 }}</div>
             </div>
           </div>
         </div>
@@ -143,7 +143,7 @@
           <plus-outlined/>
           添加用户
         </a-button>
-        <a-button  @click="handleRefresh">
+        <a-button @click="handleRefresh">
           <reload-outlined/>
           刷新
         </a-button>
@@ -153,6 +153,18 @@
         </a-button>
       </a-space>
     </div>
+
+
+    <!-- 确认删除对话框 -->
+    <a-modal
+        v-model:visible="deleteModalVisible"
+        title="确认删除"
+        okText="确定"
+        cancelText="取消"
+        @ok="handleDeleteConfirm"
+    >
+      <p>确定要删除用户 "{{ deleteUserInfo.username || '此用户' }}" 吗？此操作不可恢复！</p>
+    </a-modal>
 
     <!-- 用户数据表格 -->
     <a-table
@@ -165,6 +177,17 @@
         row-key="id"
     >
       <template #bodyCell="{ column, record }">
+
+        <!-- ID列自定义渲染 -->
+        <template v-if="column.dataIndex === 'id'">
+          <a-tooltip placement="topLeft">
+            <template #title>{{ record.id }}</template>
+            <span class="truncated-id" @mouseenter="showFullId = record.id" @mouseleave="showFullId = ''">
+          {{ formatId(record.id) }}
+        </span>
+          </a-tooltip>
+        </template>
+
         <!-- 用户头像列 -->
         <template v-if="column.dataIndex === 'avatar'">
           <a-avatar :src="record.avatar" :alt="record.username"/>
@@ -183,9 +206,14 @@
           />
         </template>
 
+
+        <template v-if="column.dataIndex === 'registerTime'">
+          {{ formatDateTime(record.registerTime, true) }}
+        </template>
+
         <!-- 操作列 -->
         <template v-if="column.dataIndex === 'action'">
-          <a-space>
+          <div class="action-buttons">
             <a-button type="link" size="small" @click="viewUserDetails(record)">
               <eye-outlined/>
               查看
@@ -194,22 +222,29 @@
               <edit-outlined/>
               编辑
             </a-button>
-            <a-button type="link" size="small" @click="resetPassword(record)">
-              <key-outlined/>
-              重置密码
-            </a-button>
-            <a-popconfirm
-                title="确定要删除此用户吗？"
-                ok-text="确定"
-                cancel-text="取消"
-                @confirm="deleteUser(record)"
-            >
-              <a-button type="link" size="small" danger>
-                <delete-outlined/>
-                删除
-              </a-button>
-            </a-popconfirm>
-          </a-space>
+
+            <template v-if="record.role !== 'admin' && record.role !== 'superAdmin'">
+              <a-dropdown>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item key="reset" @click="resetPassword(record)">
+                      <key-outlined/>
+                      重置密码
+                    </a-menu-item>
+                    <a-menu-divider/>
+                    <a-menu-item key="delete" danger @click="confirmDelete(record)">
+                      <delete-outlined/>
+                      删除
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+                <a-button type="link" size="small">
+                  <more-outlined/>
+                  更多
+                </a-button>
+              </a-dropdown>
+            </template>
+          </div>
         </template>
       </template>
     </a-table>
@@ -501,7 +536,7 @@
         <a-form-item label="备注" name="remark">
           <a-textarea
               v-model:value="editForm.remark"
-              placeholder="请输入用户备注信息（选填）"
+              placeholder="请输入用户备注信息）"
               :rows="3"
               :maxLength="200"
               :showCount="true"
@@ -645,9 +680,9 @@
             </a-form-item>
 
             <a-form-item label="确认密码" name="confirmPassword" :rules="[
-  { required: true, message: '请确认密码' },
-  { validator: validateConfirmPassword }
-]">
+                { required: true, message: '请确认密码' },
+                { validator: validateConfirmPassword }
+              ]">
               <a-input-password
                   v-model:value="formState.confirmPassword"
                   placeholder="请确认密码"
@@ -720,8 +755,8 @@
         <a-form-item label="新密码" name="newPassword">
           <a-input-password v-model:value="resetPasswordForm.newPassword" placeholder="请输入新密码"/>
         </a-form-item>
-        <a-form-item label="确认新密码" name="confirmNewPassword">
-          <a-input-password v-model:value="resetPasswordForm.confirmNewPassword" placeholder="请确认新密码"/>
+        <a-form-item label="确认新密码" name="checkPassword">
+          <a-input-password v-model:value="resetPasswordForm.checkPassword" placeholder="请确认新密码"/>
         </a-form-item>
       </a-form>
       <div class="reset-password-tips">
@@ -756,11 +791,58 @@ import {
   UserAddOutlined,
   SafetyOutlined,
   SettingOutlined,
-  FileTextOutlined,
-  QuestionCircleOutlined
+  MoreOutlined,
+  WarningOutlined
 } from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
+import {
+  addUserUsingPost,
+  batchDeleteUsersUsingDelete,
+  deleteUserUsingDelete,
+  getUserByIdUsingGet,
+  getUserStatisticsUsingGet,
+  listUserByPageUsingGet,
+  resetUserPasswordUsingPost,
+  updateUserUsingPut
+} from "@/api/yonghuguanli.js";
+
+
+// 表格数据和加载状态
+const loading = ref(false);
+const userData = ref([]);
+const pagination = reactive({
+  current: 1,         // 当前页码
+  pageSize: 10,       // 每页条数
+  total: 0,           // 总记录数
+  showSizeChanger: true,  // 显示每页条数选择器
+  showQuickJumper: true,  // 显示快速跳转
+  pageSizeOptions: ['10', '20', '50', '100'], // 每页条数选项
+  showTotal: (total) => `共 ${total} 条`,  // 总记录数展示文本
+});
+
+// 选中行数据
+const selectedRowKeys = ref([]);
+const hasSelected = computed(() => selectedRowKeys.value.length > 0);
+
+// 模态框可见性和当前操作用户
+const viewModalVisible = ref(false);
+const visible = ref(false);
+const formRef = ref();
+const editModalVisible = ref(false);
+const resetPasswordModalVisible = ref(false);
+const submitLoading = ref(false);
+const currentUser = ref({});
+
+// 表单引用
+const editFormRef = ref(null);
+const resetPasswordFormRef = ref(null);
+
+const deleteModalVisible = ref(false);
+const deleteUserInfo = ref({});
+
+const showFullId = ref('');
+
 
 // 表格列定义
 const columns = [
@@ -768,8 +850,10 @@ const columns = [
     title: 'ID',
     dataIndex: 'id',
     align: 'center',
-    width: 70,
-    fixed: 'left'
+    width: 120,
+    fixed: 'left',
+    className: 'id-column',
+    ellipsis: true,
   },
   {
     title: '账户名',
@@ -854,43 +938,6 @@ const statCards = reactive([
   },
 ]);
 
-// 搜索表单数据
-const searchForm = reactive({
-  username: '',
-  role: undefined,
-  status: undefined,
-  registerTime: [],
-});
-
-// 表格数据和加载状态
-const loading = ref(false);
-const userData = ref([]);
-const activeTab = ref('all');
-const pagination = reactive({
-  current: 1,
-  pageSize: 10,
-  total: 0,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total) => `共 ${total} 条`,
-});
-
-// 选中行数据
-const selectedRowKeys = ref([]);
-const hasSelected = computed(() => selectedRowKeys.value.length > 0);
-
-// 模态框可见性和当前操作用户
-const viewModalVisible = ref(false);
-const visible = ref(false);
-const formRef = ref();
-const editModalVisible = ref(false);
-const resetPasswordModalVisible = ref(false);
-const submitLoading = ref(false);
-const currentUser = ref({});
-
-// 表单引用
-const editFormRef = ref(null);
-const resetPasswordFormRef = ref(null);
 
 // 编辑表单数据
 const editForm = reactive({
@@ -901,18 +948,28 @@ const editForm = reactive({
   avatar: '',
   role: '',
   status: '',
-  remark: '' // 新增备注字段
+  remark: ''
 });
 
 const formState = reactive({
-  accountName: '',
-  userName: '',
+  accountName: '', // 对应API中的account
+  userName: '',    // 对应API中的username
   password: '',
   confirmPassword: '',
   phone: '',
-  role: 'normal',
+  role: 'user',    // 默认为普通用户
   status: 'active',
-  avatar: ''
+  avatar: '',
+  remark: ''       // 备注字段
+});
+
+
+// 搜索表单数据
+const searchForm = reactive({
+  username: '',
+  role: undefined,
+  status: undefined,
+  registerTime: [],
 });
 
 // 模拟登录历史数据
@@ -938,78 +995,43 @@ const loginHistory = ref([
 ]);
 
 // 获取时间线颜色
-function getTimelineColor(index) {
+const getTimelineColor = (index) => {
   const colors = ['#6554C0', '#52C41A', '#1890FF', '#FAAD14', '#F5222D'];
   return colors[index % colors.length];
-}
+};
 
 // 获取状态样式类
-function getStatusClass(status) {
+const getStatusClass = (status) => {
   const statusMap = {
     active: 'status-active',
     inactive: 'status-inactive',
     banned: 'status-banned'
   };
   return statusMap[status] || 'status-default';
-}
-
-// 关闭用户详情
-function closeUserDetails() {
-  viewModalVisible.value = false;
-}
-
-// 编辑当前用户
-function editThisUser() {
-  // 关闭详情窗口
-  viewModalVisible.value = false;
-
-  // 调用编辑函数
-  editUser(currentUser.value);
-}
-
-// 为当前用户重置密码
-function resetPasswordForUser() {
-  // 关闭详情窗口
-  viewModalVisible.value = false;
-
-  // 调用重置密码函数
-  resetPassword(currentUser.value);
-}
-
+};
 
 // 角色选项
 const roleOptions = [
   {value: 'user', label: '普通用户'},
   {value: 'admin', label: '管理员'},
-  {value: 'superAdmin', label: '超级管理员'},
-  {value: 'vip', label: 'VIP用户'}
+  {value: 'vip', label: 'VIP用户'},
+  {value: 'superAdmin', label: '超级管理员'}
 ];
 
 // 状态选项
 const statusOptions = [
   {value: 'active', label: '已激活', tagColor: 'success'},
   {value: 'inactive', label: '未激活', tagColor: 'warning'},
-  {value: 'disabled', label: '已禁用', tagColor: 'error'}
+  {value: 'banned', label: '已禁用', tagColor: 'error'}
 ];
 
 // 重置密码表单数据
 const resetPasswordForm = reactive({
   userId: '',
   newPassword: '',
-  confirmNewPassword: '',
+  checkPassword: '',
 });
 
-// 重置密码验证规则
-const resetPasswordRules = {
-  newPassword: [
-    {required: true, message: '请输入新密码', trigger: 'blur'},
-    {min: 6, max: 20, message: '密码长度应为6-20个字符', trigger: 'blur'}
-  ],
-  confirmNewPassword: [
-    {required: true, message: '请确认新密码', trigger: 'blur'},
-    {validator: validateResetPasswordConfirm, trigger: 'blur'}
-  ],
-};
 
 // 密码确认验证
 const validateConfirmPassword = async (_rule, value) => {
@@ -1022,12 +1044,26 @@ const validateConfirmPassword = async (_rule, value) => {
 };
 
 // 重置密码确认验证
-function validateResetPasswordConfirm(rule, value) {
+const validateResetPasswordConfirm = (rule, value) => {
   if (value !== resetPasswordForm.newPassword) {
     return Promise.reject('两次输入的密码不一致');
   }
   return Promise.resolve();
-}
+};
+
+
+// 重置密码验证规则
+const resetPasswordRules = {
+  newPassword: [
+    {required: true, message: '请输入新密码', trigger: 'blur'},
+    {min: 6, max: 20, message: '密码长度应为6-20个字符', trigger: 'blur'}
+  ],
+  checkPassword: [
+    {required: true, message: '请确认新密码', trigger: 'blur'},
+    {validator: validateResetPasswordConfirm, trigger: 'blur'}
+  ],
+};
+
 
 // 表单验证规则
 const rules = {
@@ -1058,6 +1094,7 @@ const rules = {
     {required: true, message: '请选择状态', trigger: 'change'}
   ],
 };
+
 
 // 密码强度计算
 const getPasswordStrength = computed(() => {
@@ -1099,6 +1136,30 @@ const getPasswordStrengthText = () => {
   return '非常强';
 };
 
+// 关闭用户详情
+const closeUserDetails = () => {
+  viewModalVisible.value = false;
+};
+
+// 编辑当前用户
+const editThisUser = () => {
+  // 关闭详情窗口
+  viewModalVisible.value = false;
+
+  // 调用编辑函数
+  editUser(currentUser.value);
+};
+
+// 为当前用户重置密码
+const resetPasswordForUser = () => {
+  // 关闭详情窗口
+  viewModalVisible.value = false;
+
+  // 调用重置密码函数
+  resetPassword(currentUser.value);
+};
+
+
 const showModal = () => {
   visible.value = true;
 };
@@ -1114,236 +1175,359 @@ const resetForm = () => {
   formRef.value && formRef.value.resetFields();
 };
 
-// 组件挂载时获取数据
-onMounted(() => {
-  fetchUserData();
+
+const stats = ref({
+  todayLoginUsers: 0,
+  newUsersThisWeek: 0,
+  bannedUsers: 0
 });
 
-// 获取用户数据
-function fetchUserData() {
-  loading.value = true;
-  // 这里应该是调用API获取数据，现在模拟一些数据
-  setTimeout(() => {
-    const data = [];
-    for (let i = 1; i <= 50; i++) {
-      data.push({
-        id: i,
-        account: `account_${i}`,
-        username: `用户${i}`,
-        phone: `1391234${i.toString().padStart(4, '0')}`,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`,
-        role: i % 5 === 0 ? 'admin' : (i % 3 === 0 ? 'vip' : 'user'),
-        status: i % 7 === 0 ? 'banned' : (i % 4 === 0 ? 'inactive' : 'active'),
-        registerTime: new Date(2025, 0, i % 28 + 1).getTime(),
-        lastLoginTime: new Date(2025, 2, i % 28 + 1).getTime(),
-      });
+
+// 获取用户统计数据
+const fetchUserStatistics = async () => {
+  try {
+    const response = await getUserStatisticsUsingGet();
+    if (response.data && response.data.data) {
+      const data = response.data.data;
+
+      // 更新统计卡片数据
+      statCards[0].value = data.totalUsers || 0;
+      statCards[1].value = data.newUsersThisMonth || 0;
+      statCards[2].value = data.vipUsers || 0;
+      statCards[3].value = `${data.activeUserRatio || 0}%`;
+
+      // 更新增长率
+      statCards[0].change = data.totalUserGrowth || 0;
+      statCards[1].change = data.newUserGrowth || 0;
+      statCards[2].change = data.vipUserGrowth || 0;
+      statCards[3].change = data.activeGrowth || 0;
+
+      // 更新顶部指标数据（使用响应式数据）
+      stats.value = {
+        todayLoginUsers: data.todayLoginUsers || 0,
+        newUsersThisWeek: data.newUsersThisWeek || 0,
+        bannedUsers: data.bannedUsers || 0
+      };
     }
-    userData.value = data;
-    pagination.total = data.length;
-    loading.value = false;
-  }, 500);
-}
+  } catch (error) {
+    console.error('获取用户统计数据错误:', error);
+    message.error('获取统计数据失败');
+  }
+};
+
+
+// 格式化日期时间
+const formatDateTime = (timestamp, dateOnly = false) => {
+  if (!timestamp) return '';
+  return dayjs(timestamp).format(dateOnly ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss');
+};
 
 // 搜索处理
-function handleSearch() {
-  // 实际项目中应调用API进行搜索
-  loading.value = true;
-  setTimeout(() => {
-    // 模拟搜索过滤
-    const filteredData = userData.value.filter(user => {
-      let match = true;
-
-      if (searchForm.username && !user.username.includes(searchForm.username)) {
-        match = false;
-      }
-
-      if (searchForm.role && user.role !== searchForm.role) {
-        match = false;
-      }
-
-      if (searchForm.status && user.status !== searchForm.status) {
-        match = false;
-      }
-
-      if (searchForm.registerTime && searchForm.registerTime.length === 2) {
-        const startTime = searchForm.registerTime[0].valueOf();
-        const endTime = searchForm.registerTime[1].valueOf();
-        if (user.registerTime < startTime || user.registerTime > endTime) {
-          match = false;
-        }
-      }
-
-      return match;
-    });
-
-    userData.value = filteredData;
-    pagination.total = filteredData.length;
-    pagination.current = 1;
-    loading.value = false;
-
-    message.success('搜索完成');
-  }, 500);
-}
+const handleSearch = async () => {
+  pagination.current = 1; // 重置到第一页
+  await fetchUserData(); // 使用搜索条件获取数据
+};
 
 
 // 刷新表格数据
-function handleRefresh() {
+const handleRefresh = () => {
   fetchUserData();
   selectedRowKeys.value = [];
   message.success('数据已刷新');
-}
+};
 
 // 表格选择变化
-function onSelectChange(selected) {
+const onSelectChange = (selected) => {
   selectedRowKeys.value = selected;
-}
+};
 
 // 表格变化处理（排序、分页等）
-function handleTableChange(pag, filters, sorter) {
+const handleTableChange = (pag, filters, sorter) => {
+  console.log("表格变化:", pag);
+  // 更新分页信息
   pagination.current = pag.current;
   pagination.pageSize = pag.pageSize;
+  // 重新获取数据
+  fetchUserData();
+};
 
-  // 处理排序
-  if (sorter.field && sorter.order) {
-    const order = sorter.order === 'ascend' ? 1 : -1;
-    userData.value = [...userData.value].sort((a, b) => {
-      return order * (a[sorter.field] - b[sorter.field]);
-    });
-  }
-}
 
 // 获取角色名称
-function getRoleName(role) {
+const getRoleName = (role) => {
   const roleMap = {
     admin: '管理员',
     user: '普通用户',
-    vip: 'VIP用户'
+    vip: 'VIP用户',
+    superAdmin: '超级管理员'
   };
   return roleMap[role] || '未知角色';
-}
+};
+
 
 // 获取角色颜色
-function getRoleColor(role) {
+const getRoleColor = (role) => {
   const colorMap = {
     admin: '#6554C0',
     user: '#52C41A',
-    vip: '#FAAD14'
+    vip: '#FAAD14',
+    superAdmin: '#FF4D4F'
   };
   return colorMap[role] || 'default';
-}
+};
 
 // 获取状态类型
-function getStatusType(status) {
+const getStatusType = (status) => {
   const statusMap = {
     active: 'success',
     inactive: 'warning',
     banned: 'error'
   };
   return statusMap[status] || 'default';
-}
+};
+
 
 // 获取状态文本
-function getStatusText(status) {
+const getStatusText = (status) => {
   const statusMap = {
     active: '已激活',
     inactive: '未激活',
     banned: '已禁用'
   };
   return statusMap[status] || '未知状态';
-}
-
-// 格式化日期时间
-function formatDateTime(timestamp) {
-  return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss');
-}
-
-// 查看用户详情
-function viewUserDetails(record) {
-  currentUser.value = {...record};
-  viewModalVisible.value = true;
-}
-
-// 编辑用户信息
-function editUser(record) {
-  // 复制用户数据到编辑表单
-  Object.keys(editForm).forEach(key => {
-    if (key in record) {
-      editForm[key] = record[key];
-    } else if (key === 'remark') {
-      // 为备注字段设置默认值（如果记录中没有）
-      editForm.remark = record.remark || '';
-    }
-  });
-  editModalVisible.value = true;
-}
-
-function resetSearchForm() {
-  // 重置搜索表单的所有字段
-  searchForm.username = '';
-  searchForm.role = undefined;
-  searchForm.status = undefined;
-  searchForm.registerTime = [];
-
-  // 重新获取数据（可选：是否在重置后自动刷新数据）
-  fetchUserData();
-
-  // 提示用户已重置
-  message.success('搜索条件已重置');
-}
-
-// 取消编辑
-const handleEditCancel = () => {
-  editModalVisible.value = false;
 };
 
-// 处理编辑提交
-function handleEditSubmit() {
-  editFormRef.value.validate()
-      .then(() => {
-        submitLoading.value = true;
+// 格式化ID显示，截断过长的ID
+const formatId = (id) => {
+  if (id && id.toString().length > 12) {
+    const idStr = id.toString();
+    const start = idStr.substring(0, 6);
+    const end = idStr.substring(idStr.length - 4);
+    return `${start}...${end}`;
+  }
+  return id;
+};
 
-        // 模拟API调用
-        setTimeout(() => {
-          // 更新表格中的数据
-          const index = userData.value.findIndex(user => user.id === editForm.id);
-          if (index !== -1) {
-            userData.value[index] = {...userData.value[index], ...editForm};
-          }
+// 获取用户数据
+const fetchUserData = async () => {
+  loading.value = true;
+  try {
+    // 构建查询参数 - 修改为后端期望的参数名
+    const params = {
+      pageNum: pagination.current,  // 改为 pageNum
+      pageSize: pagination.pageSize, // 保持 pageSize
+      username: searchForm.username || undefined,
+      role: searchForm.role || undefined,
+      status: searchForm.status || undefined,
+      startTime: searchForm.registerTime?.[0]?.valueOf(),
+      endTime: searchForm.registerTime?.[1]?.valueOf(),
+    };
 
-          submitLoading.value = false;
-          editModalVisible.value = false;
-          message.success('用户信息已更新');
-        }, 500);
-      })
-      .catch(error => {
-        console.error('表单验证失败', error);
-      });
-}
+    // 调用API
+    const response = await listUserByPageUsingGet(params);
+    const result = response.data;
+    if (result.code === 200 && result.data) {
+      // 确保ID为字符串类型，防止JS对大数的精度问题
+      userData.value = (result.data.records || []).map(user => ({
+        ...user,
+        id: user.id?.toString() // 确保ID为字符串
+      }));
+
+      // 更新分页信息 - 匹配后端返回的字段
+      pagination.total = result.data.total || 0;
+      pagination.current = result.data.pageNum || 1;
+
+    } else {
+      userData.value = [];
+      pagination.total = 0;
+      message.warning('获取用户数据失败');
+    }
+  } catch (error) {
+    console.error('获取用户列表错误:', error);
+    message.error('获取用户列表失败，请稍后重试');
+    userData.value = [];
+    pagination.total = 0;
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 查看用户详情
+const viewUserDetails = async (record) => {
+  try {
+    // 确保使用完整的ID字符串
+    const userId = record.id;
+
+    const response = await getUserByIdUsingGet({id: userId});
+    const result = response.data;
+
+    if (result.data && result.code === 200) {
+      currentUser.value = result.data;
+      viewModalVisible.value = true;
+    } else {
+      message.error('获取用户详情失败');
+    }
+  } catch (error) {
+    console.error('获取用户详情错误:', error);
+    message.error('获取用户详情失败，请稍后重试');
+  }
+};
 
 // 打开添加用户弹窗
-function openAddUserModal() {
+const openAddUserModal = () => {
   // 重置添加表单数据
   formState.accountName = '';
   formState.userName = '';
   formState.password = '';
   formState.confirmPassword = '';
   formState.phone = '';
-  formState.role = 'normal';
+  formState.role = 'user';
   formState.status = 'active';
   formState.avatar = '';
 
   // 使用正确的状态变量打开弹窗
   visible.value = true;
-}
+};
+
+
+const resetSearchForm = () => {
+  // 重置搜索表单的所有字段
+  searchForm.username = '';
+  searchForm.role = undefined;
+  searchForm.status = undefined;
+  searchForm.registerTime = [];
+
+  // 重新获取数据
+  pagination.current = 1;
+  fetchUserData();
+
+  message.success('搜索条件已重置');
+};
+
+// 取消编辑
+const handleEditCancel = () => {
+  editModalVisible.value = false;
+};
+
+// 编辑用户信息
+const editUser = async (record) => {
+  try {
+    // 获取完整的用户信息
+    const response = await getUserByIdUsingGet({id: record.id});
+
+    if (response.data && response.data.data) {
+      const userData = response.data.data;
+
+      // 确保使用完整ID
+      editForm.id = userData.id.toString();
+
+      // 复制其他用户数据到编辑表单
+      editForm.account = userData.account || '';
+      editForm.username = userData.username || '';
+      editForm.phone = userData.phone || '';
+      editForm.avatar = userData.avatar || '';
+      editForm.role = userData.role || '';
+      editForm.status = userData.status || '';
+      editForm.remark = userData.remark || '';
+
+      // 打开编辑弹窗
+      editModalVisible.value = true;
+    } else {
+      message.error('获取用户信息失败');
+    }
+  } catch (error) {
+    console.error('加载用户信息错误:', error);
+    message.error('加载用户信息失败，请稍后重试');
+  }
+};
+
+// 处理编辑提交
+const handleEditSubmit = () => {
+  editFormRef.value.validate()
+      .then(async () => {
+        submitLoading.value = true;
+        try {
+          // 构建请求参数 - 确保与后端API期望的格式一致
+          const params = {
+            id: editForm.id,
+            username: editForm.username,
+            phone: editForm.phone,
+            avatar: editForm.avatar,
+            role: editForm.role,
+            status: editForm.status,
+            remark: editForm.remark // 如果后端也需要remark字段
+          };
+
+          console.log("提交更新请求参数:", params); // 调试日志
+
+          // 调用更新API
+          const response = await updateUserUsingPut(params);
+
+          if (response.data && response.data.data) {
+            message.success('用户信息已更新');
+
+            // 更新表格中的数据
+            const index = userData.value.findIndex(user => user.id === editForm.id);
+            if (index !== -1) {
+              userData.value[index] = {...userData.value[index], ...editForm};
+            }
+
+            // 关闭编辑弹窗
+            editModalVisible.value = false;
+
+            // 刷新用户列表
+            fetchUserData();
+          } else {
+            message.error('更新用户信息失败: ' + (response.data?.message || '未知错误'));
+          }
+        } catch (error) {
+          console.error('更新用户信息错误:', error);
+          message.error('更新用户信息失败，请稍后重试: ' + (error.message || '未知错误'));
+        } finally {
+          submitLoading.value = false;
+        }
+      })
+      .catch(error => {
+        console.error('表单验证失败', error);
+      });
+};
 
 // 添加用户提交事件
 const handleSubmit = () => {
   formRef.value
       .validate()
-      .then(() => {
-        message.success('添加用户成功');
-        visible.value = false;
-        resetForm();
+      .then(async () => {
+        submitLoading.value = true;
+        try {
+          // 构建请求参数
+          const params = {
+            account: formState.accountName,
+            password: formState.password,
+            username: formState.userName,
+            phone: formState.phone,
+            avatar: formState.avatar,
+            role: formState.role,
+            status: formState.status,
+            remark: formState.remark
+          };
+
+          // 调用添加用户API
+          const response = await addUserUsingPost(params);
+
+          if (response.data) {
+            message.success('添加用户成功');
+            visible.value = false;
+            resetForm();
+            // 刷新用户列表
+            fetchUserData();
+          } else {
+            message.error('添加用户失败');
+          }
+        } catch (error) {
+          console.error('添加用户错误:', error);
+          message.error('添加用户失败，请稍后重试');
+        } finally {
+          submitLoading.value = false;
+        }
       })
       .catch(error => {
         console.log('表单校验失败:', error);
@@ -1359,123 +1543,154 @@ const handleAvatarUpload = () => {
 
 
 // 重置用户密码
-function resetPassword(record) {
+const resetPassword = (record) => {
   resetPasswordForm.userId = record.id;
   resetPasswordForm.newPassword = '';
-  resetPasswordForm.confirmNewPassword = '';
+  resetPasswordForm.checkPassword = '';
   resetPasswordModalVisible.value = true;
-}
+};
 
 // 处理重置密码提交
-function handleResetPassword() {
+const handleResetPassword = () => {
   resetPasswordFormRef.value.validate()
-      .then(() => {
+      .then(async () => {
         submitLoading.value = true;
+        try {
+          // 构建请求参数
+          const params = {
+            userId: resetPasswordForm.userId,
+            newPassword: resetPasswordForm.newPassword,
+            checkPassword: resetPasswordForm.checkPassword,
+          };
 
-        // 模拟API调用
-        setTimeout(() => {
+          // 调用重置密码API
+          const response = await resetUserPasswordUsingPost(params);
+
+          if (response.data) {
+            message.success('密码已重置');
+            resetPasswordModalVisible.value = false;
+          } else {
+            message.error('重置密码失败');
+          }
+        } catch (error) {
+          console.error('重置密码错误:', error);
+          message.error('重置密码失败，请稍后重试');
+        } finally {
           submitLoading.value = false;
-          resetPasswordModalVisible.value = false;
-          message.success('密码已重置');
-        }, 500);
+        }
       })
       .catch(error => {
         console.error('表单验证失败', error);
       });
-}
+};
+
+// 确认删除方法
+const confirmDelete = (record) => {
+  deleteUserInfo.value = record;
+  deleteModalVisible.value = true;
+};
+
+// 处理确认删除
+const handleDeleteConfirm = async () => {
+  try {
+    await deleteUser(deleteUserInfo.value);
+    deleteModalVisible.value = false;
+    deleteUserInfo.value = {};
+  } catch (error) {
+    console.error('删除用户出错:', error);
+  }
+};
 
 // 删除用户
-function deleteUser(record) {
+const deleteUser = async (record) => {
   loading.value = true;
+  try {
+    const userId = record.id;
+    const response = await deleteUserUsingDelete({id: userId});
 
-  // 模拟API调用
-  setTimeout(() => {
-    userData.value = userData.value.filter(user => user.id !== record.id);
-    pagination.total -= 1;
+    if (response.data) {
+      // 从当前列表中移除被删除的用户
+      userData.value = userData.value.filter(user => user.id !== record.id);
+
+      // 更新总条数
+      pagination.total -= 1;
+
+      // 判断当前页删除后是否为空
+      if (userData.value.length === 0 && pagination.current > 1) {
+        // 如果当前页为空且不是第一页，则跳转到前一页
+        pagination.current -= 1;
+        // 重新获取数据
+        await fetchUserData();
+      }
+
+      message.success('用户已删除');
+    } else {
+      message.error('删除用户失败');
+    }
+  } catch (error) {
+    console.error('删除用户错误:', error, '请求ID:', record.id);
+    message.error('删除用户失败，请稍后重试');
+  } finally {
     loading.value = false;
-    message.success('用户已删除');
-  }, 500);
-}
+  }
+};
 
 // 批量删除用户
-function handleBatchDelete() {
+const handleBatchDelete = async () => {
   if (!selectedRowKeys.value.length) {
     return;
   }
 
   loading.value = true;
+  try {
+    // 记录当前页码
+    const currentPage = pagination.current;
 
-  // 模拟API调用
-  setTimeout(() => {
-    userData.value = userData.value.filter(user => !selectedRowKeys.value.includes(user.id));
-    pagination.total -= selectedRowKeys.value.length;
-    selectedRowKeys.value = [];
+    // 记录当前页选中的行数
+    const currentPageSelectedCount = userData.value.filter(
+        user => selectedRowKeys.value.includes(user.id)
+    ).length;
+
+    // 使用批量删除API
+    const response = await batchDeleteUsersUsingDelete({
+      ids: selectedRowKeys.value
+    });
+
+    if (response.data) {
+      // 更新总条数
+      pagination.total -= selectedRowKeys.value.length;
+      selectedRowKeys.value = [];
+
+      // 判断是否会删除当前页的所有数据
+      if (currentPageSelectedCount === userData.value.length && currentPage > 1) {
+        // 如果当前页所有数据都被删除且不是第一页，则跳转到前一页
+        pagination.current = currentPage - 1;
+      }
+
+      message.success('已批量删除用户');
+      // 刷新用户列表
+      await fetchUserData();
+    } else {
+      message.error('批量删除用户失败');
+    }
+  } catch (error) {
+    console.error('批量删除用户错误:', error);
+    message.error('批量删除用户失败，请稍后重试');
+  } finally {
     loading.value = false;
-    message.success('已批量删除用户');
-  }, 500);
-}
-
-// 头像上传前验证
-function beforeUpload(file) {
-  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-  if (!isJpgOrPng) {
-    message.error('只能上传JPG/PNG格式的图片!');
   }
+};
 
-  const isLt2M = file.size / 1024 / 1024 < 2;
-  if (!isLt2M) {
-    message.error('图片大小不能超过2MB!');
-  }
-
-  return false; // 阻止自动上传
-}
-
-// 编辑表单头像变更处理
-function handleAvatarChange(info) {
-  if (info.file.status !== 'uploading') {
-    console.log(info.file, info.fileList);
-  }
-
-  if (info.file.status === 'done') {
-    // 实际项目中应获取服务器返回的URL
-    // 这里仅作示例，使用本地预览
-    getBase64(info.file.originFileObj, (url) => {
-      editForm.avatar = url;
-    });
-    message.success('头像上传成功');
-  } else if (info.file.status === 'error') {
-    message.error('头像上传失败');
-  }
-}
-
-// 添加表单头像变更处理
-function handleAddAvatarChange(info) {
-  if (info.file.status !== 'uploading') {
-    console.log(info.file, info.fileList);
-  }
-
-  if (info.file.status === 'done') {
-    // 实际项目中应获取服务器返回的URL
-    // 这里仅作示例，使用本地预览
-    getBase64(info.file.originFileObj, (url) => {
-      addForm.avatar = url;
-    });
-    message.success('头像上传成功');
-  } else if (info.file.status === 'error') {
-    message.error('头像上传失败');
-  }
-}
-
-// 将文件转换为Base64
-function getBase64(file, callback) {
-  const reader = new FileReader();
-  reader.addEventListener('load', () => callback(reader.result));
-  reader.readAsDataURL(file);
-}
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchUserData();
+  fetchUserStatistics();
+});
 
 // 暴露方法给父组件使用
 defineExpose({
-  showModal
+  showModal,
+  confirmDelete
 });
 </script>
 
@@ -2136,9 +2351,83 @@ defineExpose({
   color: #333;
 }
 
-/* 保留原有的其他样式，但可能需要重命名以避免冲突 */
-.stat-cards {
-  margin-bottom: 24px;
+/* 操作列样式优化 */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.action-buttons .ant-btn {
+  padding: 0 8px;
+}
+
+/* 当操作按钮位于表格最后一列时，确保下拉菜单向左展开 */
+.action-buttons .ant-dropdown-menu {
+  min-width: 120px;
+}
+
+/* 动画效果 */
+.ant-dropdown-menu-item {
+  transition: all 0.2s;
+}
+
+.ant-dropdown-menu-item:hover {
+  background-color: #f6f5ff;
+}
+
+.ant-dropdown-menu-item-danger:hover {
+  background-color: #fff1f0;
+}
+
+/* ID列样式增强 */
+.truncated-id {
+  cursor: pointer;
+  color: #6554C0;
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.truncated-id:hover {
+  color: #6554C0;
+  text-decoration: underline;
+}
+
+/* 增强 Tooltip 的可见性 */
+:deep(.ant-tooltip) {
+  max-width: 500px;
+}
+
+:deep(.ant-tooltip-inner) {
+  word-break: break-all;
+  font-family: monospace;
+  padding: 8px 12px;
+}
+
+/* 响应式设计优化 */
+@media screen and (max-width: 576px) {
+  :deep(.id-column) {
+    min-width: 100px;
+    max-width: 100px;
+  }
+
+  /* 优化小屏幕下的表格显示 */
+  .user-management-container :deep(.ant-table-content) {
+    overflow-x: auto;
+  }
+
+  /* 确保操作列在小屏幕上保持可见 */
+  :deep(.action-column) {
+    position: sticky;
+    right: 0;
+    background-color: #fff;
+    z-index: 1;
+  }
 }
 
 /* 响应式设计 */
