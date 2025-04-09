@@ -41,7 +41,6 @@ export const useUserStore = defineStore('user', () => {
                 if (parsedData.userInfo && typeof parsedData.userInfo === 'object') {
                     // 如果发现嵌套的userInfo，解套一层
                     userInfo.value = parsedData.userInfo;
-                    console.log('检测并修复了嵌套的userInfo数据结构');
                 } else {
                     // 正常赋值
                     userInfo.value = parsedData;

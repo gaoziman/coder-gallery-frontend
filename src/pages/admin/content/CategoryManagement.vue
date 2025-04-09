@@ -25,7 +25,7 @@
                 <calendar-outlined/>
                 今日创建
               </div>
-              <div class="tm-metric-value">8</div>
+              <div class="tm-metric-value">{{ statistics.todayCreated || 0 }}</div>
             </div>
             <div class="tm-divider"></div>
             <div class="tm-metric-item">
@@ -33,7 +33,7 @@
                 <partition-outlined/>
                 总分类数
               </div>
-              <div class="tm-metric-value">86</div>
+              <div class="tm-metric-value">{{ statistics.totalCategories || 0 }}</div>
             </div>
             <div class="tm-divider"></div>
             <div class="tm-metric-item">
@@ -41,7 +41,7 @@
                 <link-outlined/>
                 内容总数
               </div>
-              <div class="tm-metric-value">3.5k</div>
+              <div class="tm-metric-value">{{ statistics.totalItems || 0 }}</div>
             </div>
           </div>
         </div>
@@ -61,8 +61,16 @@
               <div class="stat-info">
                 <div class="stat-title">{{ card.title }}</div>
                 <div class="stat-value">{{ card.value }}
-                  <span class="stat-trend">
-                    <trend-badge :value="card.change"/>
+                  <span class="stat-trend" v-if="card.change !== undefined">
+                    <template v-if="card.change > 0">
+                      <arrow-up-outlined class="trend-up"/> +{{ card.change }}%
+                    </template>
+                    <template v-else-if="card.change < 0">
+                      <arrow-down-outlined class="trend-down"/> {{ card.change }}%
+                    </template>
+                    <template v-else>
+                      <minus-outlined class="trend-flat"/> {{ card.change }}%
+                    </template>
                   </span>
                 </div>
                 <div class="stat-change" :class="{ 'increase': card.change > 0, 'decrease': card.change < 0 }">
@@ -84,7 +92,7 @@
     </div>
 
     <!-- 搜索条件区域 -->
-    <a-card class="search-form-card" :body-style="{ padding: '24px' }">
+    <a-card v-if="viewMode === 'list'" class="search-form-card" :body-style="{ padding: '24px' }">
       <div class="search-form-container">
         <a-form layout="inline" :model="searchForm" @finish="handleSearch" class="search-form">
           <div class="search-form-items">
@@ -101,10 +109,9 @@
                   style="width: 150px"
                   allowClear
               >
-                <a-select-option value="article">文章分类</a-select-option>
-                <a-select-option value="product">产品分类</a-select-option>
-                <a-select-option value="media">媒体分类</a-select-option>
-                <a-select-option value="user">用户分类</a-select-option>
+                <a-select-option v-for="type in categoryTypes" :key="type.value" :value="type.value">
+                  {{ type.text }}
+                </a-select-option>
               </a-select>
             </a-form-item>
 
@@ -150,13 +157,13 @@
             <delete-outlined/>
             批量删除
           </a-button>
-          <a-button :disabled="!hasSelected" @click="handleBatchMove">
-            <swap-outlined/>
-            批量移动
-          </a-button>
           <a-button :disabled="!hasSelected" @click="handleBatchExport">
             <export-outlined/>
             批量导出
+          </a-button>
+          <a-button type="primary" :disabled="!hasSelected" @click="handleBatchMove">
+            <swap-outlined/>
+            批量移动
           </a-button>
         </a-space>
       </div>
@@ -167,6 +174,10 @@
             <branches-outlined/>
             树形视图
           </a-radio-button>
+          <a-radio-button value="card">
+            <appstore-outlined/>
+            卡片视图
+          </a-radio-button>
           <a-radio-button value="list">
             <unordered-list-outlined/>
             列表视图
@@ -175,134 +186,482 @@
       </div>
     </div>
 
-    <!-- 树形视图 -->
+    <!-- 树形视图 - 全新设计 -->
     <div v-if="viewMode === 'tree'" class="tree-view-container">
       <a-row :gutter="16">
-        <a-col :span="8">
-          <a-card class="tree-card" :body-style="{ padding: '16px' }">
+        <!-- 左侧树形结构 -->
+        <a-col :span="7">
+          <a-card class="tree-card" :body-style="{ padding: '0' }">
             <template #title>
-              <div class="tree-card-title">
-                <branches-outlined />
-                <span>分类层级树</span>
+              <div class="tree-card-header">
+                <div class="tree-card-title">
+                  <branches-outlined class="tree-icon"/>
+                  <span>分类层级树</span>
+                </div>
+                <div class="tree-actions">
+                  <a-tooltip title="刷新分类">
+                    <a-button type="text" shape="circle" @click="refreshTree">
+                      <reload-outlined/>
+                    </a-button>
+                  </a-tooltip>
+                  <a-tooltip :title="isTreeCollapsed ? '展开全部' : '折叠全部'">
+                    <a-button type="text" shape="circle" @click="toggleTreeExpand">
+                      <expand-outlined :rotate="isTreeCollapsed ? 0 : 90"/>
+                    </a-button>
+                  </a-tooltip>
+                </div>
               </div>
             </template>
-            <a-spin :spinning="loading">
-              <div class="tree-header">
-                <a-input-search
-                    v-model:value="searchTreeValue"
-                    placeholder="搜索分类"
-                    style="width: 100%;"
-                    @change="handleTreeSearch"
-                    allowClear
-                />
-              </div>
+
+            <div class="tree-search-wrapper">
+              <a-input
+                  v-model:value="searchTreeValue"
+                  placeholder="搜索分类名称"
+                  class="tree-search"
+                  @change="handleTreeSearch"
+                  allowClear
+              >
+                <template #prefix>
+                  <search-outlined/>
+                </template>
+              </a-input>
+            </div>
+
+            <a-spin :spinning="loading" class="tree-spin-container">
               <div class="tree-content">
+                <div v-if="categoryTreeData.length === 0" class="tree-empty-state">
+                  <a-empty
+                      description="暂无分类数据"
+                      :image="Empty.PRESENTED_IMAGE_SIMPLE"
+                  />
+                  <a-button type="primary" size="small" @click="openCreateModal">新建分类</a-button>
+                </div>
                 <a-tree
+                    v-else
                     :tree-data="categoryTreeData"
                     :selectable="true"
                     :selected-keys="selectedTreeKeys"
                     :expandable="true"
-                    :show-line="true"
-                    :draggable="true"
+                    :show-line="{ showLeafIcon: false }"
+                    :auto-expand-parent="true"
+                    :expanded-keys="expandedKeys"
+                    block-node
+                    class="custom-tree"
                     @select="onTreeSelect"
-                    @drop="onTreeDrop"
+                    @expand="onTreeExpand"
                 >
-                  <template #title="{ title, key }">
-                    <span class="tree-node-title">{{ title }}</span>
-                    <span class="tree-node-action">
-                      <a-dropdown :trigger="['click']">
-                        <template #overlay>
-                          <a-menu>
-                            <a-menu-item @click.stop="addChildCategory(key)">
-                              <plus-outlined /> 添加子分类
-                            </a-menu-item>
-                            <a-menu-item @click.stop="editCategory(key)">
-                              <edit-outlined /> 编辑
-                            </a-menu-item>
-                            <a-menu-divider />
-                            <a-menu-item @click.stop="showDeleteConfirm(key)" danger>
-                              <delete-outlined /> 删除
-                            </a-menu-item>
-                          </a-menu>
-                        </template>
-                        <more-outlined @click.stop />
-                      </a-dropdown>
-                    </span>
+                  <template #switcherIcon="{ expanded }">
+                    <caret-down-outlined
+                        :style="{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', fontSize: '12px', color: '#6554C0' }"
+                    />
+                  </template>
+                  <template #title="{ title, key, dataRef }">
+                    <div class="tree-node-wrapper">
+                      <div class="tree-node-content">
+                        <div class="tree-node-icon" :style="{ background: getCategoryTypeColor(dataRef.type) + '15' }">
+                          <component
+                              :is="getIconComponent(dataRef.icon || 'AppstoreOutlined')"
+                              :style="{ color: getCategoryTypeColor(dataRef.type) }"
+                          />
+                        </div>
+                        <span class="tree-node-title">{{ title }}</span>
+                        <a-tag class="tree-node-counter" :color="getCategoryTypeColor(dataRef.type)">
+                          {{ dataRef.contentCount || 0 }}
+                        </a-tag>
+                      </div>
+                      <div class="tree-node-actions">
+                        <a-dropdown :trigger="['click']" @click.stop>
+                          <a-button type="text" size="small" class="tree-node-action-btn">
+                            <more-outlined/>
+                          </a-button>
+                          <template #overlay>
+                            <a-menu>
+                              <a-menu-item key="view" @click.stop="viewCategory(dataRef)">
+                                <eye-outlined/>
+                                查看详情
+                              </a-menu-item>
+                              <a-menu-item key="add" @click.stop="addChildCategory(key)">
+                                <plus-outlined/>
+                                添加子分类
+                              </a-menu-item>
+                              <a-menu-item key="edit" @click.stop="editCategory(key)">
+                                <edit-outlined/>
+                                编辑分类
+                              </a-menu-item>
+                              <a-menu-item key="move" @click.stop="moveCategory(dataRef)">
+                                <swap-outlined/>
+                                移动分类
+                              </a-menu-item>
+                              <a-menu-divider/>
+                              <a-menu-item key="delete" danger @click.stop="showDeleteConfirm(key)">
+                                <delete-outlined/>
+                                删除分类
+                              </a-menu-item>
+                            </a-menu>
+                          </template>
+                        </a-dropdown>
+                      </div>
+                    </div>
                   </template>
                 </a-tree>
               </div>
             </a-spin>
+
+            <div class="tree-footer">
+              <a-statistic title="总分类数" :value="statistics.totalCategories || 0"/>
+              <a-statistic title="子分类总数" :value="statistics.totalCategories - statistics.topLevelCategories || 0"/>
+            </div>
           </a-card>
         </a-col>
 
-        <a-col :span="16">
+        <!-- 右侧详情面板 -->
+        <a-col :span="17">
           <div v-if="selectedCategory" class="category-detail-panel">
-            <a-card :body-style="{ padding: '24px' }">
-              <template #title>
-                <div class="detail-panel-title">
-                  <appstore-outlined />
-                  <span>{{ selectedCategory.name }} - 详细信息</span>
+            <a-card :body-style="{ padding: '0' }" class="detail-card">
+              <!-- 详情面板顶部 -->
+              <div class="detail-panel-header"
+                   :style="{ background: `linear-gradient(to right, ${getCategoryTypeColor(selectedCategory.type) + '30'}, ${getCategoryTypeColor(selectedCategory.type) + '05'})` }">
+                <div class="detail-panel-icon" :style="{ background: getCategoryTypeColor(selectedCategory.type) }">
+                  <component :is="getIconComponent(selectedCategory.icon || 'AppstoreOutlined')"
+                             style="color: white; font-size: 24px;"/>
                 </div>
-              </template>
-
-              <div class="detail-panel-content">
-                <a-descriptions :column="2" bordered>
-                  <a-descriptions-item label="分类ID">{{ selectedCategory.id }}</a-descriptions-item>
-                  <a-descriptions-item label="创建时间">{{ formatDateTime(selectedCategory.createTime) }}</a-descriptions-item>
-                  <a-descriptions-item label="分类类型">
+                <div class="detail-panel-title">
+                  <h2>{{ selectedCategory.name }}</h2>
+                  <div class="detail-panel-subtitle">
                     <a-tag :color="getCategoryTypeColor(selectedCategory.type)">
                       {{ getCategoryTypeName(selectedCategory.type) }}
                     </a-tag>
-                  </a-descriptions-item>
-                  <a-descriptions-item label="内容数量">
-                    <a-badge :count="selectedCategory.itemCount" :number-style="{ backgroundColor: '#52C41A' }" />
-                  </a-descriptions-item>
-                  <a-descriptions-item label="分类描述" :span="2">
-                    {{ selectedCategory.description || '暂无描述' }}
-                  </a-descriptions-item>
-                  <a-descriptions-item label="子分类数量">{{ selectedCategory.childCount }}</a-descriptions-item>
-                  <a-descriptions-item label="排序">{{ selectedCategory.sort }}</a-descriptions-item>
-                </a-descriptions>
+                    <span class="detail-panel-path">
+                      <partition-outlined/>
+                      {{ getCategoryPath(selectedCategory) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
+              <div class="detail-panel-content">
+                <!-- 信息卡片与指标 -->
+                <div class="detail-panel-metrics" style="margin-top: 24px;">
+                  <div class="detail-metric-card">
+                    <div class="detail-metric-icon">
+                      <calendar-outlined style="color: #6554C0"/>
+                    </div>
+                    <div class="detail-metric-info">
+                      <div class="detail-metric-value">{{ formatDateTime(selectedCategory.createTime,true) }}</div>
+                      <div class="detail-metric-label">创建时间</div>
+                    </div>
+                  </div>
+
+                  <div class="detail-metric-card">
+                    <div class="detail-metric-icon">
+                      <file-outlined style="color: #2F54EB"/>
+                    </div>
+                    <div class="detail-metric-info">
+                      <div class="detail-metric-value">{{ selectedCategory.contentCount || 0 }}</div>
+                      <div class="detail-metric-label">关联内容</div>
+                    </div>
+                  </div>
+
+                  <div class="detail-metric-card">
+                    <div class="detail-metric-icon">
+                      <branches-outlined style="color: #52C41A"/>
+                    </div>
+                    <div class="detail-metric-info">
+                      <div class="detail-metric-value"> {{ selectedCategory && selectedCategory.childCount !== undefined ? selectedCategory.childCount : childCategories.length || 0 }}</div>
+                      <div class="detail-metric-label">子分类数量</div>
+                    </div>
+                  </div>
+
+                  <div class="detail-metric-card">
+                    <div class="detail-metric-icon">
+                      <sort-ascending-outlined style="color: #FA8C16"/>
+                    </div>
+                    <div class="detail-metric-info">
+                      <div class="detail-metric-value">{{ selectedCategory.sortOrder || 0 }}</div>
+                      <div class="detail-metric-label">排序优先级</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 详细信息面板 -->
+                <div class="detail-panel-info">
+                  <a-collapse :bordered="false" class="detail-collapse" :default-active-key="['1']">
+                    <a-collapse-panel key="1" header="基本信息">
+                      <a-descriptions :column="2" bordered size="small">
+                        <a-descriptions-item label="分类ID">{{ selectedCategory.id }}</a-descriptions-item>
+                        <a-descriptions-item label="URL别名">{{
+                            selectedCategory.urlName || '未设置'
+                          }}
+                        </a-descriptions-item>
+                        <a-descriptions-item label="层级" span="2">
+                          <div class="level-indicator">
+                            <div v-for="i in selectedCategory.level" :key="i" class="level-dot"></div>
+                            <span>{{ getLevelText(selectedCategory.level) }}</span>
+                          </div>
+                        </a-descriptions-item>
+                        <a-descriptions-item label="分类描述" span="2">
+                          <div class="description-content">
+                            {{ selectedCategory.description || '暂无描述信息' }}
+                          </div>
+                        </a-descriptions-item>
+                      </a-descriptions>
+                    </a-collapse-panel>
+
+                    <a-collapse-panel key="2" header="关联内容">
+                      <div class="related-items-container">
+                        <a-empty v-if="!relatedItems || relatedItems.length === 0" description="暂无关联内容"/>
+                        <div v-else class="related-items-list">
+                          <a-list :data-source="relatedItems" :pagination="{ pageSize: 5, size: 'small' }">
+                            <template #renderItem="{ item }">
+                              <a-list-item>
+                                <a-list-item-meta>
+                                  <template #title>
+                                    <a href="javascript:;">{{ item.title }}</a>
+                                  </template>
+                                  <template #avatar>
+                                    <a-avatar :style="{ backgroundColor: getContentTypeColor(item.type) }">
+                                      {{ item.type.charAt(0) }}
+                                    </a-avatar>
+                                  </template>
+                                  <template #description>
+                                    <div class="content-item-meta">
+                                      <a-tag :color="getContentTypeColor(item.type)">{{ item.type }}</a-tag>
+                                      <span class="content-item-time">
+                                        <calendar-outlined/> {{ formatDateTime(item.createTime, true) }}
+                                      </span>
+                                    </div>
+                                  </template>
+                                </a-list-item-meta>
+                                <template #actions>
+                                  <a-button type="link" size="small">
+                                    <eye-outlined/>
+                                    查看
+                                  </a-button>
+                                </template>
+                              </a-list-item>
+                            </template>
+                          </a-list>
+                        </div>
+                      </div>
+                    </a-collapse-panel>
+
+                    <a-collapse-panel key="3" header="子分类列表">
+                      <div class="children-categories-container">
+                        <a-empty v-if="!childCategories || childCategories.length === 0" description="暂无子分类"/>
+                        <a-row :gutter="[16, 16]" v-else>
+                          <a-col :xs="24" :sm="12" :md="8" v-for="child in childCategories" :key="child.id">
+                            <div class="child-category-card" @click="viewCategory(child)">
+                              <div class="child-category-icon"
+                                   :style="{ background: getCategoryTypeColor(child.type) + '15' }">
+                                <component
+                                    :is="getIconComponent(child.icon || 'AppstoreOutlined')"
+                                    :style="{ color: getCategoryTypeColor(child.type) }"
+                                />
+                              </div>
+                              <div class="child-category-info">
+                                <div class="child-category-name">{{ child.name }}</div>
+                                <div class="child-category-meta">
+                                  <a-tag size="small" :color="getCategoryTypeColor(child.type)">
+                                    {{ getCategoryTypeName(child.type) }}
+                                  </a-tag>
+                                  <span class="child-category-count">
+                                    <file-outlined/> {{ child.contentCount || 0 }}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </a-col>
+                        </a-row>
+                      </div>
+                    </a-collapse-panel>
+                  </a-collapse>
+                </div>
+
+                <!-- 操作按钮区域 -->
                 <div class="detail-action-bar">
-                  <a-space>
+                  <a-button @click="selectedCategory = null">
+                    <rollback-outlined/>
+                    返回
+                  </a-button>
+                  <div class="action-buttons">
                     <a-button type="primary" @click="editCategory(selectedCategory.id)">
-                      <edit-outlined />
+                      <edit-outlined/>
                       编辑分类
                     </a-button>
                     <a-button @click="addChildCategory(selectedCategory.id)">
-                      <plus-outlined />
+                      <plus-outlined/>
                       添加子分类
                     </a-button>
-                    <a-button type="primary" danger @click="showDeleteConfirm(selectedCategory.id)">
-                      <delete-outlined />
+                    <a-button type="primary"  @click="moveCategory(selectedCategory)">
+                      <swap-outlined/>
+                      移动分类
+                    </a-button>
+                    <a-button danger @click="showDeleteConfirm(selectedCategory.id)">
+                      <delete-outlined/>
                       删除分类
                     </a-button>
-                  </a-space>
+                  </div>
                 </div>
-
-                <a-divider orientation="left">关联内容</a-divider>
-
-                <a-table
-                    :columns="relatedColumns"
-                    :data-source="relatedItems"
-                    :pagination="{ pageSize: 5, size: 'small' }"
-                    size="small"
-                />
               </div>
             </a-card>
           </div>
 
           <div v-else class="category-empty-detail">
-            <a-empty description="请选择一个分类以查看详情">
-              <template #image>
-                <appstore-outlined style="font-size: 64px; color: #bfbfbf" />
-              </template>
+            <div class="empty-detail-content">
+              <div class="empty-detail-icon">
+                <appstore-outlined/>
+              </div>
+              <h3>请选择一个分类以查看详情</h3>
+              <p>从左侧分类层级树中选择一个分类，或者新建一个分类</p>
               <a-button type="primary" @click="openCreateModal">新建分类</a-button>
-            </a-empty>
+            </div>
           </div>
         </a-col>
       </a-row>
+    </div>
+
+    <!-- 卡片视图 -->
+    <div v-else-if="viewMode === 'card'" class="card-view-container">
+      <!-- 搜索条件区域 - 沿用列表模式的搜索框 -->
+      <a-card v-if="viewMode === 'card'" class="search-form-card" :body-style="{ padding: '24px' }">
+        <div class="search-form-container">
+          <a-form layout="inline" :model="searchForm" @finish="handleSearch" class="search-form">
+            <!-- 复用现有的搜索表单内容 -->
+            <!-- ... -->
+          </a-form>
+        </div>
+      </a-card>
+
+      <!-- 分类卡片列表 -->
+      <div class="category-cards-wrapper">
+        <a-row :gutter="[24, 24]">
+          <a-col :xs="24" :sm="24" :md="12" :lg="8" :xl="8" v-for="category in categoryData" :key="category.id">
+            <!-- 使用新设计的分类卡片组件 -->
+            <div class="category-detail-card">
+              <!-- 顶部装饰条 -->
+              <div class="card-decoration-bar"
+                   :style="{ background: `linear-gradient(90deg, ${getCategoryTypeColor(category.type)}, ${getSecondaryColor(category.type)})` }">
+              </div>
+
+              <!-- 卡片主体内容 -->
+              <div class="card-content">
+                <!-- 左侧分类图标 -->
+                <div class="category-icon-container">
+                  <div class="category-icon"
+                       :style="{ background: `linear-gradient(135deg, ${getCategoryTypeColor(category.type)} 0%, ${getSecondaryColor(category.type)} 100%)` }">
+                    <component :is="getIconComponent(category.icon || 'AppstoreOutlined')" />
+                  </div>
+                  <div class="icon-decoration"
+                       :style="{ background: `${getCategoryTypeColor(category.type)}20` }">
+                  </div>
+                </div>
+
+                <!-- 中间分类信息 -->
+                <div class="category-info">
+                  <div class="category-title-row">
+                    <h2 class="category-title">{{ category.name }}</h2>
+                    <a-tag :color="getCategoryTypeColor(category.type)">
+                      {{ getCategoryTypeName(category.type) }}
+                    </a-tag>
+                  </div>
+                  <div class="category-path">
+                    <partition-outlined />
+                    <span>{{ getCategoryPath(category) }}</span>
+                  </div>
+                  <div class="category-description">
+                    {{ category.description || '这个分类尚未添加描述信息...' }}
+                  </div>
+                </div>
+
+                <!-- 右侧统计信息 -->
+                <div class="category-stats">
+                  <div class="stat-item">
+                    <div class="stat-icon content-icon"
+                         :style="{ background: `linear-gradient(135deg, #4ECDC4 0%, #26A69A 100%)` }">
+                      <file-outlined />
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-value">{{ category.contentCount || 0 }}</div>
+                      <div class="stat-label">关联内容</div>
+                    </div>
+                  </div>
+
+                  <div class="stat-item">
+                    <div class="stat-icon children-icon"
+                         :style="{ background: `linear-gradient(135deg, #6554C0 0%, #9F44D3 100%)` }">
+                      <branches-outlined />
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-value">{{ category.childCount || 0 }}</div>
+                      <div class="stat-label">子分类</div>
+                    </div>
+                  </div>
+
+                  <div class="stat-divider"></div>
+
+                  <div class="stat-item date-item">
+                    <calendar-outlined />
+                    <div class="stat-date">{{ formatDateTime(category.createTime, true) }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 底部操作按钮区 -->
+              <div class="card-actions">
+                <a-button type="text" class="action-btn" @click="viewCategory(category)">
+                  <eye-outlined />
+                  查看详情
+                </a-button>
+                <a-button type="text" class="action-btn" @click="editCategory(category.id)">
+                  <edit-outlined />
+                  编辑分类
+                </a-button>
+                <a-button type="text" class="action-btn" @click="addChildCategory(category.id)">
+                  <plus-outlined />
+                  添加子分类
+                </a-button>
+                <a-dropdown placement="bottomRight">
+                  <a-button type="text" class="action-btn">
+                    <more-outlined />
+                  </a-button>
+                  <template #overlay>
+                    <a-menu>
+                      <a-menu-item key="move" @click="moveCategory(category)">
+                        <swap-outlined />
+                        移动分类
+                      </a-menu-item>
+                      <a-menu-item key="export">
+                        <export-outlined />
+                        导出分类
+                      </a-menu-item>
+                      <a-menu-divider />
+                      <a-menu-item key="delete" danger @click="showDeleteConfirm(category.id)">
+                        <delete-outlined />
+                        删除分类
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
+              </div>
+            </div>
+          </a-col>
+        </a-row>
+
+        <!-- 分页器 -->
+        <div class="pagination-container">
+          <a-pagination
+              v-model:current="pagination.current"
+              v-model:pageSize="pagination.pageSize"
+              :total="pagination.total"
+              :showSizeChanger="pagination.showSizeChanger"
+              :pageSizeOptions="pagination.pageSizeOptions"
+              :showQuickJumper="pagination.showQuickJumper"
+              :showTotal="pagination.showTotal"
+              @change="handlePaginationChange"
+              @showSizeChange="pagination.onShowSizeChange"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- 列表视图 -->
@@ -317,6 +676,17 @@
           row-key="id"
       >
         <template #bodyCell="{ column, record }">
+          <!-- 分类名称列 -->
+          <template v-if="column.dataIndex === 'name'">
+            <div class="category-name-cell">
+              <div class="category-icon"
+                   :style="{ background: getCategoryTypeColor(record.type) + '15', color: getCategoryTypeColor(record.type) }">
+                <component :is="getIconComponent(record.icon || 'AppstoreOutlined')"/>
+              </div>
+              <span>{{ record.name }}</span>
+            </div>
+          </template>
+
           <!-- 分类类型列 -->
           <template v-if="column.dataIndex === 'type'">
             <a-tag :color="getCategoryTypeColor(record.type)">
@@ -324,10 +694,6 @@
             </a-tag>
           </template>
 
-          <!-- 内容数量列 -->
-          <template v-if="column.dataIndex === 'itemCount'">
-            <a-badge :count="record.itemCount" :number-style="{ backgroundColor: '#52C41A' }" />
-          </template>
 
           <!-- 分类层级列 -->
           <template v-if="column.dataIndex === 'level'">
@@ -339,12 +705,12 @@
 
           <!-- 创建时间 -->
           <template v-if="column.dataIndex === 'createTime'">
-            {{ formatDateTime(record.createTime) }}
+            {{ formatDateTime(record.createTime, true) }}
           </template>
 
           <!-- 操作列 -->
           <template v-if="column.dataIndex === 'action'">
-            <a-space>
+            <div class="table-actions">
               <a-button type="link" size="small" @click="viewCategory(record)">
                 <eye-outlined/>
                 查看
@@ -356,15 +722,18 @@
               <a-dropdown>
                 <template #overlay>
                   <a-menu>
-                    <a-menu-item key="1" @click="addChildCategory(record.id)">
-                      <plus-outlined/> 添加子分类
+                    <a-menu-item key="1" @click="addChildCategory(record.id)" style="white-space: nowrap; min-width: 110px;">
+                      <plus-outlined/>
+                      添加子分类
                     </a-menu-item>
                     <a-menu-item key="2" @click="moveCategory(record)">
-                      <swap-outlined/> 移动分类
+                      <swap-outlined/>
+                      移动分类
                     </a-menu-item>
                     <a-menu-divider/>
                     <a-menu-item key="3" danger @click="showDeleteConfirm(record.id)">
-                      <delete-outlined/> 删除分类
+                      <delete-outlined/>
+                      删除分类
                     </a-menu-item>
                   </a-menu>
                 </template>
@@ -373,29 +742,27 @@
                   更多
                 </a-button>
               </a-dropdown>
-            </a-space>
+            </div>
           </template>
         </template>
       </a-table>
     </div>
 
-    <!-- 新建/编辑分类弹窗 -->
+
+    <!-- 分类管理弹窗 - 优化后与用户管理风格一致 -->
     <a-modal
         v-model:visible="categoryModalVisible"
-        :title="isEditing ? '编辑分类' : '新建分类'"
+        :title="null"
         width="720px"
         :mask-closable="false"
         :destroyOnClose="true"
         :footer="null"
-        class="custom-category-modal"
+        class="category-management-modal"
     >
       <div class="modal-header">
-        <div class="header-icon">
-          <component :is="isEditing ? EditOutlined : PlusOutlined"/>
-        </div>
         <div class="header-title">
           <h2>{{ isEditing ? '编辑分类信息' : '创建新分类' }}</h2>
-          <p>{{ isEditing ? '修改分类的基本信息和关联设置' : '创建一个新的分类，用于内容的归类和组织' }}</p>
+          <p>{{ isEditing ? '请修改以下信息更新分类' : '请填写以下信息创建一个新的分类' }}</p>
         </div>
       </div>
 
@@ -407,21 +774,15 @@
           ref="categoryFormRef"
           layout="vertical"
       >
-        <div class="category-tabs">
-          <div class="tab-item" :class="{ active: activeTab === 'basic' }" @click="activeTab = 'basic'">
-            <info-circle-outlined/>
-            <span>基本信息</span>
-          </div>
-          <div class="tab-item" :class="{ active: activeTab === 'advanced' }" @click="activeTab = 'advanced'">
-            <setting-outlined/>
-            <span>高级设置</span>
-          </div>
-        </div>
+        <div class="form-row-container">
+          <!-- 左侧表单列 -->
+          <div class="form-column">
+            <div class="column-header">
+              <appstore-outlined/>
+              <span>基本信息</span>
+            </div>
 
-        <div class="form-content">
-          <!-- 基本信息面板 -->
-          <div v-show="activeTab === 'basic'" class="tab-panel">
-            <a-form-item label="分类名称" name="name">
+            <a-form-item label="分类名称" name="name" required>
               <a-input
                   v-model:value="categoryForm.name"
                   placeholder="请输入分类名称"
@@ -429,7 +790,7 @@
                   showCount
               >
                 <template #prefix>
-                  <font-outlined style="color: rgba(0, 0, 0, 0.25)"/>
+                  <appstore-outlined style="color: rgba(0, 0, 0, 0.25)"/>
                 </template>
               </a-input>
             </a-form-item>
@@ -438,119 +799,298 @@
               <a-tree-select
                   v-model:value="categoryForm.parentId"
                   :tree-data="parentCategoryOptions"
-                  placeholder="请选择上级分类（不选择则为顶级分类）"
+                  :dropdown-style="{ maxHeight: '280px' }"
+                  placeholder="请选择上级分类"
                   allow-clear
-                  tree-default-expand-all
                   show-search
-                  style="width: 100%"
-              />
-            </a-form-item>
-
-            <a-form-item label="分类类型" name="type">
-              <a-select
-                  v-model:value="categoryForm.type"
-                  placeholder="请选择分类类型"
-                  style="width: 100%"
+                  :tree-default-expand-all="true"
               >
-                <a-select-option value="article">文章分类</a-select-option>
-                <a-select-option value="product">产品分类</a-select-option>
-                <a-select-option value="media">媒体分类</a-select-option>
-                <a-select-option value="user">用户分类</a-select-option>
-              </a-select>
+                <template #prefix>
+                  <partition-outlined style="color: rgba(0, 0, 0, 0.25)"/>
+                </template>
+              </a-tree-select>
+              <div class="form-hint">不选择时将创建为顶级分类</div>
             </a-form-item>
 
-            <a-form-item label="分类描述" name="description">
-              <a-textarea
-                  v-model:value="categoryForm.description"
-                  placeholder="请输入分类描述信息（选填）"
-                  :rows="4"
-                  :maxLength="200"
-                  :showCount="true"
-              />
+            <a-form-item label="URL别名" name="urlName">
+              <a-input
+                  v-model:value="categoryForm.urlName"
+                  placeholder="用于生成友好URL"
+                  :maxLength="50"
+                  allow-clear
+              >
+                <template #prefix>
+                  <link-outlined style="color: rgba(0, 0, 0, 0.25)"/>
+                </template>
+              </a-input>
+              <div class="form-hint">不填写系统将自动生成</div>
             </a-form-item>
           </div>
 
-          <!-- 高级设置面板 -->
-          <div v-show="activeTab === 'advanced'" class="tab-panel">
-            <a-form-item label="排序优先级" name="sort">
+          <!-- 右侧表单列 -->
+          <div class="form-column">
+            <div class="column-header">
+              <setting-outlined/>
+              <span>分类设置</span>
+            </div>
+
+            <a-form-item label="分类类型" name="type" required>
+              <a-select
+                  v-model:value="categoryForm.type"
+                  placeholder="请选择分类类型"
+                  @change="handleTypeChange"
+              >
+                <template #suffixIcon>
+                  <tag-outlined/>
+                </template>
+                <a-select-option v-for="type in categoryTypes" :key="type.value" :value="type.value">
+                  <div class="type-option">
+                    <span class="type-color" :style="{ backgroundColor: getCategoryTypeColor(type.value) }"></span>
+                    <span>{{ type.text }}</span>
+                  </div>
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+
+            <a-form-item label="排序优先级" name="sortOrder">
               <a-input-number
-                  v-model:value="categoryForm.sort"
+                  v-model:value="categoryForm.sortOrder"
                   :min="0"
                   :max="999"
                   style="width: 100%"
-              />
-              <div class="form-item-help">数值越小，排序越靠前</div>
-            </a-form-item>
-
-            <a-form-item label="图标" name="icon">
-              <a-input
-                  v-model:value="categoryForm.icon"
-                  placeholder="请输入图标名称或代码"
               >
                 <template #prefix>
-                  <component :is="getIconComponent(categoryForm.icon)" style="color: rgba(0, 0, 0, 0.45)"/>
+                  <sort-ascending-outlined style="color: rgba(0, 0, 0, 0.25)"/>
                 </template>
-              </a-input>
-              <div class="form-item-help">可以输入Ant Design图标名称</div>
-            </a-form-item>
-
-            <a-form-item label="是否在导航中显示" name="showInMenu">
-              <a-switch
-                  v-model:checked="categoryForm.showInMenu"
-                  checked-children="显示"
-                  un-checked-children="隐藏"
-              />
-              <div class="form-item-help">开启后，该分类将在网站导航中显示</div>
-            </a-form-item>
-
-            <a-form-item label="分类别名" name="alias">
-              <a-input
-                  v-model:value="categoryForm.alias"
-                  placeholder="请输入分类别名，用于URL等场景"
-                  allow-clear
-              />
-              <div class="form-item-help">用于生成友好的URL，不填则使用分类ID</div>
+              </a-input-number>
+              <div class="form-hint">数值越小，排序越靠前</div>
             </a-form-item>
           </div>
         </div>
 
-        <a-form-item label="分类预览">
-          <div class="category-preview">
-            <div class="preview-header">预览效果</div>
-            <div class="preview-content">
-              <div class="preview-category">
-                <div class="preview-category-icon">
-                  <component :is="getIconComponent(categoryForm.icon)" :style="{ color: getCategoryTypeColor(categoryForm.type) }"/>
+        <a-form-item label="分类描述" name="description">
+          <a-textarea
+              v-model:value="categoryForm.description"
+              placeholder="请输入分类描述信息（选填）"
+              :rows="4"
+              :maxLength="200"
+              showCount
+          />
+        </a-form-item>
+
+        <!-- 预览区域 -->
+        <div class="preview-section">
+          <div class="preview-header">
+            <eye-outlined/>
+            <span>预览效果</span>
+          </div>
+          <div class="preview-content">
+            <div class="preview-card">
+              <div class="preview-icon" :style="{backgroundColor: getCategoryTypeColor(categoryForm.type) + '15'}">
+                <component :is="getIconComponent(categoryForm.icon || 'AppstoreOutlined')"
+                           :style="{ color: getCategoryTypeColor(categoryForm.type) }"/>
+              </div>
+              <div class="preview-info">
+                <div class="preview-name">{{ categoryForm.name || '分类名称' }}</div>
+                <div class="preview-meta">
+                  <a-tag :color="getCategoryTypeColor(categoryForm.type)">
+                    {{ getCategoryTypeName(categoryForm.type) }}
+                  </a-tag>
+                  <span class="preview-path">
+                    {{ categoryForm.parentId ? getParentName(categoryForm.parentId) : '顶级分类' }}
+                  </span>
                 </div>
-                <div class="preview-category-info">
-                  <div class="preview-category-name">{{ categoryForm.name || '分类名称预览' }}</div>
-                  <div class="preview-category-type">
-                    <a-tag :color="getCategoryTypeColor(categoryForm.type)">
-                      {{ getCategoryTypeName(categoryForm.type) }}
-                    </a-tag>
-                  </div>
-                </div>
-                <div class="preview-category-description">
-                  {{ categoryForm.description || '分类描述将显示在此处...' }}
-                </div>
+                <div class="preview-desc">{{ categoryForm.description || '分类描述将显示在此处...' }}</div>
               </div>
             </div>
           </div>
-        </a-form-item>
+        </div>
 
         <div class="form-footer">
           <a-space>
-            <a-button @click="handleCategoryCancel">取消</a-button>
+            <a-button @click="handleCancel">取消</a-button>
             <a-button type="primary" @click="handleCategorySubmit" :loading="submitLoading">
               <template #icon>
                 <save-outlined/>
               </template>
-              {{ isEditing ? '保存' : '创建' }}
+              保存
             </a-button>
           </a-space>
         </div>
       </a-form>
     </a-modal>
+
+    <!--  移动分类  -->
+    <a-modal
+        v-model:visible="categoryMoveModalVisible"
+        :title="null"
+        width="780px"
+        :mask-closable="false"
+        :footer="null"
+        :destroyOnClose="true"
+        class="category-move-modal"
+        :bodyStyle="{ padding: 0 }"
+    >
+      <div class="move-container">
+        <!-- 头部区域 -->
+        <div class="move-header">
+          <div class="header-bg-decoration"></div>
+          <div class="header-content">
+            <div class="header-icon">
+              <swap-outlined/>
+            </div>
+            <div class="header-text">
+              <h2 class="modal-title">{{ isBatchMove ? '批量移动分类' : '移动分类' }}</h2>
+              <p class="modal-subtitle">
+                {{
+                  isBatchMove
+                      ? `将选定的 ${batchSourceCategories.length} 个分类移动到新的位置`
+                      : '将当前分类移动到新的位置，同时保留其子分类结构'
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 源分类信息卡片 - 单个移动时 -->
+        <div class="source-section" v-if="!isBatchMove && currentSourceCategory">
+          <div class="source-label">当前分类</div>
+          <div class="source-card">
+            <div class="source-icon"
+                 :style="{ background: getCategoryTypeColor(currentSourceCategory.type) + '15', color: getCategoryTypeColor(currentSourceCategory.type) }">
+              <component :is="getIconComponent(currentSourceCategory.icon || 'AppstoreOutlined')"/>
+            </div>
+            <div class="source-info">
+              <div class="source-name">{{ currentSourceCategory.name }}</div>
+              <div class="source-path">
+                <a-tag :color="getCategoryTypeColor(currentSourceCategory.type)">
+                  {{ getCategoryTypeName(currentSourceCategory.type) }}
+                </a-tag>
+                <div class="path-text">
+                  <partition-outlined/>
+                  {{ getCategoryPath(currentSourceCategory) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 批量移动源信息 -->
+        <div class="source-section" v-if="isBatchMove">
+          <div class="source-label">选中分类</div>
+          <div class="source-card batch-card">
+            <div class="source-icon" style="background: #6554C015; color: #6554C0">
+              <swap-outlined/>
+            </div>
+            <div class="source-info">
+              <div class="source-name">已选择 {{ batchSourceCategories.length }} 个分类</div>
+              <div class="selected-categories">
+                <a-tag v-for="(cat, index) in batchSourceCategories.slice(0, 3)" :key="index"
+                       :color="getCategoryTypeColor(cat.type)" class="category-tag">
+                  {{ cat.name }}
+                </a-tag>
+                <a-tag v-if="batchSourceCategories.length > 3" class="more-tag">
+                  +{{ batchSourceCategories.length - 3 }}
+                </a-tag>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 目标选择区域 -->
+        <div class="destination-section">
+          <div class="section-label">
+            <folder-outlined/>
+            选择目标位置
+          </div>
+
+          <!-- 顶级分类选项 -->
+          <div
+              class="top-level-option"
+              :class="{ selected: selectedDestination === 0 }"
+              @click="selectedDestination = 0"
+          >
+            <div class="option-icon">
+              <partition-outlined/>
+            </div>
+            <div class="option-content">
+              <div class="option-title">作为顶级分类</div>
+              <div class="option-desc">将分类移动到最顶层，不属于任何父分类</div>
+            </div>
+            <div class="option-arrow">
+              <right-outlined/>
+            </div>
+          </div>
+
+          <!-- 分类列表 -->
+          <div v-if="availableCategoryOptions.length > 0" class="parent-category-section">
+            <div class="section-label secondary-label">
+              <branches-outlined/>
+              选择父分类
+            </div>
+
+            <div class="categories-tree-container">
+              <a-tree
+                  :tree-data="formattedTreeData"
+                  :selectable="true"
+                  :selected-keys="[selectedDestination]"
+                  :expandable="true"
+                  :show-line="{ showLeafIcon: false }"
+                  :auto-expand-parent="true"
+                  :default-expanded-keys="defaultTreeExpandedKeys"
+                  @select="onDestinationSelect"
+              >
+                <template #title="{ title, key, dataRef }">
+                  <div class="tree-node-container">
+                    <div class="node-icon"
+                         :style="{ background: getCategoryTypeColor(dataRef.type) + '15', color: getCategoryTypeColor(dataRef.type) }">
+                      <component :is="getIconComponent(dataRef.icon || 'AppstoreOutlined')"/>
+                    </div>
+                    <div class="node-content">
+                      <span class="node-title">{{ title }}</span>
+                    </div>
+                  </div>
+                </template>
+              </a-tree>
+            </div>
+          </div>
+
+          <a-empty
+              v-else
+              description="没有可选的目标分类"
+              image="simple"
+              style="margin: 20px 0"
+          >
+            <span class="empty-note">可能是因为选择了所有可用分类或不存在其他分类</span>
+          </a-empty>
+        </div>
+
+        <!-- 警告提示 -->
+        <div class="move-info-note">
+          <a-alert type="info" show-icon>
+            <template #message>
+              <div class="alert-content">
+                <span>移动分类后，该分类下的所有子分类也会随之移动。此操作不会影响关联的内容项。</span>
+              </div>
+            </template>
+          </a-alert>
+        </div>
+
+        <!-- 底部操作区域 -->
+        <div class="modal-footer">
+          <a-button @click="categoryMoveModalVisible = false">取消</a-button>
+          <a-button
+              type="primary"
+              :loading="moveConfirmLoading"
+              :disabled="selectedDestination === undefined"
+              @click="handleMoveConfirm"
+          >
+            确认移动
+          </a-button>
+        </div>
+      </div>
+    </a-modal>
+
   </div>
 </template>
 
@@ -560,215 +1100,66 @@ import {
   reactive,
   onMounted,
   computed,
-  h
+  watch,
+  nextTick
 } from 'vue';
 import {
   SearchOutlined,
   ReloadOutlined,
   ArrowDownOutlined,
   ArrowUpOutlined,
+  MinusOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  InfoCircleOutlined,
+  PictureOutlined,
   CalendarOutlined,
-  SettingOutlined,
+  BookOutlined,
   PlusOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
   LinkOutlined,
   MoreOutlined,
-  SaveOutlined,
-  TeamOutlined,
+  TagOutlined,
   SwapOutlined,
   ExportOutlined,
   FolderOutlined,
   FileOutlined,
   BranchesOutlined,
   PartitionOutlined,
+  RightOutlined,
+  ExpandOutlined,
+  CaretDownOutlined,
+  SettingOutlined,
+  SaveOutlined,
+  SortAscendingOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import {Empty, message, Modal} from 'ant-design-vue';
 import dayjs from 'dayjs';
-import TrendBadge from "@/components/common/TrendBadge.vue";
 
-// 表格列定义
-const columns = [
-  {
-    title: 'ID',
-    dataIndex: 'id',
-    align: 'center',
-    width: 70,
-  },
-  {
-    title: '分类名称',
-    dataIndex: 'name',
-    align: 'left',
-    width: 180
-  },
-  {
-    title: '分类类型',
-    dataIndex: 'type',
-    align: 'center',
-    width: 100,
-    filters: [
-      { text: '文章分类', value: 'article' },
-      { text: '产品分类', value: 'product' },
-      { text: '媒体分类', value: 'media' },
-      { text: '用户分类', value: 'user' },
-    ],
-  },
-  {
-    title: '层级',
-    dataIndex: 'level',
-    align: 'center',
-    width: 100,
-    filters: [
-      { text: '一级', value: 1 },
-      { text: '二级', value: 2 },
-      { text: '三级', value: 3 },
-    ],
-  },
-  {
-    title: '内容数量',
-    dataIndex: 'itemCount',
-    align: 'center',
-    width: 100,
-    sorter: true
-  },
-  {
-    title: '排序',
-    dataIndex: 'sort',
-    align: 'center',
-    width: 80,
-    sorter: true
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-    align: 'center',
-    width: 170,
-    sorter: true
-  },
-  {
-    title: '操作',
-    dataIndex: 'action',
-    align: 'center',
-    width: 230,
-    className: 'action-column',
-    fixed: 'right'
-  }
-];
+import {
+  getCategoryTreeUsingGet,
+  listCategoryByPageUsingGet,
+  createCategoryUsingPost,
+  updateCategoryUsingPut,
+  deleteCategoryUsingDelete,
+  batchDeleteCategoriesUsingDelete,
+  batchMoveCategoriesUsingPost,
+  moveCategoryUsingPost,
+  getCategoryStatisticsUsingGet,
+  getCategoryByIdUsingGet,
+  getCategoryRelatedItemsUsingGet,
+} from "@/api/fenleiguanli";
 
-// 关联内容表格列定义
-const relatedColumns = [
-  {
-    title: '内容类型',
-    dataIndex: 'type',
-    align: 'center',
-    width: 100,
-  },
-  {
-    title: '内容标题',
-    dataIndex: 'title',
-    align: 'left',
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-    align: 'center',
-    width: 170,
-  }
-];
 
-// 顶部卡片数据
-const statCards = reactive([
-  {
-    title: '分类总数',
-    value: '86',
-    change: 9.3,
-    color: 'purple',
-    icon: AppstoreOutlined,
-  },
-  {
-    title: '本月新增',
-    value: '12',
-    change: 5.2,
-    color: 'blue',
-    icon: PlusOutlined,
-  },
-  {
-    title: '顶级分类',
-    value: '24',
-    change: 2.8,
-    color: 'green',
-    icon: PartitionOutlined,
-  },
-  {
-    title: '空分类',
-    value: '18',
-    change: -3.5,
-    color: 'gold',
-    icon: FolderOutlined,
-  },
-]);
-
-// 搜索表单数据
-const searchForm = reactive({
-  categoryName: '',
-  categoryType: undefined,
-  createTime: [],
-});
-
-// 分类表单
-const categoryForm = reactive({
-  id: '',
-  name: '',
-  parentId: null,
-  type: 'article',
-  description: '',
-  icon: 'AppstoreOutlined',
-  sort: 100,
-  showInMenu: true,
-  alias: '',
-});
-
-// 获取图标组件
-function getIconComponent(iconName) {
-  // 根据字符串名称返回对应的图标组件
-  const iconMap = {
-    'AppstoreOutlined': AppstoreOutlined,
-    'FolderOutlined': FolderOutlined,
-    'FileOutlined': FileOutlined,
-    'LinkOutlined': LinkOutlined,
-    'TeamOutlined': TeamOutlined,
-    'PartitionOutlined': PartitionOutlined,
-    'BranchesOutlined': BranchesOutlined,
-  };
-
-  return iconMap[iconName] || AppstoreOutlined;
-}
-
-// 其他必要的变量和方法
-const categoryModalVisible = ref(false);
-const isEditing = ref(false);
-const submitLoading = ref(false);
-const categoryFormRef = ref(null);
-const activeTab = ref('basic');
-
-// 表格数据和加载状态
-const loading = ref(false);
-const categoryData = ref([]);
-const pagination = reactive({
-  current: 1,
-  pageSize: 10,
-  total: 0,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total) => `共 ${total} 条`,
-});
+// 用于控制树的展开/折叠状态
+const isTreeCollapsed = ref(true);
+const allTreeKeys = ref([]);
+const expandedKeys = ref([]);
 
 // 视图模式
-const viewMode = ref('tree');
+const viewMode = ref('list');
 
 // 选中行数据
 const selectedRowKeys = ref([]);
@@ -779,8 +1170,124 @@ const categoryTreeData = ref([]);
 const selectedTreeKeys = ref([]);
 const searchTreeValue = ref('');
 const selectedCategory = ref(null);
+const childCategories = ref([]);
 
-// 模拟关联内容数据
+// 其他必要的变量和方法
+const categoryModalVisible = ref(false);
+const isEditing = ref(false);
+const submitLoading = ref(false);
+const categoryFormRef = ref(null);
+
+const availableCategoryOptions = ref([]);
+const loading = ref(false);
+const completeCategories = ref([]);
+const selectedDestination = ref(null);
+
+// 统计数据
+const statistics = reactive({
+  todayCreated: 0,
+  totalCategories: 0,
+  totalItems: 0,
+  topLevelCategories: 0,
+  emptyCategoriesCount: 0,
+  newCategoriesThisMonth: 0
+});
+
+// 移动分类相关变量
+const categoryMoveModalVisible = ref(false);
+const currentSourceCategory = ref(null);
+const batchSourceCategories = ref([]);
+const isBatchMove = ref(false);
+const moveConfirmLoading = ref(false);
+
+// 表格数据和加载状态
+const categoryData = ref([]);
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
+  showSizeChanger: true,
+  showQuickJumper: true,
+  showTotal: (total) => `共 ${total} 条`,
+  // 添加下面的页码大小选项配置
+  pageSizeOptions: ['10', '20', '50', '100'],
+  // 添加onShowSizeChange回调函数
+  onShowSizeChange: (current, size) => {
+    pagination.current = 1; // 切换每页条数时，重置为第一页
+    pagination.pageSize = size;
+    fetchCategoryData(); // 重新获取数据
+  }
+});
+
+// 主分类类型定义
+const categoryTypes = [
+  {value: 'animation', text: '动漫类型'},
+  {value: 'theme', text: '多样素材'},
+  {value: 'learning', text: '技术学习'},
+  {value: 'figure', text: '人物样式'},
+  {value: 'style', text: '样式风格'},
+  {value: 'wallpaper', text: '花样壁纸'}
+];
+
+
+// 表格列定义
+const columns = [
+  {
+    title: 'ID',
+    dataIndex: 'id',
+    align: 'center',
+    width: 170,
+  },
+  {
+    title: '分类名称',
+    dataIndex: 'name',
+    align: 'left',
+    width: 180,
+  },
+  {
+    title: '分类类型',
+    dataIndex: 'type',
+    align: 'center',
+    width: 120,
+  },
+  {
+    title: '层级',
+    dataIndex: 'level',
+    align: 'center',
+    width: 100,
+  },
+  {
+    title: '内容数量',
+    dataIndex: 'contentCount',
+    align: 'center',
+    width: 100,
+    sorter: true,
+  },
+  {
+    title: '排序',
+    dataIndex: 'sortOrder',
+    align: 'center',
+    width: 80,
+    sorter: true,
+  },
+  {
+    title: '创建时间',
+    dataIndex: 'createTime',
+    align: 'center',
+    width: 170,
+    sorter: true,
+  },
+  {
+    title: '操作',
+    dataIndex: 'action',
+    align: 'center',
+    width: 200,
+    className: 'action-column',
+    fixed: 'right',
+  }
+];
+
+// 关联内容表格列定义
 const relatedItems = ref([
   {
     id: 1,
@@ -814,389 +1321,168 @@ const relatedItems = ref([
   }
 ]);
 
+// 顶部卡片数据
+const statCards = reactive([
+  {
+    title: '分类总数',
+    value: '0',
+    change: 0,
+    color: 'purple',
+    icon: AppstoreOutlined,
+  },
+  {
+    title: '本月新增',
+    value: '0',
+    change: 0,
+    color: 'blue',
+    icon: PlusOutlined,
+  },
+  {
+    title: '顶级分类',
+    value: '0',
+    change: 0,
+    color: 'green',
+    icon: PartitionOutlined,
+  },
+  {
+    title: '空分类',
+    value: '0',
+    change: 0,
+    color: 'gold',
+    icon: FolderOutlined,
+  },
+]);
+
+// 搜索表单数据
+const searchForm = reactive({
+  categoryName: '',
+  categoryType: undefined,
+  createTime: [],
+});
+
+// 分类表单
+const categoryForm = reactive({
+  id: '',
+  name: '',
+  parentId: null,
+  type: '',
+  description: '',
+  icon: 'AppstoreOutlined',
+  sortOrder: 1,
+  urlName: '',
+});
+
 // 分类表单验证规则
 const categoryRules = {
   name: [
-    { required: true, message: '请输入分类名称', trigger: 'blur' },
-    { max: 50, message: '分类名称不能超过50个字符', trigger: 'blur' }
+    {required: true, message: '请输入分类名称', trigger: 'blur'},
+    {max: 50, message: '分类名称不能超过50个字符', trigger: 'blur'}
   ],
   type: [
-    { required: true, message: '请选择分类类型', trigger: 'change' }
+    {required: true, message: '请选择分类类型', trigger: 'change'}
   ],
-  sort: [
-    { required: true, message: '请设置排序优先级', trigger: 'blur' },
-    { type: 'number', min: 0, max: 999, message: '排序值必须在0-999之间', trigger: 'blur' }
+  sortOrder: [
+    {required: true, message: '请设置排序优先级', trigger: 'blur'},
+    {type: 'number', min: 0, max: 999, message: '排序值必须在0-999之间', trigger: 'blur'}
   ],
+  urlName: [
+    {
+      validator: (_, value) => {
+        if (!value || value.trim() === '') {
+          return Promise.resolve();
+        }
+        // 修改别名格式校验，支持大小写字母、数字和连字符
+        if (!/^[a-zA-Z0-9-]+$/.test(value)) {
+          return Promise.reject('别名只能包含字母、数字和连字符');
+        }
+        // 唯一性检查
+        const isUnique = !categoryData.value.some(item =>
+            item.urlName === value && item.id !== categoryForm.id
+        );
+        return isUnique ? Promise.resolve() : Promise.reject('该别名已被使用，请更换');
+      }, trigger: 'blur'
+    }
+  ]
 };
 
-// 父分类选项
-const parentCategoryOptions = computed(() => {
-  // 构建适用于树选择的数据结构
-  const buildTreeData = (data, parentId = null) => {
-    const result = [];
-    const items = data.filter(item =>
-        (parentId === null && !item.parentId) ||
-        (item.parentId === parentId)
-    );
-
-    items.forEach(item => {
-      // 避免自己选择自己为父类
-      if (isEditing.value && item.id === categoryForm.id) {
-        return;
-      }
-
-      const node = {
-        title: item.name,
-        value: item.id,
-        key: item.id,
-      };
-
-      const children = buildTreeData(data, item.id);
-      if (children.length) {
-        node.children = children;
-      }
-
-      result.push(node);
-    });
-
-    return result;
+// 获取图标组件
+const getIconComponent = (iconName) => {
+  const iconMap = {
+    'AppstoreOutlined': AppstoreOutlined,
+    'FolderOutlined': FolderOutlined,
+    'FileOutlined': FileOutlined,
+    'PartitionOutlined': PartitionOutlined,
+    'BookOutlined': BookOutlined,
+    'PictureOutlined': PictureOutlined
   };
-
-  return buildTreeData(categoryData.value);
-});
-
-// 组件挂载时获取数据
-onMounted(() => {
-  fetchCategoryData();
-});
-
-// 获取分类数据
-function fetchCategoryData() {
-  loading.value = true;
-
-  // 模拟API请求获取分类数据
-  setTimeout(() => {
-    const data = [
-      {
-        id: 1,
-        name: '产品分类',
-        parentId: null,
-        type: 'product',
-        description: '所有产品的主分类，包含各类产品子分类',
-        icon: 'AppstoreOutlined',
-        level: 1,
-        sort: 10,
-        itemCount: 156,
-        childCount: 3,
-        showInMenu: true,
-        alias: 'products',
-        createTime: new Date(2025, 0, 5).getTime(),
-        updateTime: new Date(2025, 0, 5).getTime(),
-      },
-      {
-        id: 2,
-        name: '智能设备',
-        parentId: 1,
-        type: 'product',
-        description: '智能家居和IoT相关设备',
-        icon: 'AppstoreOutlined',
-        level: 2,
-        sort: 20,
-        itemCount: 68,
-        childCount: 2,
-        showInMenu: true,
-        alias: 'smart-devices',
-        createTime: new Date(2025, 0, 6).getTime(),
-        updateTime: new Date(2025, 0, 15).getTime(),
-      },
-      {
-        id: 3,
-        name: '软件服务',
-        parentId: 1,
-        type: 'product',
-        description: '各类软件产品和服务',
-        icon: 'AppstoreOutlined',
-        level: 2,
-        sort: 30,
-        itemCount: 52,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'software',
-        createTime: new Date(2025, 0, 7).getTime(),
-        updateTime: new Date(2025, 0, 7).getTime(),
-      },
-      {
-        id: 4,
-        name: '解决方案',
-        parentId: 1,
-        type: 'product',
-        description: '企业级解决方案和服务包',
-        icon: 'AppstoreOutlined',
-        level: 2,
-        sort: 40,
-        itemCount: 36,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'solutions',
-        createTime: new Date(2025, 0, 8).getTime(),
-        updateTime: new Date(2025, 0, 8).getTime(),
-      },
-      {
-        id: 5,
-        name: '智能家居',
-        parentId: 2,
-        type: 'product',
-        description: '家庭智能设备和系统',
-        icon: 'HomeOutlined',
-        level: 3,
-        sort: 10,
-        itemCount: 45,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'smart-home',
-        createTime: new Date(2025, 0, 9).getTime(),
-        updateTime: new Date(2025, 0, 9).getTime(),
-      },
-      {
-        id: 6,
-        name: '商业智能',
-        parentId: 2,
-        type: 'product',
-        description: '商业场景智能设备解决方案',
-        icon: 'ShopOutlined',
-        level: 3,
-        sort: 20,
-        itemCount: 23,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'business-intelligence',
-        createTime: new Date(2025, 0, 10).getTime(),
-        updateTime: new Date(2025, 0, 10).getTime(),
-      },
-      {
-        id: 7,
-        name: '文章资讯',
-        parentId: null,
-        type: 'article',
-        description: '公司新闻、行业动态、技术博客等内容',
-        icon: 'FileOutlined',
-        level: 1,
-        sort: 50,
-        itemCount: 245,
-        childCount: 3,
-        showInMenu: true,
-        alias: 'articles',
-        createTime: new Date(2025, 0, 11).getTime(),
-        updateTime: new Date(2025, 0, 11).getTime(),
-      },
-      {
-        id: 8,
-        name: '公司新闻',
-        parentId: 7,
-        type: 'article',
-        description: '公司最新动态、发布会等信息',
-        icon: 'FileOutlined',
-        level: 2,
-        sort: 10,
-        itemCount: 87,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'company-news',
-        createTime: new Date(2025, 0, 12).getTime(),
-        updateTime: new Date(2025, 0, 12).getTime(),
-      },
-      {
-        id: 9,
-        name: '技术博客',
-        parentId: 7,
-        type: 'article',
-        description: '技术分享、解决方案、最佳实践',
-        icon: 'FileOutlined',
-        level: 2,
-        sort: 20,
-        itemCount: 108,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'tech-blog',
-        createTime: new Date(2025, 0, 13).getTime(),
-        updateTime: new Date(2025, 0, 13).getTime(),
-      },
-      {
-        id: 10,
-        name: '行业资讯',
-        parentId: 7,
-        type: 'article',
-        description: '行业最新动态、市场分析等资讯',
-        icon: 'FileOutlined',
-        level: 2,
-        sort: 30,
-        itemCount: 50,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'industry-news',
-        createTime: new Date(2025, 0, 14).getTime(),
-        updateTime: new Date(2025, 0, 14).getTime(),
-      },
-      {
-        id: 11,
-        name: '媒体资源',
-        parentId: null,
-        type: 'media',
-        description: '图片、视频等多媒体资源',
-        icon: 'PictureOutlined',
-        level: 1,
-        sort: 60,
-        itemCount: 328,
-        childCount: 2,
-        showInMenu: true,
-        alias: 'media',
-        createTime: new Date(2025, 0, 15).getTime(),
-        updateTime: new Date(2025, 0, 15).getTime(),
-      },
-      {
-        id: 12,
-        name: '图片素材',
-        parentId: 11,
-        type: 'media',
-        description: '产品图片、宣传海报等图片资源',
-        icon: 'PictureOutlined',
-        level: 2,
-        sort: 10,
-        itemCount: 215,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'images',
-        createTime: new Date(2025, 0, 16).getTime(),
-        updateTime: new Date(2025, 0, 16).getTime(),
-      },
-      {
-        id: 13,
-        name: '视频资源',
-        parentId: 11,
-        type: 'media',
-        description: '宣传视频、教程视频等资源',
-        icon: 'VideoCameraOutlined',
-        level: 2,
-        sort: 20,
-        itemCount: 113,
-        childCount: 0,
-        showInMenu: true,
-        alias: 'videos',
-        createTime: new Date(2025, 0, 17).getTime(),
-        updateTime: new Date(2025, 0, 17).getTime(),
-      },
-      {
-        id: 14,
-        name: '用户分类',
-        parentId: null,
-        type: 'user',
-        description: '用户标签和分组',
-        icon: 'TeamOutlined',
-        level: 1,
-        sort: 70,
-        itemCount: 158,
-        childCount: 2,
-        showInMenu: false,
-        alias: 'users',
-        createTime: new Date(2025, 0, 18).getTime(),
-        updateTime: new Date(2025, 0, 18).getTime(),
-      },
-      {
-        id: 15,
-        name: '企业客户',
-        parentId: 14,
-        type: 'user',
-        description: '企业级别客户和VIP',
-        icon: 'TeamOutlined',
-        level: 2,
-        sort: 10,
-        itemCount: 85,
-        childCount: 0,
-        showInMenu: false,
-        alias: 'enterprise',
-        createTime: new Date(2025, 0, 19).getTime(),
-        updateTime: new Date(2025, 0, 19).getTime(),
-      },
-      {
-        id: 16,
-        name: '个人用户',
-        parentId: 14,
-        type: 'user',
-        description: '个人用户和普通消费者',
-        icon: 'TeamOutlined',
-        level: 2,
-        sort: 20,
-        itemCount: 73,
-        childCount: 0,
-        showInMenu: false,
-        alias: 'personal',
-        createTime: new Date(2025, 0, 20).getTime(),
-        updateTime: new Date(2025, 0, 20).getTime(),
-      }
-    ];
-
-    categoryData.value = data;
-    pagination.total = data.length;
-
-    // 构建树形数据
-    buildCategoryTree(data);
-
-    loading.value = false;
-  }, 500);
-}
-
-// 构建分类树数据
-function buildCategoryTree(data) {
-  const buildTree = (items, parentId = null) => {
-    return items
-        .filter(item =>
-            (parentId === null && !item.parentId) ||
-            (item.parentId === parentId)
-        )
-        .map(item => {
-          const node = {
-            title: item.name,
-            key: item.id,
-            icon: getIconComponent(item.icon),
-            data: item,
-          };
-
-          const children = buildTree(items, item.id);
-          if (children.length) {
-            node.children = children;
-          }
-
-          return node;
-        });
-  };
-
-  categoryTreeData.value = buildTree(data);
-}
+  return iconMap[iconName] || AppstoreOutlined;
+};
 
 // 获取分类类型名称
-function getCategoryTypeName(type) {
+const getCategoryTypeName = (type) => {
+  // 如果类型为空或未定义，使用默认类型
+  if (!type) return '技术学习'; // 默认显示
+
   const typeMap = {
-    'article': '文章分类',
-    'product': '产品分类',
-    'media': '媒体分类',
-    'user': '用户分类'
+    'animation': '动漫类型',
+    'theme': '多样素材',
+    'learning': '技术学习',
+    'figure': '人物样式',
+    'style': '样式风格',
+    'wallpaper': '花样壁纸'
   };
   return typeMap[type] || '未知类型';
-}
+};
+
+// 获取内容类型对应的颜色
+const getContentTypeColor = (type) => {
+  const colorMap = {
+    '文章': '#1890FF',
+    '产品': '#52C41A',
+    '媒体': '#FA8C16',
+    '图片': '#EB2F96',
+    '视频': '#F5222D',
+    '音频': '#722ED1',
+    '文档': '#2F54EB'
+  };
+  return colorMap[type] || '#8C8C8C';
+};
+
+// 获取次要颜色（用于渐变）
+const getSecondaryColor = (type) => {
+  const colorMap = {
+    'animation': '#FF8E53',  // 动漫类型的次要颜色
+    'theme': '#2AB7CA',      // 多样素材的次要颜色
+    'learning': '#36CEFF',   // 技术学习的次要颜色
+    'figure': '#FFD166',     // 人物样式的次要颜色
+    'style': '#B15EFF',      // 样式风格的次要颜色
+    'wallpaper': '#95DE64'   // 花样壁纸的次要颜色
+  };
+  return colorMap[type] || '#BFBFBF';  // 默认为灰色
+};
+
+// 处理分页变化
+const handlePaginationChange = (page, pageSize) => {
+  pagination.current = page;
+  pagination.pageSize = pageSize;
+  fetchCategoryData();
+};
 
 // 获取分类类型颜色
-function getCategoryTypeColor(type) {
+const getCategoryTypeColor = (type) => {
   const colorMap = {
-    'article': '#1890FF',
-    'product': '#52C41A',
-    'media': '#722ED1',
-    'user': '#FA8C16'
+    'animation': '#FF6B8B',   // 鲜艳的粉红色，适合动漫类型
+    'theme': '#4ECDC4',       // 清新的青绿色，适合视觉主题
+    'learning': '#4F86F7',    // 明亮的蓝色，代表学习和技术
+    'figure': '#FFB347',      // 温暖的橙色，适合人物样式
+    'style': '#8A2BE2',       // 鲜明的紫色，代表设计风格
+    'wallpaper': '#50C878'    // 翠绿色，适合花样壁纸
   };
-  return colorMap[type] || '#000000';
-}
+  return colorMap[type] || '#BFBFBF';  // 默认为灰色
+};
 
 // 获取层级文本
-function getLevelText(level) {
+const getLevelText = (level) => {
   const levelMap = {
     1: '一级',
     2: '二级',
@@ -1204,84 +1490,68 @@ function getLevelText(level) {
     4: '四级'
   };
   return levelMap[level] || `${level}级`;
-}
+};
 
 // 格式化日期时间
-function formatDateTime(timestamp) {
-  return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss');
-}
+const formatDateTime = (timestamp, dateOnly = false) => {
+  if (!timestamp) return '未设置';
+  return dayjs(timestamp).format(dateOnly ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss');
+};
 
 // 搜索处理
-function handleSearch() {
-  loading.value = true;
-
-  // 模拟搜索过滤
-  setTimeout(() => {
-    const filteredData = categoryData.value.filter(category => {
-      let match = true;
-
-      if (searchForm.categoryName && !category.name.includes(searchForm.categoryName)) {
-        match = false;
-      }
-
-      if (searchForm.categoryType && category.type !== searchForm.categoryType) {
-        match = false;
-      }
-
-      if (searchForm.createTime && searchForm.createTime.length === 2) {
-        const startTime = searchForm.createTime[0].valueOf();
-        const endTime = searchForm.createTime[1].valueOf();
-        if (category.createTime < startTime || category.createTime > endTime) {
-          match = false;
-        }
-      }
-
-      return match;
-    });
-
-    // 重新构建树形数据
-    buildCategoryTree(filteredData);
-
-    pagination.total = filteredData.length;
-    pagination.current = 1;
-    loading.value = false;
-
-    message.success('搜索完成');
-  }, 500);
-}
+const handleSearch = async () => {
+  pagination.current = 1; // 重置到第一页
+  await fetchCategoryData();
+};
 
 // 重置搜索表单
-function resetSearchForm() {
+const resetSearchForm = () => {
   searchForm.categoryName = '';
   searchForm.categoryType = undefined;
   searchForm.createTime = [];
 
   // 重新获取所有数据
+  pagination.current = 1;
   fetchCategoryData();
 
   message.success('搜索条件已重置');
-}
+};
 
 // 刷新数据
-function handleRefresh() {
+const handleRefresh = () => {
   fetchCategoryData();
+  fetchCategoryStatistics();
+  fetchCategoryTree();
   selectedRowKeys.value = [];
-  selectedTreeKeys.value = [];
-  selectedCategory.value = null;
+  if (viewMode.value === 'tree') {
+    selectedTreeKeys.value = [];
+    selectedCategory.value = null;
+  }
   message.success('数据已刷新');
-}
+};
+
+// 刷新树形结构
+const refreshTree = () => {
+  fetchCategoryTree();
+  message.success('分类树已刷新');
+};
 
 // 表格选择变化
-function onSelectChange(selected) {
+const onSelectChange = (selected) => {
   selectedRowKeys.value = selected;
-}
+};
 
 // 表格变化处理
-function handleTableChange(pag, filters, sorter) {
-  pagination.current = pag.current;
-  pagination.pageSize = pag.pageSize;
+const handleTableChange = (pag, filters, sorter) => {
+  // 处理分页变化
+  if (pag.current !== pagination.current || pag.pageSize !== pagination.pageSize) {
+    pagination.current = pag.current;
+    pagination.pageSize = pag.pageSize;
+    fetchCategoryData(); // 重新获取数据
+    return; // 分页变化后直接返回，避免重复处理
+  }
 
-  // 处理排序
+  // 处理排序（这部分逻辑保持不变）
   if (sorter.field && sorter.order) {
     const order = sorter.order === 'ascend' ? 1 : -1;
     categoryData.value = [...categoryData.value].sort((a, b) => {
@@ -1300,113 +1570,492 @@ function handleTableChange(pag, filters, sorter) {
   if (filters.level && filters.level.length > 0) {
     categoryData.value = categoryData.value.filter(item => filters.level.includes(item.level));
   }
-}
+};
 
-// 页面变化
-function onPageChange(page, pageSize) {
-  pagination.current = page;
-  pagination.pageSize = pageSize;
-}
+// 添加默认展开的节点
+const defaultExpandedKeys = computed(() => {
+  // 默认展开第一级节点
+  return categoryTreeData.value
+      .filter(item => item.children && item.children.length > 0)
+      .map(item => item.key)
+      .slice(0, 5); // 只展开前5个以避免过多展开
+});
 
-// 每页条数变化
-function onShowSizeChange(current, size) {
-  pagination.pageSize = size;
-  pagination.current = 1;
-}
+// 父分类选项
+const parentCategoryOptions = computed(() => {
+  // 首先确保我们有完整的分类数据
+  const fetchAllCategoriesIfNeeded = async () => {
+    if (completeCategories.value.length === 0) {
+      await loadCompleteCategories();
+    }
+  };
 
-// 树搜索处理
-function handleTreeSearch(e) {
+  // 确保在首次渲染时加载完整数据
+  if (completeCategories.value.length === 0) {
+    fetchAllCategoriesIfNeeded();
+  }
+
+  // 使用更完整的数据源
+  const dataSource = completeCategories.value.length > 0
+      ? completeCategories.value
+      : categoryData.value;
+
+  // 构建适用于树选择的数据结构
+  const buildTreeData = (data, parentId = null) => {
+    const result = [];
+    const items = data.filter(item =>
+        (parentId === null && (!item.parentId || item.parentId === 0)) ||
+        (item.parentId === parentId)
+    );
+
+    items.forEach(item => {
+      // 避免自己选择自己为父类
+      if (isEditing.value && item.id === categoryForm.id) {
+        return;
+      }
+
+      const node = {
+        title: item.name,
+        value: item.id,
+        key: item.id,
+        // 添加图标和类型信息，增强视觉效果
+        icon: getIconComponent(item.icon || 'AppstoreOutlined'),
+        type: item.type,
+        // 添加自定义类，用于样式定制
+        className: `category-tree-node type-${item.type || 'default'}`
+      };
+
+      const children = buildTreeData(data, item.id);
+      if (children.length) {
+        node.children = children;
+      }
+
+      result.push(node);
+    });
+
+    return result;
+  };
+
+  return buildTreeData(dataSource);
+});
+
+// 获取分类数据
+const fetchCategoryData = async () => {
+  loading.value = true;
+  try {
+    // 构建查询参数
+    const params = {
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
+      name: searchForm.categoryName,
+      type: searchForm.categoryType,
+    };
+
+    // 改进日期处理逻辑，确保只有在日期有效时才添加到查询参数中
+    if (searchForm.createTime && searchForm.createTime.length === 2) {
+      // 确保两个日期都存在并且是有效的dayjs对象
+      if (searchForm.createTime[0] && searchForm.createTime[1]) {
+        // 开始日期使用当天开始时间 00:00:00
+        params.createTimeStart = searchForm.createTime[0].format('YYYY-MM-DD 00:00:00');
+        // 结束日期使用当天结束时间 23:59:59
+        params.createTimeEnd = searchForm.createTime[1].format('YYYY-MM-DD 23:59:59');
+      }
+    }
+
+    // 调用API获取分页数据
+    const response = await listCategoryByPageUsingGet(params);
+
+    if (response.data && response.data.code === 200) {
+      const result = response.data.data;
+      categoryData.value = result.records || [];
+      pagination.total = result.total || 0;
+
+      // 获取分类树结构
+      await fetchCategoryTree();
+    } else {
+      throw new Error(response.data?.message || '获取分类数据失败');
+    }
+  } catch (error) {
+    console.error('获取分类数据错误:', error);
+    message.error('获取分类数据失败，请稍后重试');
+    // 确保即使出错也有一些数据显示
+    categoryData.value = [];
+    pagination.total = 0;
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 获取分类树形结构
+const fetchCategoryTree = async () => {
+  try {
+    const response = await getCategoryTreeUsingGet();
+
+    if (response.data && response.data.code === 200) {
+      const treeData = response.data.data || [];
+      // 在转换前先检查数据是否包含 contentCount
+      const enhancedTreeData = ensureContentCounts(treeData);
+      categoryTreeData.value = transformTreeData(enhancedTreeData);
+
+      // 同时更新本地缓存
+      updateCategoryCacheFromTree(enhancedTreeData);
+
+      // 更新所有可能的键，但不自动展开
+      allTreeKeys.value = getAllTreeNodeKeys(categoryTreeData.value);
+
+      // 保持折叠状态
+      if (isTreeCollapsed.value) {
+        expandedKeys.value = []; // 确保折叠状态
+      }
+    } else {
+      // 异常处理：确保即使API出错，视图也不会崩溃
+      categoryTreeData.value = [];
+      message.warning('获取分类树形结构异常，请刷新重试');
+    }
+  } catch (error) {
+    console.error('获取分类树形结构错误:', error);
+    message.error('获取分类树形结构失败，请稍后重试');
+    // 确保在出错时也有一个空数组，而不是undefined
+    categoryTreeData.value = [];
+  }
+};
+
+// 3. 添加辅助函数确保所有节点都有 contentCount 值
+const ensureContentCounts = (treeData) => {
+  return treeData.map(item => {
+    // 确保当前节点有 contentCount
+    const enhancedItem = {
+      ...item,
+      contentCount: item.contentCount !== undefined ? item.contentCount : 0
+    };
+
+    // 递归处理子节点
+    if (item.children && item.children.length > 0) {
+      enhancedItem.children = ensureContentCounts(item.children);
+    }
+
+    return enhancedItem;
+  });
+};
+
+// 从树形数据更新缓存
+const updateCategoryCacheFromTree = (treeData, parentPath = '') => {
+  if (!treeData || !treeData.length) return;
+
+  treeData.forEach(category => {
+    // 只缓存基本信息，详细信息仍需通过API获取
+    const basicInfo = {
+      id: category.id,
+      name: category.name,
+      type: category.type,
+      icon: category.icon || 'AppstoreOutlined',
+      parentId: category.parentId,
+      contentCount: category.contentCount || 0,
+      childCount: (category.children || []).length,
+      // 记录路径信息，便于显示
+      path: parentPath ? `${parentPath} > ${category.name}` : category.name,
+      level: parentPath ? parentPath.split('>').length + 1 : 1
+    };
+
+    // 更新缓存，设置较短的过期时间
+    setCategoryToCache(category.id, basicInfo, 2 * 60 * 1000); // 2分钟过期
+
+    // 递归处理子分类
+    if (category.children && category.children.length) {
+      updateCategoryCacheFromTree(
+          category.children,
+          basicInfo.path
+      );
+    }
+  });
+};
+
+// 将后端返回的树形数据转换为前端树组件所需格式
+const transformTreeData = (data) => {
+  return data.map(item => {
+    const node = {
+      title: item.name,
+      key: item.id,
+      type: item.type,
+      icon: item.icon || 'AppstoreOutlined',
+      contentCount: item.contentCount || 0,
+      dataRef: {
+        ...item,  // 复制所有原始数据
+        contentCount: item.contentCount || 0
+      }
+    };
+
+    // 递归处理子节点
+    if (item.children && item.children.length > 0) {
+      node.children = transformTreeData(item.children);
+    }
+
+    return node;
+  });
+};
+
+// 获取统计数据
+const fetchCategoryStatistics = async () => {
+  try {
+    const response = await getCategoryStatisticsUsingGet();
+
+    if (response.data && response.data.code === 200) {
+      const stats = response.data.data;
+
+      // 更新统计数据对象，一次性更新所有值
+      Object.assign(statistics, {
+        todayCreated: stats.newCategoriesOfToday || 0,  // 修改为使用正确的API字段
+        totalCategories: stats.totalCategories || 0,
+        totalItems: stats.mostContentsCount || 0,
+        topLevelCategories: stats.topLevelCategories || 0,
+        emptyCategoriesCount: stats.disabledCategories || 0,  // 如API没提供，使用可能相关的字段
+        newCategoriesThisMonth: stats.newCategoriesOfMonth || 0  // 修改为使用正确的API字段
+      });
+
+      // 更新卡片统计数据
+      statCards[0].value = stats.totalCategories?.toString() || '0';
+      statCards[0].change = stats.categoryGrowthRate || 0;
+
+      statCards[1].value = stats.newCategoriesOfMonth?.toString() || '0';  // 修改为使用正确的API字段
+      statCards[1].change = stats.categoryGrowthRate || 0;
+
+      statCards[2].value = stats.topLevelCategories?.toString() || '0';
+      statCards[2].change = stats.categoryGrowthRate || 0;
+
+      // 如果API没有提供空分类数，可以计算或使用相关数据
+      statCards[3].value = (stats.totalCategories - stats.activeCategories)?.toString() || '0';
+      statCards[3].change = 0;  // 如果没有增长率数据，默认为0
+    } else {
+      // 处理异常情况，使用默认值
+      Object.assign(statistics, {
+        todayCreated: 0,
+        totalCategories: 0,
+        totalItems: 0,
+        topLevelCategories: 0,
+        emptyCategoriesCount: 0,
+        newCategoriesThisMonth: 0
+      });
+    }
+  } catch (error) {
+    console.error('获取分类统计数据错误:', error);
+    message.error('获取统计数据失败，请稍后重试');
+  }
+};
+
+// 树搜索处理函数
+const handleTreeSearch = () => {
   if (!searchTreeValue.value) {
     // 如果搜索框清空，恢复完整树
-    buildCategoryTree(categoryData.value);
+    fetchCategoryTree();
     return;
   }
 
-  // 过滤匹配的节点
-  const filteredData = categoryData.value.filter(item =>
-      item.name.toLowerCase().includes(searchTreeValue.value.toLowerCase())
-  );
+  const keyword = searchTreeValue.value.toLowerCase();
 
-  // 找到所有匹配节点的父节点路径
-  const relevantIds = new Set();
+  // 递归搜索匹配的节点
+  const filterTree = (nodes) => {
+    return nodes.filter(node => {
+      const matched = node.title.toLowerCase().includes(keyword);
+      let childrenMatched = false;
 
-  filteredData.forEach(item => {
-    // 添加当前节点
-    relevantIds.add(item.id);
+      if (node.children && node.children.length > 0) {
+        const filteredChildren = filterTree(node.children);
+        childrenMatched = filteredChildren.length > 0;
 
-    // 添加所有父节点
-    let parentId = item.parentId;
-    while (parentId) {
-      relevantIds.add(parentId);
-      const parent = categoryData.value.find(p => p.id === parentId);
-      parentId = parent ? parent.parentId : null;
-    }
-  });
+        if (childrenMatched) {
+          node.children = filteredChildren;
+        }
+      }
 
-  // 过滤树数据
-  const filteredTreeData = categoryData.value.filter(item => relevantIds.has(item.id));
-  buildCategoryTree(filteredTreeData);
-}
+      return matched || childrenMatched;
+    });
+  };
+
+  // 应用筛选 - 确保使用深拷贝避免修改原始数据
+  const clonedTreeData = JSON.parse(JSON.stringify(categoryTreeData.value));
+  categoryTreeData.value = filterTree(clonedTreeData);
+
+  // 如果过滤后没有结果，显示提示
+  if (categoryTreeData.value.length === 0) {
+    message.info(`没有找到包含 "${searchTreeValue.value}" 的分类`);
+  }
+};
 
 // 树节点选择处理
-function onTreeSelect(selectedKeys, info) {
+const onTreeSelect = (selectedKeys, info) => {
   if (selectedKeys.length === 0) {
     selectedCategory.value = null;
+    childCategories.value = [];
     return;
   }
 
   selectedTreeKeys.value = selectedKeys;
   const categoryId = selectedKeys[0];
-  selectedCategory.value = categoryData.value.find(item => item.id === categoryId);
-}
 
-// 树节点拖放处理
-function onTreeDrop(info) {
-  const dropKey = info.node.key;
-  const dragKey = info.dragNode.key;
-  const dropPos = info.node.pos.split('-');
-  const dropPosition = info.dropPosition - Number(dropPos[dropPos.length - 1]);
-
-  // 找到被拖动的节点
-  const dragNode = categoryData.value.find(item => item.id === dragKey);
-
-  if (!dragNode) return;
-
-  // 根据不同的放置位置处理逻辑
-  if (dropPosition === 0) {
-    // 放在节点内部，成为子节点
-    dragNode.parentId = dropKey;
-    dragNode.level = categoryData.value.find(item => item.id === dropKey).level + 1;
-  } else {
-    // 放在节点前后，保持同级
-    const dropNodeData = categoryData.value.find(item => item.id === dropKey);
-    dragNode.parentId = dropNodeData.parentId;
-    dragNode.level = dropNodeData.level;
+  // 首先尝试从缓存获取
+  const cachedCategory = getCategoryFromCache(categoryId);
+  if (cachedCategory) {
+    selectedCategory.value = cachedCategory;
+    // 异步刷新缓存但不阻塞UI
+    fetchCategoryDetails(categoryId, false);
+    fetchCategoryChildren(categoryId);
+    return;
   }
 
-  // 更新树形数据
-  buildCategoryTree(categoryData.value);
+  // 如果缓存中没有，则正常加载
+  fetchCategoryDetails(categoryId, true);
+};
 
-  message.success('分类层级已更新');
-}
+// 抽取获取分类详情的函数
+const fetchCategoryDetails = (categoryId, showLoading = true) => {
+  if (showLoading) {
+    loading.value = true;
+  }
+
+  getCategoryByIdUsingGet({id: categoryId})
+      .then(response => {
+        if (response.data && response.data.code === 200 && response.data.data) {
+          const categoryData = response.data.data;
+          // 更新缓存
+          setCategoryToCache(categoryId, categoryData);
+          // 如果当前选中的仍然是这个分类，则更新UI
+          if (selectedTreeKeys.value.includes(categoryId)) {
+            selectedCategory.value = categoryData;
+          }
+          // 同时获取关联内容
+          return fetchRelatedItems(categoryId);
+        } else {
+          throw new Error(response.data?.message || '获取分类详情失败');
+        }
+      })
+      .then(() => {
+        // 获取子分类
+        return fetchCategoryChildren(categoryId);
+      })
+      .catch(error => {
+        console.error('获取分类详情错误:', error);
+        if (showLoading) {
+          message.error('获取分类详情失败');
+        }
+
+        // 失败时也重置状态，确保UI不卡住
+        if (selectedTreeKeys.value.includes(categoryId)) {
+          selectedCategory.value = {
+            id: categoryId,
+            name: '数据加载失败',
+            type: 'learning',
+            description: '请尝试刷新或选择其他分类'
+          };
+        }
+      })
+      .finally(() => {
+        if (showLoading) {
+          loading.value = false;
+        }
+      });
+};
+
+// 获取分类子分类数据
+const fetchCategoryChildren = async (categoryId) => {
+  try {
+    const response = await listCategoryByPageUsingGet({
+      parentId: categoryId,
+      pageNum: 1,
+      pageSize: 100 // 获取足够的子分类以计算正确的总数
+    });
+
+    if (response.data && response.data.code === 200) {
+      // 更新子分类列表
+      childCategories.value = response.data.data.records || [];
+
+      // 关键修复：基于实际返回的子分类数量更新统计数字
+      if (selectedCategory.value && selectedCategory.value.id === categoryId) {
+        // 更新子分类计数
+        selectedCategory.value.childCount = childCategories.value.length;
+
+        // 同时更新顶部统计区域的数字
+        // 假设统计区域是通过一个响应式变量更新的
+        const childrenCount = childCategories.value.length;
+
+        // 更新顶部统计区域的"子分类数量"值
+        // 这里根据实际UI组件的绑定变量名可能需要调整
+        statistics.currentChildrenCount = childrenCount;
+      }
+    } else {
+      childCategories.value = [];
+      if (selectedCategory.value) {
+        selectedCategory.value.childCount = 0;
+      }
+    }
+  } catch (error) {
+    console.error('获取子分类错误:', error);
+    childCategories.value = [];
+    if (selectedCategory.value) {
+      selectedCategory.value.childCount = 0;
+    }
+  }
+};
+
+const expandCategoryList = (expanded) => {
+  if (expanded && selectedCategory.value) {
+    // 当展开子分类列表时，强制刷新子分类数量
+    fetchCategoryChildren(selectedCategory.value.id);
+  }
+};
+
+// 添加缓存对象
+const categoryCache = reactive({
+  data: new Map(),
+  // 缓存过期时间（毫秒）
+  ttl: 5 * 60 * 1000 // 5分钟
+});
+
+// 从缓存获取分类详情
+const getCategoryFromCache = (categoryId) => {
+  const cached = categoryCache.data.get(categoryId);
+  if (cached && Date.now() - cached.timestamp < categoryCache.ttl) {
+    return cached.data;
+  }
+  return null;
+};
+
+// 将分类详情存入缓存
+const setCategoryToCache = (categoryId, categoryData, customTtl) => {
+  categoryCache.data.set(categoryId, {
+    data: categoryData,
+    timestamp: Date.now(),
+    ttl: customTtl || categoryCache.ttl
+  });
+};
 
 // 打开创建分类模态框
-function openCreateModal() {
-  // 重置表单
+const openCreateModal = () => {
+  // 重置表单为默认值
   Object.keys(categoryForm).forEach(key => {
-    categoryForm[key] = key === 'type' ? 'article' :
-        key === 'sort' ? 100 :
-            key === 'showInMenu' ? true :
-                key === 'icon' ? 'AppstoreOutlined' : '';
+    categoryForm[key] = '';
   });
 
+  // 设置默认值
+  categoryForm.type = 'learning';
+  categoryForm.sortOrder = 100;
+  categoryForm.icon = 'AppstoreOutlined';
+
+  // 标记为创建模式
   isEditing.value = false;
+
+  // 显示模态框
   categoryModalVisible.value = true;
-}
+};
 
 // 编辑分类
-function editCategory(id) {
-  const category = categoryData.value.find(item => item.id === id);
+const editCategory = (id) => {
+  // 首先从缓存中查询以加快响应
+  let category = getCategoryFromCache(id);
+
+  // 如果缓存中没有，则从表格数据中查找
+  if (!category) {
+    category = categoryData.value.find(item => item.id === id);
+  }
 
   if (!category) {
     message.error('未找到该分类信息');
@@ -1416,36 +2065,98 @@ function editCategory(id) {
   // 复制分类数据到编辑表单
   Object.keys(categoryForm).forEach(key => {
     if (key in category) {
-      categoryForm[key] = category[key];
+      // 对于parentId需要特殊处理
+      if (key === 'parentId' && (!category[key] || category[key] === 0)) {
+        categoryForm[key] = null; // 使用null表示顶级分类
+      } else {
+        categoryForm[key] = category[key];
+      }
     }
   });
 
   isEditing.value = true;
   categoryModalVisible.value = true;
-
-  // 如果详情模态框打开，关闭它
-  if (selectedCategory.value && selectedCategory.value.id === id) {
-    selectedCategory.value = null;
-  }
-}
+};
 
 // 查看分类详情
-function viewCategory(record) {
-  selectedCategory.value = record;
-  selectedTreeKeys.value = [record.id];
-
-  // 如果当前是列表视图，切换到树形视图
-  if (viewMode.value === 'list') {
+const viewCategory = async (record) => {
+  try {
+    // 切换到树形视图
     viewMode.value = 'tree';
+
+    // 设置加载状态
+    loading.value = true;
+
+    // 获取分类详情 - 优先使用缓存提升性能
+    const cachedCategory = getCategoryFromCache(record.id);
+
+    if (cachedCategory) {
+      selectedCategory.value = cachedCategory;
+      selectedTreeKeys.value = [record.id];
+
+      // 确保展开到该节点
+      expandToNode(record.id);
+
+      // 异步更新详情和关联内容，但不阻塞UI显示
+      fetchCategoryDetails(record.id, false);
+      loading.value = false;
+    } else {
+      // 如果缓存中没有，则正常加载
+      const response = await getCategoryByIdUsingGet({id: record.id});
+      if (response.data && response.data.code === 200) {
+        // 设置选中的节点和展开视图
+        selectedTreeKeys.value = [record.id];
+        selectedCategory.value = response.data.data;
+
+        // 展开到该节点
+        expandToNode(record.id);
+
+        // 获取关联内容
+        await fetchRelatedItems(record.id);
+
+        // 获取子分类
+        await fetchCategoryChildren(record.id);
+      } else {
+        throw new Error(response.data?.message || '获取分类详情失败');
+      }
+      loading.value = false;
+    }
+  } catch (error) {
+    console.error('获取分类详情错误:', error);
+    message.error('获取分类详情失败');
+    loading.value = false;
   }
-}
+};
+
+// 获取分类关联的内容
+const fetchRelatedItems = async (categoryId) => {
+  try {
+    // 调用API获取关联内容
+    const response = await getCategoryRelatedItemsUsingGet({
+      categoryId,
+      pageNum: 1,
+      pageSize: 5
+    });
+
+    if (response.data && response.data.code === 200) {
+      relatedItems.value = response.data.data.records || [];
+    } else {
+      // 如果API返回错误，使用空数组
+      relatedItems.value = [];
+    }
+  } catch (error) {
+    console.error('获取关联内容错误:', error);
+    // 出错时使用空数组，确保UI不会崩溃
+    relatedItems.value = [];
+  }
+};
 
 // 添加子分类
-function addChildCategory(parentId) {
+const addChildCategory = (parentId) => {
   // 重置表单
   Object.keys(categoryForm).forEach(key => {
-    categoryForm[key] = key === 'type' ? 'article' :
-        key === 'sort' ? 100 :
+    categoryForm[key] = key === 'type' ? 'learning' :
+        key === 'sortOrder' ? 100 :
             key === 'showInMenu' ? true :
                 key === 'icon' ? 'AppstoreOutlined' : '';
   });
@@ -1454,265 +2165,1000 @@ function addChildCategory(parentId) {
   categoryForm.parentId = parentId;
 
   // 自动设置类型与父分类一致
-  const parentCategory = categoryData.value.find(item => item.id === parentId);
+  const parentCategory = getCategoryFromCache(parentId) ||
+      categoryData.value.find(item => item.id === parentId);
+
   if (parentCategory) {
     categoryForm.type = parentCategory.type;
   }
 
   isEditing.value = false;
   categoryModalVisible.value = true;
-}
+};
+
+// 处理取消按钮
+const handleCancel = () => {
+  // 重置表单
+  categoryFormRef.value && categoryFormRef.value.resetFields();
+  // 关闭模态框
+  categoryModalVisible.value = false;
+};
+
+// 类型变更处理函数
+const handleTypeChange = (value) => {
+  categoryForm.type = value;
+  // 确保预览区域立即更新
+  nextTick(() => {
+    // 更新预览区域颜色和图标
+    const previewIcon = document.querySelector('.preview-icon');
+    if (previewIcon) {
+      previewIcon.style.backgroundColor = getCategoryTypeColor(value) + '15';
+    }
+
+    const iconComponent = document.querySelector('.preview-icon .anticon');
+    if (iconComponent) {
+      iconComponent.style.color = getCategoryTypeColor(value);
+    }
+
+    // 更新标签颜色
+    const tag = document.querySelector('.preview-meta .ant-tag');
+    if (tag) {
+      tag.style.backgroundColor = getCategoryTypeColor(value);
+      tag.style.borderColor = getCategoryTypeColor(value);
+    }
+  });
+};
+
+// 初始化表单时设置默认值
+const initCategoryForm = () => {
+  // 如果是新建分类，设置默认值
+  if (!isEditing.value) {
+    categoryForm.type = 'learning';  // 默认类型为"技术学习"
+    categoryForm.sortOrder = 100;    // 默认排序值
+    categoryForm.icon = 'AppstoreOutlined';  // 默认图标
+  }
+};
 
 // 处理分类提交
-function handleCategorySubmit() {
+const handleCategorySubmit = () => {
   categoryFormRef.value.validate()
-      .then(() => {
+      .then(async () => {
         submitLoading.value = true;
-
-        // 模拟API调用
-        setTimeout(() => {
+        try {
           const formData = {...categoryForm};
 
-          // 计算分类层级
-          let level = 1;
-          if (formData.parentId) {
-            const parent = categoryData.value.find(item => item.id === formData.parentId);
-            if (parent) {
-              level = parent.level + 1;
-            }
+          if (!formData.urlName || formData.urlName.trim() === '') {
+            // 使用分类名称+时间戳作为默认别名
+            formData.urlName = `${formData.name}-${Date.now()}`;
           }
+
+          let savedCategoryId; // 存储保存后的分类ID
 
           if (isEditing.value) {
             // 更新分类
-            const index = categoryData.value.findIndex(category => category.id === formData.id);
-            if (index !== -1) {
-              categoryData.value[index] = {
-                ...categoryData.value[index],
-                ...formData,
-                level,
-                updateTime: new Date().getTime()
-              };
-
-              // 更新子分类的level
-              updateChildrenLevel(formData.id);
-            }
-            message.success('分类信息已更新');
-          } else {
-            // 创建分类
-            const newCategory = {
-              ...formData,
-              id: Math.max(...categoryData.value.map(category => category.id)) + 1,
-              level,
-              itemCount: 0,
-              childCount: 0,
-              createTime: new Date().getTime(),
-              updateTime: new Date().getTime()
+            const params = {
+              id: formData.id,
+              name: formData.name,
+              description: formData.description,
+              icon: formData.icon,
+              urlName: formData.urlName, // 字段名称映射
+              sortOrder: formData.sortOrder, // 字段名称映射
+              status: formData.status
             };
 
-            categoryData.value.unshift(newCategory);
+            const response = await updateCategoryUsingPut(params);
 
-            // 更新父分类的childCount
-            if (newCategory.parentId) {
-              const parentIndex = categoryData.value.findIndex(item => item.id === newCategory.parentId);
-              if (parentIndex !== -1) {
-                categoryData.value[parentIndex].childCount += 1;
-              }
+            if (response.data && response.data.code === 200) {
+              message.success('分类信息已更新');
+              savedCategoryId = formData.id; // 使用当前编辑的ID
+              categoryModalVisible.value = false;
+              await fetchCategoryData(); // 刷新数据
+
+              // 在更新后自动选中并显示该分类详情
+              await selectCategoryAfterSave(savedCategoryId);
+            } else {
+              message.error('更新分类失败: ' + (response.data?.message || '未知错误'));
             }
+          } else {
+            // 创建分类
+            const params = {
+              name: formData.name,
+              parentId: formData.parentId,
+              type: formData.type,
+              description: formData.description,
+              icon: formData.icon,
+              urlName: formData.urlName,
+              sortOrder: formData.sortOrder,
+              status: formData.status
+            };
 
-            pagination.total += 1;
-            message.success('分类创建成功');
+            const response = await createCategoryUsingPost(params);
+
+            if (response.data && response.data.code === 200) {
+              message.success('分类创建成功');
+              savedCategoryId = response.data.data.id; // 从响应中获取新创建的ID
+              categoryModalVisible.value = false;
+              await fetchCategoryData(); // 刷新数据
+
+              // 在创建后自动选中并显示该分类详情
+              await selectCategoryAfterSave(savedCategoryId);
+            } else {
+              message.error('创建分类失败: ' + (response.data?.message || '未知错误'));
+            }
           }
-
-          // 重建分类树
-          buildCategoryTree(categoryData.value);
-
+        } catch (error) {
+          console.error('提交分类数据错误:', error);
+          message.error('操作失败，请稍后重试');
+        } finally {
           submitLoading.value = false;
-          categoryModalVisible.value = false;
-        }, 500);
+        }
       })
       .catch(error => {
         console.error('表单验证失败', error);
       });
-}
+};
 
-// 更新子分类的level
-function updateChildrenLevel(parentId) {
-  const parent = categoryData.value.find(item => item.id === parentId);
-  if (!parent) return;
+// 增强的父分类选项，添加样式和类型信息
+const enhancedParentCategoryOptions = computed(() => {
+  const processNode = (node) => {
+    // 确保节点有类型属性
+    const nodeType = node.type || 'default';
 
-  const children = categoryData.value.filter(item => item.parentId === parentId);
+    // 创建新节点对象，复制原有属性
+    const enhancedNode = {
+      ...node,
+      type: nodeType,
+      className: `category-tree-node type-${nodeType}`,
+      // 递归处理子节点
+      children: node.children ? node.children.map(childNode => processNode(childNode)) : []
+    };
 
-  children.forEach(child => {
-    const index = categoryData.value.findIndex(item => item.id === child.id);
-    if (index !== -1) {
-      categoryData.value[index].level = parent.level + 1;
-      // 递归更新子分类的子分类
-      updateChildrenLevel(child.id);
+    return enhancedNode;
+  };
+
+  // 处理所有顶级节点
+  return parentCategoryOptions.value.map(node => processNode(node));
+});
+
+// 保存后根据视图模式决定是否显示详情
+const selectCategoryAfterSave = async (categoryId) => {
+  if (!categoryId) return;
+
+  try {
+    // 判断当前视图模式
+    if (viewMode.value === 'tree') {
+      // 只有在树形视图模式下才进行详情跳转和选中状态设置
+
+      // 1. 展开到对应节点
+      expandToNode(categoryId);
+
+      // 2. 设置树形视图选中状态
+      selectedTreeKeys.value = [categoryId];
+
+      // 3. 确保树节点展开
+      const parentCategory = findParentCategory(categoryId);
+      if (parentCategory) {
+        expandedKeys.value = Array.from(
+            new Set([...expandedKeys.value, parentCategory.id])
+        );
+      }
+
+      // 4. 获取并加载详情数据
+      const response = await getCategoryByIdUsingGet({id: categoryId});
+      if (response.data && response.data.code === 200) {
+        selectedCategory.value = response.data.data;
+
+        // 5. 获取关联内容
+        await fetchRelatedItems(categoryId);
+
+        // 6. 获取子分类
+        await fetchCategoryChildren(categoryId);
+      } else {
+        throw new Error(response.data?.message || '获取分类详情失败');
+      }
+    } else {
+
+      // 如果需要确保该项在当前页面显示，但不选中它
+      const index = categoryData.value.findIndex(item => item.id === categoryId);
+      if (index >= 0) {
+        const pageNum = Math.floor(index / pagination.pageSize) + 1;
+        if (pagination.current !== pageNum) {
+          pagination.current = pageNum;
+          // 注意：这里我们需要再次刷新数据以显示正确的页面
+          await fetchCategoryData();
+          // 不再重新设置选中状态
+        }
+      }
     }
-  });
-}
+  } catch (error) {
+    console.error('选中分类失败:', error);
+    message.error('加载分类详情失败');
+    // 出错时重置选中状态
+    if (viewMode.value === 'tree') {
+      selectedCategory.value = null;
+      selectedTreeKeys.value = [];
+    }
+  }
+};
 
-// 取消分类编辑
-function handleCategoryCancel() {
-  categoryModalVisible.value = false;
-}
+// 辅助函数：查找父分类
+const findParentCategory = (categoryId) => {
+  // 首先尝试从缓存中获取更好的性能
+  const category = getCategoryFromCache(categoryId);
 
-// 显示删除确认对话框
-function showDeleteConfirm(id) {
-  const category = categoryData.value.find(item => item.id === id);
+  if (category && category.parentId) {
+    return getCategoryFromCache(category.parentId) ||
+        categoryData.value.find(item => item.id === category.parentId);
+  }
+
+  // 如果缓存中没有，则从原始数据查找
+  const fallbackCategory = categoryData.value.find(item => item.id === categoryId);
+  if (fallbackCategory && fallbackCategory.parentId) {
+    return categoryData.value.find(item => item.id === fallbackCategory.parentId);
+  }
+
+  return null;
+};
+
+// 辅助函数：展开到指定节点
+const expandToNode = (categoryId) => {
+  const category = getCategoryFromCache(categoryId) ||
+      categoryData.value.find(item => item.id === categoryId);
 
   if (!category) return;
 
-  // 检查是否有子分类
-  const hasChildren = categoryData.value.some(item => item.parentId === id);
+  // 收集所有父节点ID
+  const parentIds = [];
+  let currentParentId = category.parentId;
 
-  window.$modal?.confirm({
+  while (currentParentId) {
+    parentIds.push(currentParentId);
+    const parentCategory = getCategoryFromCache(currentParentId) ||
+        categoryData.value.find(item => item.id === currentParentId);
+
+    currentParentId = parentCategory ? parentCategory.parentId : null;
+  }
+
+  // 更新展开的键
+  if (parentIds.length > 0) {
+    expandedKeys.value = Array.from(
+        new Set([...expandedKeys.value, ...parentIds])
+    );
+  }
+};
+
+const getParentName = (parentId) => {
+  if (!parentId) return '顶级分类';
+
+  // 首先检查缓存以获得更好的性能
+  const cachedParent = getCategoryFromCache(parentId);
+  if (cachedParent) return cachedParent.name;
+
+  // 如果缓存中没有，检查数据源
+  if (!categoryData.value || categoryData.value.length === 0) return '加载中...';
+
+  const parent = categoryData.value.find(item => item.id === parentId);
+  return parent ? parent.name : '未知分类';
+};
+
+// 显示删除确认对话框
+const showDeleteConfirm = (id) => {
+  // 优先从缓存中获取
+  const category = getCategoryFromCache(id) || categoryData.value.find(item => item.id === id);
+  if (!category) {
+    message.error('无法获取分类信息');
+    return;
+  }
+
+  // 检查是否有子分类
+  const hasChildren = category.childCount > 0 || childCategories.value.length > 0 ||
+      categoryData.value.some(item => item.parentId === id);
+
+  // 检查是否有关联内容
+  const hasContents = category.contentCount > 0;
+
+  const modal = Modal;
+
+  let confirmContent = '删除后将无法恢复，请谨慎操作。';
+  if (hasChildren) {
+    confirmContent = '该分类下包含子分类，删除后所有子分类将一并删除，且无法恢复，请谨慎操作。';
+  }
+  if (hasContents) {
+    confirmContent += `\n该分类下有${category.contentCount}个关联内容，删除分类后内容不会被删除，但会失去分类关联。`;
+  }
+
+  modal.confirm({
     title: '确定要删除此分类吗?',
-    content: hasChildren
-        ? '该分类下包含子分类，删除后所有子分类将一并删除，且无法恢复，请谨慎操作。'
-        : '删除后将无法恢复，请谨慎操作。',
-    okText: '确定',
+    content: confirmContent,
+    okText: '确定删除',
     okType: 'danger',
     cancelText: '取消',
     onOk() {
       deleteCategory(id);
     }
   });
-}
+};
 
 // 删除分类
-function deleteCategory(id) {
+const deleteCategory = async (id) => {
   loading.value = true;
+  try {
+    const response = await deleteCategoryUsingDelete({id});
 
-  // 模拟API调用
-  setTimeout(() => {
-    // 递归删除分类及其子分类
-    const deletedIds = recursiveDeleteCategory(id);
-
-    // 更新父分类的childCount
-    const category = categoryData.value.find(item => item.id === id);
-    if (category && category.parentId) {
-      const parentIndex = categoryData.value.findIndex(item => item.id === category.parentId);
-      if (parentIndex !== -1) {
-        categoryData.value[parentIndex].childCount -= 1;
+    if (response.data && response.data.code === 200) {
+      // 从当前列表中移除被删除的分类
+      if (selectedCategory.value && selectedCategory.value.id === id) {
+        selectedCategory.value = null;
+        selectedTreeKeys.value = [];
       }
+
+      // 清除已选择的行，如果该行在选中行中
+      if (selectedRowKeys.value.includes(id)) {
+        selectedRowKeys.value = selectedRowKeys.value.filter(key => key !== id);
+      }
+
+      message.success('分类已删除');
+
+      // 重新获取数据
+      await fetchCategoryData();
+
+      // 重新获取统计数据
+      await fetchCategoryStatistics();
+
+      // 如果在树视图中，需要刷新树
+      if (viewMode.value === 'tree') {
+        await fetchCategoryTree();
+      }
+    } else {
+      message.error('删除分类失败: ' + (response.data?.message || '未知错误'));
     }
-
-    // 过滤出未删除的分类
-    categoryData.value = categoryData.value.filter(category => !deletedIds.includes(category.id));
-    pagination.total = categoryData.value.length;
-
-    // 重建分类树
-    buildCategoryTree(categoryData.value);
-
+  } catch (error) {
+    console.error('删除分类错误:', error);
+    message.error('删除分类失败，请稍后重试');
+  } finally {
     loading.value = false;
-    message.success('分类已删除');
-
-    // 如果删除的是当前选中的分类，则清除选中状态
-    if (selectedRowKeys.value.includes(id)) {
-      selectedRowKeys.value = selectedRowKeys.value.filter(key => key !== id);
-    }
-
-    if (selectedTreeKeys.value.includes(id)) {
-      selectedTreeKeys.value = [];
-      selectedCategory.value = null;
-    }
-  }, 500);
-}
-
-// 递归删除分类及其子分类
-function recursiveDeleteCategory(categoryId) {
-  const deletedIds = [categoryId];
-
-  // 查找所有子分类
-  const children = categoryData.value.filter(item => item.parentId === categoryId);
-
-  // 递归删除子分类
-  children.forEach(child => {
-    deletedIds.push(...recursiveDeleteCategory(child.id));
-  });
-
-  return deletedIds;
-}
+  }
+};
 
 // 批量删除分类
-function handleBatchDelete() {
+const handleBatchDelete = async () => {
   if (selectedRowKeys.value.length === 0) {
     message.warning('请先选择要删除的分类');
     return;
   }
 
-  window.$modal?.confirm({
-    title: `确定要删除选中的 ${selectedRowKeys.value.length} 个分类吗?`,
-    content: '删除后将无法恢复，所有子分类也会被一并删除，请谨慎操作。',
-    okText: '确定',
-    okType: 'danger',
-    cancelText: '取消',
-    onOk() {
-      loading.value = true;
-
-      // 模拟API调用
-      setTimeout(() => {
-        // 获取所有需要删除的分类ID（包括子分类）
-        let allDeletedIds = [];
-        selectedRowKeys.value.forEach(id => {
-          allDeletedIds.push(...recursiveDeleteCategory(id));
-        });
-
-        // 去重
-        allDeletedIds = [...new Set(allDeletedIds)];
-
-        // 过滤出未删除的分类
-        categoryData.value = categoryData.value.filter(category => !allDeletedIds.includes(category.id));
-        pagination.total = categoryData.value.length;
-
-        // 重建分类树
-        buildCategoryTree(categoryData.value);
-
-        selectedRowKeys.value = [];
-        selectedTreeKeys.value = [];
-        selectedCategory.value = null;
-
-        loading.value = false;
-        message.success('已批量删除分类');
-      }, 800);
-    }
+  // 检查是否有子分类和关联内容
+  const selectedCategories = selectedRowKeys.value.map(id => {
+    return getCategoryFromCache(id) ||
+        categoryData.value.find(item => item.id === id) ||
+        {id, name: `ID为${id}的分类`, type: 'default'};
   });
-}
 
-// 批量移动分类
-function handleBatchMove() {
-  if (selectedRowKeys.value.length === 0) {
-    message.warning('请先选择要移动的分类');
-    return;
+  const hasChildren = selectedCategories.some(category =>
+      category.childCount > 0 || categoryData.value.some(item => item.parentId === category.id)
+  );
+
+  const totalContents = selectedCategories.reduce((sum, category) => sum + (category.contentCount || 0), 0);
+
+  const modal = Modal;
+
+  let confirmContent = `确定要删除选中的 ${selectedRowKeys.value.length} 个分类吗？删除后将无法恢复。`;
+  if (hasChildren) {
+    confirmContent += '\n\n所选分类中有包含子分类的项，删除后所有子分类将一并删除。';
+  }
+  if (totalContents > 0) {
+    confirmContent += `\n\n所选分类关联了共计 ${totalContents} 个内容项，删除分类后内容不会被删除，但会失去分类关联。`;
   }
 
-  // 这里可以实现批量移动的模态框
-  message.info('批量移动功能正在开发中...');
-}
+
+  modal.confirm({
+    title: '批量删除分类',
+    content: confirmContent,
+    okText: '确定删除',
+    okType: 'danger',
+    cancelText: '取消',
+    async onOk() {
+      loading.value = true;
+      try {
+        const response = await batchDeleteCategoriesUsingDelete({
+          ids: selectedRowKeys.value
+        });
+
+        if (response.data && response.data.code === 200) {
+          selectedRowKeys.value = [];
+          selectedTreeKeys.value = [];
+          selectedCategory.value = null;
+
+          message.success('已批量删除分类');
+
+          // 重新获取数据
+          await fetchCategoryData();
+
+          // 刷新统计数据
+          await fetchCategoryStatistics();
+
+          // 如果在树视图中，需要刷新树
+          if (viewMode.value === 'tree') {
+            await fetchCategoryTree();
+          }
+        } else {
+          message.error('批量删除分类失败: ' + (response.data?.message || '未知错误'));
+        }
+      } catch (error) {
+        console.error('批量删除分类错误:', error);
+        message.error('批量删除分类失败，请稍后重试');
+      } finally {
+        loading.value = false;
+      }
+    }
+  });
+};
 
 // 批量导出分类
-function handleBatchExport() {
+const handleBatchExport = () => {
   if (selectedRowKeys.value.length === 0) {
     message.warning('请先选择要导出的分类');
     return;
   }
 
+  // 这里可以实现实际的导出逻辑，目前只是显示一个消息提示
   message.loading('正在准备导出数据...', 2)
       .then(() => message.success('导出成功，文件已保存到下载中心'));
-}
+};
 
-// 移动单个分类
-function moveCategory(record) {
-  // 这里可以实现移动分类的模态框
-  message.info(`正在准备移动分类"${record.name}"...`);
-}
+// 获取完整的分类数据
+const loadCompleteCategories = async () => {
+  try {
+    // 使用默认参数获取所有分类数据
+    const response = await listCategoryByPageUsingGet({
+      pageNum: 1,
+      pageSize: 90, // 使用较大的数值确保获取所有数据
+      // 不传递任何搜索条件
+    });
+
+    if (response.data && response.data.code === 200) {
+      // 存储完整的分类数据到临时变量（不影响当前列表显示）
+      completeCategories.value = response.data.data.records || [];
+    } else {
+      throw new Error(response.data?.message || '获取分类数据失败');
+    }
+  } catch (error) {
+    console.error('获取完整分类数据错误:', error);
+    message.error('获取分类数据失败');
+    completeCategories.value = []; // 出错时重置为空数组
+  }
+};
+
+// 加载可用的目标分类
+const loadAvailableCategories = async (sourceId) => {
+  if (!sourceId) return;
+
+  try {
+    // 防止重复加载
+    if (completeCategories.value.length === 0) {
+      await loadCompleteCategories();
+    }
+
+    // 排除当前分类及其所有子分类
+    const excludeIds = getAllChildIds(sourceId, completeCategories.value);
+
+    // 从完整数据中过滤可选目标
+    availableCategoryOptions.value = flattenCategoryTree(completeCategories.value)
+        .filter(item => !excludeIds.includes(item.id))
+        .map(item => ({
+          ...item,
+          level: getCategoryLevel(item, completeCategories.value)
+        }));
+  } catch (error) {
+    console.error('加载可用分类数据错误:', error);
+    message.error('加载可用分类数据失败');
+    availableCategoryOptions.value = [];
+  }
+};
+
+// 获取分类的所有子ID（递归）
+const getAllChildIds = (categoryId, categoriesSource) => {
+  const result = [categoryId];
+
+  // 使用提供的数据源查找子分类
+  categoriesSource.forEach(item => {
+    if (item.parentId === categoryId) {
+      result.push(...getAllChildIds(item.id, categoriesSource));
+    }
+  });
+
+  return result;
+};
+
+// 将树形结构扁平化并保留层级信息
+const flattenCategoryTree = (categories, parentId = null, level = 0) => {
+  let result = [];
+
+  // 找出当前层级的分类
+  const currentLevelCategories = categories.filter(item =>
+      (parentId === null && (!item.parentId || item.parentId === 0)) ||
+      (item.parentId === parentId)
+  );
+
+  // 处理每个分类及其子分类
+  currentLevelCategories.forEach(category => {
+    // 添加当前分类（带有层级信息）
+    result.push({...category, level});
+
+    // 递归处理子分类
+    const children = flattenCategoryTree(categories, category.id, level + 1);
+    result = [...result, ...children];
+  });
+
+  return result;
+};
+
+// 获取分类在树中的层级
+const getCategoryLevel = (category, categoriesSource, level = 0) => {
+  if (!category.parentId) return level;
+
+  const parentCategory = categoriesSource.find(c => c.id === category.parentId);
+  if (!parentCategory) return level;
+
+  return getCategoryLevel(parentCategory, categoriesSource, level + 1);
+};
+
+// 获取分类路径文本
+const getCategoryPath = (category) => {
+  if (!category) return '';
+  if (!category.parentId) return '顶级分类';
+
+  // 确定使用哪个数据源
+  const dataSource = completeCategories.value.length > 0
+      ? completeCategories.value
+      : categoryData.value;
+
+  // 构建从根到当前的路径
+  const buildPath = (categoryId) => {
+    if (!categoryId) return [];
+
+    const currentCategory = dataSource.find(c => c.id === categoryId);
+    if (!currentCategory) return [];
+
+    if (!currentCategory.parentId) {
+      return [currentCategory.name];
+    }
+
+    return [...buildPath(currentCategory.parentId), currentCategory.name];
+  };
+
+  const path = buildPath(category.parentId);
+  return path.join(' > ');
+};
+
+// 添加移动单个分类的函数
+const moveCategory = (record) => {
+  // 设置源分类信息
+  const sourceCategory = {...record};
+
+  // 加载可用的目标分类（排除自身及其子分类）
+  loadAvailableCategories(sourceCategory.id);
+
+  // 打开移动模态框
+  showCategoryMoveModal(sourceCategory);
+};
+
+// 批量移动分类
+const handleBatchMove = async () => {
+  if (selectedRowKeys.value.length === 0) {
+    message.warning('请先选择要移动的分类');
+    return;
+  }
+
+  // 获取所选分类详情
+  const selectedCategories = categoryData.value.filter(item =>
+      selectedRowKeys.value.includes(item.id)
+  );
+
+  // 确保所有选中的分类都存在
+  if (selectedCategories.length !== selectedRowKeys.value.length) {
+    message.error('部分选中的分类信息不完整，请刷新后重试');
+    return;
+  }
+
+  // 假设我们使用第一个选中的分类作为主要显示（也可以显示计数）
+  const primaryCategory = selectedCategories[0];
+
+  // 获取所有ID，用于排除不可选的目标
+  const allSelectedIds = selectedRowKeys.value;
+
+  // 加载可用的目标分类（排除所有选中的分类及其子分类）
+  loadAllAvailableCategories(allSelectedIds);
+
+  // 打开批量移动模态框
+  showBatchMoveModal(selectedCategories);
+};
+
+// 更新加载所有可用分类的函数（排除多个源分类）
+const loadAllAvailableCategories = async (sourceIds) => {
+  try {
+    if (completeCategories.value.length === 0) {
+      await loadCompleteCategories();
+    }
+
+    // 收集所有需要排除的ID（包括选中的分类及其所有子分类）
+    let excludeIds = [];
+    sourceIds.forEach(id => {
+      excludeIds = [...excludeIds, ...getAllChildIds(id, completeCategories.value)];
+    });
+
+    // 从完整数据中过滤可选目标
+    availableCategoryOptions.value = flattenCategoryTree(completeCategories.value)
+        .filter(item => !excludeIds.includes(item.id))
+        .map(item => ({
+          ...item,
+          level: getCategoryLevel(item, completeCategories.value)
+        }));
+  } catch (error) {
+    console.error('加载可用分类数据错误:', error);
+    message.error('加载可用分类数据失败');
+    availableCategoryOptions.value = [];
+  }
+};
+
+// 显示分类移动模态框
+const showCategoryMoveModal = (sourceCategory) => {
+  // 设置源分类
+  currentSourceCategory.value = sourceCategory;
+
+  // 初始化选中的目标分类
+  selectedDestination.value = null;
+
+  // 设置是否为批量操作
+  isBatchMove.value = false;
+
+  // 打开模态框
+  categoryMoveModalVisible.value = true;
+};
+
+// 显示批量移动模态框
+const showBatchMoveModal = (sourceCategories) => {
+  // 设置多个源分类
+  batchSourceCategories.value = sourceCategories;
+
+  // 初始化选中的目标分类
+  selectedDestination.value = null;
+
+  // 设置为批量操作
+  isBatchMove.value = true;
+
+  // 打开模态框
+  categoryMoveModalVisible.value = true;
+};
+
+// 处理移动确认
+const handleMoveConfirm = async () => {
+  if (selectedDestination.value === undefined && selectedDestination.value !== 0) {
+    message.warning('请选择目标分类');
+    return;
+  }
+
+  moveConfirmLoading.value = true;
+
+  try {
+    let response;
+
+    if (isBatchMove.value) {
+      // 批量移动 - 根据实际API要求调整参数名
+      response = await batchMoveCategoriesUsingPost({
+        ids: selectedRowKeys.value,  // 假设后端期望是ids而不是categoryIds
+        parentId: selectedDestination.value === 0 ? null : selectedDestination.value  // 假设后端期望是parentId而不是targetParentId
+      });
+    } else {
+      // 单个移动
+      response = await moveCategoryUsingPost({
+        id: currentSourceCategory.value.id,  // 修改为id
+        parentId: selectedDestination.value === 0 ? null : selectedDestination.value  // 修改为parentId
+      });
+    }
+
+    if (response.data && response.data.code === 200) {
+      message.success(isBatchMove.value ? '批量移动分类成功' : '分类移动成功');
+      categoryMoveModalVisible.value = false;
+
+      // 重新获取数据
+      await fetchCategoryData();
+
+      // 刷新统计数据
+      await fetchCategoryStatistics();
+
+      // 刷新树形结构
+      if (viewMode.value === 'tree') {
+        await fetchCategoryTree();
+      }
+
+      // 清除选中状态
+      if (isBatchMove.value) {
+        selectedRowKeys.value = [];
+      }
+    } else {
+      message.error((isBatchMove.value ? '批量移动' : '移动') + '分类失败: ' +
+          (response.data?.message || '未知错误'));
+    }
+  } catch (error) {
+    console.error('移动分类错误:', error);
+    message.error('移动分类失败，请稍后重试');
+  } finally {
+    moveConfirmLoading.value = false;
+  }
+};
+
+// 将扁平的类别选项转换为树形结构
+const formattedTreeData = computed(() => {
+  // 构建适用于树选择的数据结构
+  const buildTreeData = (data, parentId = null, level = 0) => {
+    const result = [];
+    const items = data.filter(item =>
+        (parentId === null && (!item.parentId || item.parentId === 0)) ||
+        (item.parentId === parentId)
+    );
+
+    items.forEach(item => {
+      const node = {
+        title: item.name,
+        key: item.id,
+        icon: getIconComponent(item.icon || 'AppstoreOutlined'),
+        type: item.type,
+        level,
+        dataRef: item,
+      };
+
+      const children = buildTreeData(availableCategoryOptions.value, item.id, level + 1);
+      if (children.length) {
+        node.children = children;
+      }
+
+      result.push(node);
+    });
+
+    return result;
+  };
+
+  return buildTreeData(availableCategoryOptions.value);
+});
+
+// 默认展开第一级节点
+const defaultTreeExpandedKeys = computed(() => {
+  // 获取所有顶级节点的ID
+  return availableCategoryOptions.value
+      .filter(item => !item.parentId || item.parentId === 0)
+      .map(item => item.id);
+});
+
+// 处理树节点选择
+const onDestinationSelect = (selectedKeys) => {
+  if (selectedKeys && selectedKeys.length > 0) {
+    selectedDestination.value = selectedKeys[0];
+  } else {
+    selectedDestination.value = null;
+  }
+};
+
+// 添加展开/折叠切换方法
+const toggleTreeExpand = () => {
+  if (isTreeCollapsed.value) {
+    // 展开全部
+    const allKeys = getAllTreeNodeKeys(categoryTreeData.value);
+    allTreeKeys.value = allKeys;
+    expandedKeys.value = [...allKeys];
+  } else {
+    // 折叠全部
+    expandedKeys.value = [];
+  }
+  isTreeCollapsed.value = !isTreeCollapsed.value;
+};
+
+// 展开事件处理函数
+const onTreeExpand = (keys) => {
+  expandedKeys.value = keys;
+  // 根据展开状态更新折叠标志
+  isTreeCollapsed.value = keys.length === 0 ||
+      (allTreeKeys.value.length > 0 && keys.length < allTreeKeys.value.length);
+};
+
+// 获取所有树节点的 key
+const getAllTreeNodeKeys = (treeNodes) => {
+  let keys = [];
+
+  const collect = (nodes) => {
+    if (!nodes || !nodes.length) return;
+
+    nodes.forEach(node => {
+      if (node.key) {
+        keys.push(node.key);
+      }
+
+      if (node.children && node.children.length) {
+        collect(node.children);
+      }
+    });
+  };
+
+  collect(treeNodes);
+  return keys;
+};
+
+// 监听树展开状态
+watch(defaultExpandedKeys, (newKeys) => {
+  // 根据展开的key数量判断当前状态
+  isTreeCollapsed.value = newKeys.length === 0 ||
+      (allTreeKeys.value.length > 0 && newKeys.length < allTreeKeys.value.length);
+}, {deep: true});
+
+// 组件挂载时获取数据
+onMounted(() => {
+  // 初始时清除选中状态
+  selectedDestination.value = undefined;
+  // 获取列表数据
+  fetchCategoryData();
+  // 获取统计数据
+  fetchCategoryStatistics();
+
+  // 初始化为折叠状态
+  expandedKeys.value = []; // 设置为空数组，表示没有展开的节点
+  isTreeCollapsed.value = true; // 设置折叠状态标志为true
+
+  if (viewMode.value === 'tree') {
+    // 初始化树形视图相关数据
+    expandedKeys.value = [];
+    isTreeCollapsed.value = true;
+  }
+
+  // 如果未设置类型，设置默认类型
+  if (!categoryForm.type) {
+    categoryForm.type = 'learning'; // 设置默认类型
+  }
+
+  // 监听表单类型变化
+  watch(() => categoryForm.type, (newType) => {
+    if (newType) {
+      handleTypeChange(newType);
+    }
+  });
+
+  // 监听图标变化
+  watch(() => categoryForm.icon, () => {
+    nextTick(() => {
+      const iconComponent = document.querySelector('.preview-icon .anticon');
+      if (iconComponent && categoryForm.type) {
+        iconComponent.style.color = getCategoryTypeColor(categoryForm.type);
+      }
+    });
+  });
+
+  // 初始化表单
+  initCategoryForm();
+});
 </script>
 
 <style scoped>
+
 /* 全局容器样式 */
 .category-management-container {
   padding: 24px;
+  background-color: #f5f7fa;
+}
+
+/* 页面顶部标题区域 */
+.tm-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5ff 100%);
+  padding: 24px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(101, 84, 192, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.tm-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #6554C0, #9F44D3);
+}
+
+.tm-header-left {
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.tm-icon-container {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 20px;
+  box-shadow: 0 4px 12px rgba(101, 84, 192, 0.2);
+}
+
+.tm-icon {
+  font-size: 28px;
+  color: white;
+}
+
+.tm-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tm-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.tm-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+}
+
+.tm-description {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.tm-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 1;
+}
+
+.tm-metrics {
+  display: flex;
+  background-color: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.tm-metric-item {
+  padding: 0 16px;
+  position: relative;
+}
+
+.tm-divider {
+  width: 1px;
+  height: 24px;
+  background-color: #f0f0f0;
+  margin: 8px 0;
+}
+
+.tm-metric-label {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.tm-metric-label .anticon {
+  margin-right: 6px;
+}
+
+.tm-metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
 }
 
 /* 数据统计卡片样式 */
@@ -1722,11 +3168,12 @@ function moveCategory(record) {
 
 .stat-card {
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   transition: all 0.3s;
   position: relative;
   border: none;
+  background: white;
 }
 
 .stat-card::before {
@@ -1741,7 +3188,7 @@ function moveCategory(record) {
 
 .stat-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 8px 30px rgba(101, 84, 192, 0.15);
+  box-shadow: 0 8px 30px rgba(101, 84, 192, 0.12);
 }
 
 .card-content {
@@ -1796,12 +3243,32 @@ function moveCategory(record) {
 }
 
 .stat-value {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #262626;
   line-height: 1.1;
   margin-bottom: 8px;
   position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.stat-trend {
+  font-size: 13px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+.trend-up {
+  color: #52C41A;
+}
+
+.trend-down {
+  color: #F5222D;
+}
+
+.trend-flat {
+  color: #8C8C8C;
 }
 
 .stat-title {
@@ -1889,9 +3356,10 @@ function moveCategory(record) {
 
 /* 搜索表单样式 */
 .search-form-card {
-  margin-bottom: 32px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: white;
 }
 
 .search-form-container {
@@ -1905,33 +3373,24 @@ function moveCategory(record) {
 .search-form-items {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start; /* 修改为flex-start确保所有元素从顶部对齐 */
+  align-items: flex-start;
   width: 100%;
   padding: 12px 0;
 }
 
-
-/* 确保表单项和按钮组具有相同的底部边距 */
 .search-form-items .ant-form-item,
 .search-buttons {
-  margin-bottom: 16px !important; /* 使用!important确保覆盖可能的冲突样式 */
+  margin-bottom: 16px !important;
 }
 
-
-/* 确保查询和重置按钮保持水平排列 */
 .search-buttons {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 0; /* 移除可能导致错位的顶部边距 */
-  height: 32px; /* 设置与表单控件相同的高度 */
-  align-self: flex-end; /* 将按钮组对齐到底部，与输入项的底部对齐 */
+  margin-top: 0;
+  height: 32px;
+  align-self: flex-end;
 }
-
-.ant-form-item-label {
-  padding-bottom: 8px; /* 确保所有标签具有一致的底部内边距 */
-}
-
 
 /* 搜索按钮样式 */
 .search-button {
@@ -1949,9 +3408,12 @@ function moveCategory(record) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-  padding: 8px 0;
+  margin-bottom: 24px;
+  padding: 16px 20px;
   width: 100%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .operation-left {
@@ -1962,99 +3424,335 @@ function moveCategory(record) {
 .operation-right {
   display: flex;
   align-items: center;
-  margin-left: auto; /* 确保视图切换按钮组完全靠右 */
+  margin-left: auto;
 }
 
-/* 树形视图样式 */
+/* 新的树形视图样式 */
 .tree-view-container {
-  display: flex;
-  flex-direction: column;
   margin-bottom: 24px;
 }
 
 .tree-card {
-  height: 100%;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  height: 100%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .tree-card-title {
   display: flex;
   align-items: center;
   font-weight: 500;
+  color: #262626;
 }
 
-.tree-card-title .anticon {
-  margin-right: 8px;
+.tree-icon {
   color: #6554C0;
+  font-size: 18px;
+  margin-right: 8px;
 }
 
-.tree-header {
-  margin-bottom: 16px;
+.tree-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.tree-search-wrapper {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tree-search {
+  border-radius: 8px;
 }
 
 .tree-content {
   min-height: 300px;
   max-height: 600px;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 8px 16px;
+  flex: 1;
+}
+
+.tree-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tree-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.tree-content::-webkit-scrollbar-thumb {
+  background: #d5d5d5;
+  border-radius: 4px;
+}
+
+.tree-content::-webkit-scrollbar-thumb:hover {
+  background: #b5b5b5;
+}
+
+.tree-footer {
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  background-color: #fafafa;
+}
+
+/* 自定义树节点样式 */
+.tree-node-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 6px 0;
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.tree-node-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .tree-node-title {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
   margin-right: 8px;
 }
 
-.tree-node-action {
-  opacity: 0;
-  transition: opacity 0.3s;
+.tree-node-counter {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 6px;
+  height: 20px;
+  line-height: 20px;
+  border-radius: 10px;
+  flex-shrink: 0;
 }
 
-:deep(.ant-tree-node-content-wrapper:hover) .tree-node-action {
+.tree-node-actions {
+  visibility: hidden;
+  transition: visibility 0.2s, opacity 0.2s;
+  opacity: 0;
+}
+
+.tree-node-wrapper:hover .tree-node-actions {
+  visibility: visible;
   opacity: 1;
 }
 
-/* 分类详情面板样式 */
+.tree-node-action-btn {
+  color: #8c8c8c;
+}
+
+.tree-node-action-btn:hover {
+  color: #6554C0;
+  background-color: rgba(101, 84, 192, 0.08);
+}
+
+.tree-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 16px;
+}
+
+/* 详情面板样式 */
 .category-detail-panel {
   height: 100%;
 }
 
-.detail-panel-title {
+.detail-card {
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: white;
   display: flex;
-  align-items: center;
-  font-weight: 500;
+  flex-direction: column;
 }
 
-.detail-panel-title .anticon {
-  margin-right: 8px;
-  color: #6554C0;
+.detail-panel-header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.detail-panel-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.detail-panel-title {
+  flex: 1;
+}
+
+.detail-panel-title h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 8px 0;
+}
+
+.detail-panel-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-panel-path {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.detail-panel-path .anticon {
+  margin-right: 6px;
 }
 
 .detail-panel-content {
-  padding: 16px 0;
+  padding: 0 24px 24px;
+  overflow: auto;
+  flex: 1;
 }
 
-.detail-action-bar {
-  margin: 24px 0;
-  display: flex;
-  justify-content: flex-end;
+.detail-panel-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 24px; /* 增加与上方内容的间距 */
+  margin-bottom: 24px;
 }
 
-.category-empty-detail {
+.category-detail-card {
+  position: relative;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f9f9ff 100%);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+  border: 1px solid rgba(101, 84, 192, 0.08);
   height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  border-radius: 8px;
-  padding: 48px;
+  flex-direction: column;
 }
 
-/* 层级指示器样式 */
+.detail-metric-card {
+  background-color: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.03);
+  transition: all 0.3s;
+  height: 90px; /* 统一卡片高度，确保时间显示不会影响卡片布局 */
+}
+
+.detail-metric-value {
+  font-size: 16px; /* 稍微调小字体，确保长内容不会换行 */
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 4px;
+  white-space: nowrap; /* 防止内容换行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.detail-metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 12px;
+  font-size: 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.detail-metric-info {
+  flex: 1;
+}
+
+.detail-metric-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 4px;
+}
+
+.detail-metric-label {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.detail-panel-info {
+  margin-bottom: 24px;
+}
+
+.detail-collapse {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.ant-collapse-header) {
+  font-weight: 500;
+  color: #262626 !important;
+  background-color: #f9fafb;
+}
+
 .level-indicator {
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
 .level-dot {
@@ -2065,174 +3763,392 @@ function moveCategory(record) {
   margin-right: 4px;
 }
 
-/* 自定义分类模态框样式 */
-.custom-category-modal :deep(.ant-modal-header) {
-  background: linear-gradient(to right, #6554C0, #8A7AD8);
+.description-content {
+  padding: 8px 12px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #595959;
+  white-space: pre-wrap;
+}
+
+.related-items-container,
+.children-categories-container {
+  padding: 12px 0;
+}
+
+.related-items-list {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.content-item-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.content-item-time {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.content-item-time .anticon {
+  margin-right: 4px;
+}
+
+.child-category-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 1px solid #f0f0f0;
+}
+
+.child-category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(101, 84, 192, 0.12);
+  border-color: #d9d3f3;
+}
+
+.child-category-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+.child-category-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.child-category-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.child-category-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.child-category-count {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: flex;
+  align-items: center;
+}
+
+.child-category-count .anticon {
+  margin-right: 4px;
+}
+
+.detail-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.category-empty-detail {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.empty-detail-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 64px 24px;
+  max-width: 400px;
+}
+
+.empty-detail-icon {
+  font-size: 64px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+.empty-detail-content h3 {
+  font-size: 18px;
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.empty-detail-content p {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin-bottom: 24px;
+}
+
+/* 表格视图样式 */
+.category-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.category-name-cell {
+  display: flex;
+  align-items: center;
+}
+
+.category-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 12px;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* 分类管理弹窗样式 */
+.category-management-modal :deep(.ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.category-management-modal :deep(.ant-modal-header) {
   padding: 16px 24px;
   border-bottom: none;
-  border-radius: 8px 8px 0 0;
 }
 
-.custom-category-modal :deep(.ant-modal-title) {
-  color: white;
-  font-weight: 600;
+.category-management-modal :deep(.ant-modal-title) {
   font-size: 18px;
+  font-weight: 600;
+  color: #262626;
 }
 
-.custom-category-modal :deep(.ant-modal-close) {
-  color: white;
-}
-
-.custom-category-modal :deep(.ant-modal-body) {
+.category-management-modal :deep(.ant-modal-body) {
   padding: 0 24px 24px;
 }
 
-.custom-category-modal :deep(.ant-modal-content) {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+.category-management-modal :deep(.ant-modal-close) {
+  color: rgba(0, 0, 0, 0.45);
 }
 
 /* 模态框头部样式 */
 .modal-header {
   display: flex;
   align-items: center;
-  padding: 20px 0 4px;
-}
-
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 16px;
-  color: white;
-  font-size: 24px;
-  box-shadow: 0 4px 10px rgba(101, 84, 192, 0.2);
+  padding: 20px 0 0;
 }
 
 .header-title h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #262626;
 }
 
 .header-title p {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #888;
+  color: #8c8c8c;
 }
 
-/* 分类选项卡样式 */
-.category-tabs {
+/* 表单布局样式 */
+.form-row-container {
   display: flex;
-  border-bottom: 1px solid #f0f0f0;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  margin: 0 -12px;
 }
 
-.tab-item {
-  padding: 12px 20px;
+.form-column {
+  flex: 0 0 50%;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.column-header {
   display: flex;
   align-items: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  border-bottom: 2px solid transparent;
-  color: #888;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #f0f0f0;
+  color: #6554c0;
+  font-weight: 600;
 }
 
-.tab-item .anticon {
+.column-header .anticon {
   margin-right: 8px;
   font-size: 16px;
 }
 
-.tab-item.active {
-  color: #6554C0;
-  border-bottom: 2px solid #6554C0;
-  font-weight: 500;
-}
-
-.tab-item:hover {
-  color: #6554C0;
-}
-
-.form-content {
-  min-height: 320px;
-  margin-bottom: 16px;
-}
-
-.tab-panel {
-  padding: 8px 0;
-}
-
-/* 表单帮助文本 */
-.form-item-help {
+/* 表单提示样式 */
+.form-hint {
   font-size: 12px;
-  color: #888;
+  color: #8c8c8c;
   margin-top: 4px;
 }
 
-/* 分类预览样式 */
-.category-preview {
-  border: 1px solid #f0f0f0;
+/* 类型选择样式 */
+.type-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.type-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+/* 图标选择器样式 */
+.icon-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-icon-preview {
+  width: 36px;
+  height: 36px;
+  background-color: #f5f5f5;
   border-radius: 8px;
-  overflow: hidden;
-}
-
-.preview-header {
-  padding: 12px 16px;
-  background-color: #f9f9f9;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 14px;
-  color: #666;
-}
-
-.preview-content {
-  padding: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 140px;
-  background: white;
+  font-size: 20px;
 }
 
-.preview-category {
+/* 预览区域样式 */
+.preview-section {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 24px;
+  border: 1px solid #f0f0f0;
+}
+
+.preview-header {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 400px;
-}
-
-.preview-category-icon {
-  font-size: 36px;
-  margin-bottom: 16px;
-  transition: all 0.3s;
-}
-
-.preview-category-info {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   margin-bottom: 16px;
-}
-
-.preview-category-name {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 500;
+  color: #262626;
+}
+
+.preview-header .anticon {
+  margin-right: 8px;
+  color: #6554c0;
+}
+
+.preview-content {
+  padding: 16px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.preview-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.preview-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
+}
+
+.preview-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.preview-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
-.preview-category-description {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-  line-height: 1.5;
+.preview-path {
+  font-size: 13px;
+  color: #8c8c8c;
 }
 
+.preview-desc {
+  font-size: 13px;
+  color: #8c8c8c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 底部按钮区域 */
 .form-footer {
   margin-top: 24px;
   display: flex;
@@ -2241,111 +4157,667 @@ function moveCategory(record) {
   padding-top: 16px;
 }
 
-/* 标签管理专用样式 - 使用tm-前缀避免冲突 */
-.tm-page-container {
-  padding: 0; /* 移除内边距，让子元素决定间距 */
-}
-
-.tm-header {
-  background: linear-gradient(135deg, #ffffff 0%, #f6f5ff 100%);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(101, 84, 192, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.tm-header-left {
-  display: flex;
-  align-items: center;
-}
-
-.tm-icon-container {
-  width: 52px;
-  height: 52px;
-  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
+/* 移动分类模态框样式 */
+.category-move-modal :deep(.ant-modal-content) {
   border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(101, 84, 192, 0.15);
+}
+
+.category-move-modal {
+  width: 680px !important;
+}
+
+.category-move-modal :deep(.ant-modal-close) {
+  color: rgba(255, 255, 255, 0.85);
+  top: 14px;
+  right: 16px;
+  z-index: 10;
+  transition: all 0.3s;
+}
+
+.category-move-modal :deep(.ant-modal-close:hover) {
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.move-container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 头部样式 */
+.move-header {
+  position: relative;
+  padding: 20px 32px;
+  overflow: hidden;
+}
+
+.header-bg-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(120deg, #6554C0, #9F44D3);
+  z-index: 0;
+}
+
+.header-bg-decoration::after {
+  content: '';
+  position: absolute;
+  right: -50px;
+  bottom: -50px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 1;
+}
+
+.header-bg-decoration::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 1;
+}
+
+.header-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
   display: flex;
   justify-content: center;
   align-items: center;
+  font-size: 24px;
+  color: white;
   margin-right: 20px;
   box-shadow: 0 4px 12px rgba(101, 84, 192, 0.2);
 }
 
-.tm-icon {
-  font-size: 28px;
+.header-text {
   color: white;
 }
 
-.tm-header-info {
-  display: flex;
-  flex-direction: column;
+.modal-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
 }
 
-.tm-title-row {
+.modal-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* 源分类信息区域 */
+.source-section {
+  padding: 12px 32px;
+  background-color: #f9fafb;
+}
+
+.source-label {
+  font-size: 14px;
+  color: #6e7191;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.source-card {
+  padding: 16px;
+  background-color: white;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s;
+}
+
+.source-card:hover {
+  box-shadow: 0 4px 16px rgba(101, 84, 192, 0.08);
+}
+
+.source-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 16px;
+  font-size: 20px;
+}
+
+.source-info {
+  flex: 1;
+}
+
+.source-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
   margin-bottom: 6px;
 }
 
-.tm-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
+.source-path {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.tm-description {
+.path-text {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #6e7191;
+}
+
+.path-text .anticon {
+  margin-right: 6px;
   font-size: 14px;
-  color: #666;
-  margin: 0;
 }
 
-.tm-header-right {
+.selected-categories {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
 }
 
-.tm-metrics {
+.category-tag {
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.more-tag {
+  background: #f0f0f0;
+  color: #6e7191;
+  border: none;
+}
+
+/* 目标选择区域 */
+.destination-section {
+  padding: 12px 32px;
+}
+
+.section-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 12px;
   display: flex;
-  background-color: white;
+  align-items: center;
+}
+
+.section-label .anticon {
+  margin-right: 10px;
+  font-size: 16px;
+  color: #6554C0;
+}
+
+.secondary-label {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+/* 顶级分类选项 */
+.top-level-option {
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
   border-radius: 8px;
-  padding: 8px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.tm-metric-item {
-  padding: 0 16px;
+  background-color: white;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s;
   position: relative;
 }
 
-.tm-divider {
-  width: 1px;
-  height: 24px;
-  background-color: #f0f0f0;
-  margin: 8px 0;
+.top-level-option:hover {
+  background-color: #f9f5ff;
+  border-color: #ddd6f3;
 }
 
-.tm-metric-label {
+.top-level-option.selected {
+  background-color: #f0eaff;
+  border-color: #c0b6e9;
+  box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
+}
+
+.option-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #52C41A, #95DE64);
   display: flex;
+  justify-content: center;
   align-items: center;
-  font-size: 12px;
-  color: #8c8c8c;
+  margin-right: 16px;
+  font-size: 18px;
+  color: white;
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
   margin-bottom: 4px;
 }
 
-.tm-metric-label .anticon {
-  margin-right: 6px;
+.option-desc {
+  font-size: 13px;
+  color: #6e7191;
 }
 
-.tm-metric-value {
+.option-arrow {
+  color: #d9d9d9;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.top-level-option:hover .option-arrow,
+.top-level-option.selected .option-arrow {
+  color: #6554C0;
+  transform: translateX(4px);
+}
+
+/* 警告提示区域 */
+.move-info-note {
+  padding: 0 32px 12px;
+}
+
+.alert-content {
+  font-size: 13px;
+  color: #0958d9;
+}
+
+/* 底部操作区域 */
+.modal-footer {
+  padding: 12px 32px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  position: relative;
+  bottom: auto;
+}
+
+.categories-tree-container {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background-color: white;
+  padding: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.categories-tree-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.categories-tree-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+.categories-tree-container::-webkit-scrollbar-thumb {
+  background: #d5d5d5;
+  border-radius: 6px;
+}
+
+.categories-tree-container::-webkit-scrollbar-thumb:hover {
+  background: #b5b5b5;
+}
+
+.tree-node-container {
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.node-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+.node-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-title {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.node-tag {
+  font-size: 12px;
+  padding: 0 4px;
+  height: 20px;
+  line-height: 20px;
+}
+
+/*卡片视图样式*/
+/* 卡片视图容器 */
+.card-view-container {
+  margin-bottom: 24px;
+}
+
+.category-cards-wrapper {
+  margin-top: 24px;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+  text-align: center;
+  margin-top: 32px;
+  padding: 16px 0;
+}
+
+/* 分类卡片主样式 */
+.category-detail-card {
+  position: relative;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f9f9ff 100%);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+  border: 1px solid rgba(101, 84, 192, 0.08);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.category-detail-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(101, 84, 192, 0.12);
+}
+
+.card-decoration-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  z-index: 1;
+}
+
+.card-content {
+  display: flex;
+  padding: 24px;
+  position: relative;
+}
+
+.category-icon-container {
+  position: relative;
+  margin-right: 24px;
+  flex-shrink: 0;
+}
+
+.category-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 28px;
+  color: white;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 6px 16px rgba(255, 107, 139, 0.3);
+}
+
+.icon-decoration {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+}
+
+.category-info {
+  flex: 1;
+  min-width: 0;
+  padding-right: 24px;
+}
+
+.category-title-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.category-title {
   font-size: 20px;
   font-weight: 600;
-  color: #333;
+  color: #303133;
+  margin: 0;
+  margin-right: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-path {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 10px;
+}
+
+.category-path .anticon {
+  margin-right: 6px;
+  font-size: 14px;
+  color: #6554C0;
+}
+
+.category-description {
+  font-size: 14px;
+  color: #606266;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
+}
+
+.category-stats {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 24px;
+  border-left: 1px dashed rgba(101, 84, 192, 0.15);
+  flex-shrink: 0;
+  width: 180px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 12px;
+  font-size: 18px;
+  color: white;
+}
+
+.content-icon {
+  background: linear-gradient(135deg, #4ECDC4 0%, #26A69A 100%);
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.2);
+}
+
+.children-icon {
+  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
+  box-shadow: 0 4px 12px rgba(101, 84, 192, 0.2);
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.stat-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(101, 84, 192, 0.05), rgba(101, 84, 192, 0.15), rgba(101, 84, 192, 0.05));
+  margin: 8px 0 12px;
+}
+
+.date-item {
+  font-size: 13px;
+  color: #909399;
+}
+
+.date-item .anticon {
+  color: #6554C0;
+  margin-right: 8px;
+}
+
+.stat-date {
+  flex: 1;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 24px;
+  background-color: rgba(249, 249, 255, 0.7);
+  border-top: 1px solid rgba(101, 84, 192, 0.08);
+  margin-top: auto;
+}
+
+.action-btn {
+  margin-left: 8px;
+  color: #606266;
+}
+
+.action-btn:hover {
+  color: #6554C0;
+  background-color: rgba(101, 84, 192, 0.08);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .card-content {
+    flex-direction: column;
+  }
+
+  .category-icon-container {
+    margin-bottom: 16px;
+  }
+
+  .category-stats {
+    width: 100%;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px dashed rgba(101, 84, 192, 0.15);
+    padding-top: 16px;
+    margin-top: 16px;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    width: 45%;
+    margin-right: 5%;
+  }
+
+  .stat-divider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .date-item {
+    width: 100%;
+  }
+}
+
+/* 调整树形组件样式 */
+:deep(.ant-tree-treenode) {
+  padding: 1px 0 !important;
+}
+
+:deep(.ant-tree-node-content-wrapper:hover) {
+  background-color: #f9f5ff;
+}
+
+:deep(.ant-tree-node-selected) {
+  background-color: #f0eaff !important;
+}
+
+:deep(.ant-tree-switcher) {
+  color: #6554C0;
+}
+
+:deep(.ant-tree-show-line .ant-tree-indent-unit::before) {
+  border-color: #e1e1e1;
+}
+
+/* 自定义Tree组件样式 */
+.custom-tree :deep(.ant-tree-node-content-wrapper) {
+  display: flex;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.custom-tree :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
+  background-color: #f0eaff;
 }
 
 /* 响应式设计 */
@@ -2372,23 +4844,13 @@ function moveCategory(record) {
 
   .operation-right {
     margin-top: 16px;
-    width: 100%; /* 在小屏幕上占满宽度 */
-    justify-content: flex-end; /* 小屏幕时依然保持右对齐 */
-    margin-left: 0; /* 小屏幕时重置margin-left */
-  }
-
-  .tree-view-container .ant-row {
-    flex-direction: column;
-  }
-
-  .tree-view-container .ant-col {
     width: 100%;
-    max-width: 100%;
-    flex: 0 0 100%;
+    justify-content: flex-end;
+    margin-left: 0;
   }
 
-  .category-detail-panel {
-    margin-top: 24px;
+  .detail-panel-metrics {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -2405,9 +4867,47 @@ function moveCategory(record) {
     font-size: 20px;
   }
 
-  .custom-category-modal {
-    width: 95% !important;
-    max-width: 500px;
+  .form-column {
+    flex: 0 0 100%;
+  }
+
+  .tree-view-container .ant-row {
+    flex-direction: column;
+  }
+
+  .tree-view-container .ant-col {
+    width: 100%;
+    max-width: 100%;
+    flex: 0 0 100%;
+  }
+
+  .category-detail-panel {
+    margin-top: 24px;
+  }
+
+  .detail-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-panel-icon {
+    margin-bottom: 16px;
+    margin-right: 0;
+  }
+
+  .detail-panel-metrics {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .detail-action-bar {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }
 
@@ -2441,5 +4941,15 @@ function moveCategory(record) {
   .operation-left .ant-btn {
     margin-bottom: 8px;
   }
+
+  .move-header,
+  .source-section,
+  .destination-section,
+  .move-info-note,
+  .modal-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 }
 </style>
+  

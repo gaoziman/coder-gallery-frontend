@@ -49,14 +49,252 @@ declare namespace API {
     id: number;
   };
 
+  type BatchCategoryMoveRequest = {
+    /** 分类ID列表 */
+    ids: number[];
+    /** 新的父分类ID */
+    parentId: number;
+  };
+
+  type batchCreateCategoryRelationsUsingPOSTParams = {
+    /** 分类ID列表 */
+    categoryIds?: number[];
+    /** 内容ID */
+    contentId?: number;
+    /** 内容类型 */
+    contentType?: string;
+  };
+
   type BatchDeleteRequest = {
     /** ID列表 */
     ids: number[];
   };
 
+  type BatchDeleteRequest1 = {
+    /** ID列表 */
+    ids: number[];
+  };
+
+  type CategoryCreateRequest = {
+    /** 分类描述 */
+    description?: string;
+    /** 分类图标 */
+    icon?: string;
+    /** 分类名称 */
+    name: string;
+    /** 父分类ID */
+    parentId?: number;
+    /** 排序 */
+    sortOrder?: number;
+    /** 状态 */
+    status?: string;
+    /** 分类类型 */
+    type: string;
+    /** URL名称 */
+    urlName?: string;
+  };
+
+  type CategoryExportRequest = {
+    /** 是否导出所有分类 */
+    exportAll?: boolean;
+    /** 导出格式，支持xlsx, csv等 */
+    format?: string;
+    /** 要导出的分类ID列表 */
+    ids?: number[];
+  };
+
+  type CategoryMoveRequest = {
+    /** 分类ID */
+    id: number;
+    /** 新的父分类ID */
+    parentId: number;
+  };
+
+  type CategoryStatisticsVO = {
+    /** 激活状态的分类数量 */
+    activeCategories?: number;
+    /** 分类总增长率(与上月相比) */
+    categoryGrowthRate?: number;
+    /** 禁用状态的分类数量 */
+    disabledCategories?: number;
+    /** 最大分类层级 */
+    maxCategoryLevel?: number;
+    /** 最多内容的分类ID */
+    mostContentsCategory?: number;
+    /** 最多内容的分类名称 */
+    mostContentsCategoryName?: string;
+    /** 最多内容的分类内容数 */
+    mostContentsCount?: number;
+    /** 本月新增分类数 */
+    newCategoriesOfMonth?: number;
+    /** 今日新增分类数 */
+    newCategoriesOfToday?: number;
+    /** 顶级分类数量 */
+    topLevelCategories?: number;
+    /** 分类总数 */
+    totalCategories?: number;
+  };
+
+  type CategoryTreeVO = {
+    /** 子分类列表 */
+    children?: CategoryTreeVO[];
+    /** 内容数量 */
+    contentCount?: number;
+    /** 分类描述 */
+    description?: string;
+    /** 分类图标 */
+    icon?: string;
+    /** 分类ID */
+    id?: number;
+    /** 层级 */
+    level?: number;
+    /** 分类名称 */
+    name?: string;
+    /** 父分类ID */
+    parentId?: number;
+    /** 路径 */
+    path?: string;
+    /** 排序 */
+    sortOrder?: number;
+    /** 状态 */
+    status?: string;
+    /** 分类类型 */
+    type?: string;
+    /** URL名称 */
+    urlName?: string;
+  };
+
+  type CategoryUpdateRequest = {
+    /** 分类描述 */
+    description?: string;
+    /** 分类图标 */
+    icon?: string;
+    /** 分类ID */
+    id: number;
+    /** 分类名称 */
+    name?: string;
+    /** 排序 */
+    sortOrder?: number;
+    /** 状态 */
+    status?: string;
+    /** URL名称 */
+    urlName?: string;
+  };
+
+  type CategoryVO = {
+    /** 内容数量 */
+    contentCount?: number;
+    /** 创建时间 */
+    createTime?: string;
+    /** 创建用户 */
+    createUser?: number;
+    /** 创建用户名 */
+    createUsername?: string;
+    /** 分类描述 */
+    description?: string;
+    /** 分类图标 */
+    icon?: string;
+    /** 分类ID */
+    id?: number;
+    /** 层级 */
+    level?: number;
+    /** 分类名称 */
+    name?: string;
+    /** 父分类ID */
+    parentId?: number;
+    /** 父分类名称 */
+    parentName?: string;
+    /** 路径 */
+    path?: string;
+    /** 排序 */
+    sortOrder?: number;
+    /** 状态 */
+    status?: string;
+    /** 分类类型 */
+    type?: string;
+    /** 更新时间 */
+    updateTime?: string;
+    /** 更新用户 */
+    updateUser?: number;
+    /** 更新用户名 */
+    updateUsername?: string;
+    /** URL名称 */
+    urlName?: string;
+  };
+
+  type countContentsByCategoryUsingGETParams = {
+    /** 分类ID */
+    categoryId?: number;
+    /** 内容类型 */
+    contentType?: string;
+  };
+
+  type createCategoryRelationUsingPOSTParams = {
+    /** 分类ID */
+    categoryId?: number;
+    /** 内容ID */
+    contentId?: number;
+    /** 内容类型 */
+    contentType?: string;
+  };
+
+  type deleteAllRelationsByContentUsingDELETEParams = {
+    /** 内容ID */
+    contentId?: number;
+    /** 内容类型 */
+    contentType?: string;
+  };
+
+  type deleteCategoryRelationUsingDELETEParams = {
+    /** 分类ID */
+    categoryId?: number;
+    /** 内容ID */
+    contentId?: number;
+    /** 内容类型 */
+    contentType?: string;
+  };
+
+  type deleteCategoryUsingDELETEParams = {
+    /** 分类ID */
+    id?: number;
+  };
+
   type deleteUserUsingDELETEParams = {
     /** ID */
     id: number;
+  };
+
+  type getCategoryByIdUsingGETParams = {
+    /** 分类ID */
+    id?: number;
+  };
+
+  type getCategoryIdsByContentUsingGETParams = {
+    /** 内容ID */
+    contentId?: number;
+    /** 内容类型 */
+    contentType?: string;
+  };
+
+  type getCategoryRelatedItemsUsingGETParams = {
+    /** 分类ID */
+    categoryId?: number;
+    /** 内容类型 */
+    contentType?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+  };
+
+  type getCategoryTreeForFrontendUsingGETParams = {
+    /** 分类类型 */
+    type?: string;
+  };
+
+  type getCategoryTreeUsingGETParams = {
+    /** 分类类型 */
+    type?: string;
   };
 
   type getUserByIdUsingGETParams = {
@@ -67,6 +305,32 @@ declare namespace API {
   type getUserVOByIdUsingGETParams = {
     /** id */
     id: number;
+  };
+
+  type listCategoriesByTypeUsingGETParams = {
+    /** 分类类型 */
+    type?: string;
+  };
+
+  type listCategoryByPageUsingGETParams = {
+    /** 创建结束时间 */
+    createTimeEnd?: string;
+    /** 创建开始时间 */
+    createTimeStart?: string;
+    /** 层级 */
+    level?: number;
+    /** 分类名称 */
+    name?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 父分类ID */
+    parentId?: number;
+    /** 状态 */
+    status?: string;
+    /** 分类类型 */
+    type?: string;
   };
 
   type listUserByPageUsingGETParams = {
@@ -187,6 +451,26 @@ declare namespace API {
     viewName?: string;
   };
 
+  type PageResultCategoryVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: CategoryVO[];
+    total?: number;
+  };
+
+  type PageResultRelatedItemVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: RelatedItemVO[];
+    total?: number;
+  };
+
   type PageResultUserVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
@@ -197,9 +481,68 @@ declare namespace API {
     total?: number;
   };
 
+  type RelatedItemVO = {
+    /** 内容ID */
+    contentId?: number;
+    /** 内容类型 */
+    contentType?: string;
+    /** 创建时间 */
+    createTime?: string;
+    /** 创建用户 */
+    createUser?: number;
+    /** 创建用户名 */
+    createUsername?: string;
+    /** 内容描述 */
+    description?: string;
+    /** 关联项ID */
+    id?: number;
+    /** 内容状态 */
+    status?: string;
+    /** 内容缩略图 */
+    thumbnail?: string;
+    /** 内容标题 */
+    title?: string;
+  };
+
   type ResultBoolean_ = {
     code?: number;
     data?: boolean;
+    message?: string;
+  };
+
+  type ResultCategoryStatisticsVO_ = {
+    code?: number;
+    data?: CategoryStatisticsVO;
+    message?: string;
+  };
+
+  type ResultCategoryVO_ = {
+    code?: number;
+    data?: CategoryVO;
+    message?: string;
+  };
+
+  type ResultInt_ = {
+    code?: number;
+    data?: number;
+    message?: string;
+  };
+
+  type ResultListCategoryTreeVO_ = {
+    code?: number;
+    data?: CategoryTreeVO[];
+    message?: string;
+  };
+
+  type ResultListCategoryVO_ = {
+    code?: number;
+    data?: CategoryVO[];
+    message?: string;
+  };
+
+  type ResultListLong_ = {
+    code?: number;
+    data?: number[];
     message?: string;
   };
 
@@ -215,9 +558,27 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultPageResultCategoryVO_ = {
+    code?: number;
+    data?: PageResultCategoryVO_;
+    message?: string;
+  };
+
+  type ResultPageResultRelatedItemVO_ = {
+    code?: number;
+    data?: PageResultRelatedItemVO_;
+    message?: string;
+  };
+
   type ResultPageResultUserVO_ = {
     code?: number;
     data?: PageResultUserVO_;
+    message?: string;
+  };
+
+  type ResultString_ = {
+    code?: number;
+    data?: string;
     message?: string;
   };
 
@@ -236,6 +597,15 @@ declare namespace API {
   type unbanUserUsingPOSTParams = {
     /** id */
     id: number;
+  };
+
+  type updateContentCategoriesUsingPUTParams = {
+    /** 分类ID列表 */
+    categoryIds?: number[];
+    /** 内容ID */
+    contentId?: number;
+    /** 内容类型 */
+    contentType?: string;
   };
 
   type UserLoginRequest = {

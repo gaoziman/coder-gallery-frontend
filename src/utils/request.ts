@@ -38,7 +38,6 @@ myAxios.interceptors.request.use(
         // 添加token到请求头
         if (token) {
             config.headers[tokenName] = token;
-            console.log(`Adding token to request: ${tokenName}=${token.substring(0, 10)}...`);
         }
 
         return config;
