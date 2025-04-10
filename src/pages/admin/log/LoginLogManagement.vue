@@ -644,7 +644,7 @@ import {
   ref,
   reactive,
   computed,
-  onMounted
+  onMounted, onUnmounted
 } from 'vue';
 import {
   SearchOutlined,
@@ -670,7 +670,8 @@ import {
   LoginOutlined,
   SafetyOutlined,
   WindowsOutlined,
-  ChromeOutlined, AndroidOutlined
+  ChromeOutlined,
+  AndroidOutlined
 } from '@ant-design/icons-vue';
 import {message, Modal} from 'ant-design-vue';
 import dayjs from 'dayjs';
@@ -679,12 +680,63 @@ import {
   getLoginLogDetailUsingGet,
   deleteLoginLogUsingDelete,
   batchDeleteLoginLogsUsingDelete,
-  clearLoginLogsUsingDelete,
   exportLoginLogsUsingGet,
   listLoginLogsUsingGet,
   getLoginStatisticsUsingGet
 } from '@/api/denglurizhiguanli';
 import UserAvatar from "@/components/common/UserAvatar.vue"; // 导入API函数
+
+// 视图模式
+const viewMode = ref('list');
+const analysisTimeRange = ref('30');
+
+// 选中行数据
+const selectedRowKeys = ref([]);
+const hasSelected = computed(() => selectedRowKeys.value.length > 0);
+
+// 弹窗状态
+const logDetailVisible = ref(false);
+const userAnalysisVisible = ref(false);
+const selectedLog = ref(null);
+
+// 排序字段和顺序
+const sortField = ref('');
+const sortOrder = ref('');
+
+// 添加定时器引用
+const statsRefreshTimer = ref(null);
+const isRefreshing = ref(false);
+const lastRefreshTime = ref(null);
+
+// 日志数据和加载状态
+const loading = ref(false);
+const logData = ref([]);
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
+  showSizeChanger: true,
+  showQuickJumper: true,
+  showTotal: (total) => `共 ${total} 条`,
+  // 添加下面的页码大小选项配置
+  pageSizeOptions: ['10', '20', '50', '100'],
+  // 添加onShowSizeChange回调函数
+  onShowSizeChange: (current, size) => {
+    pagination.current = 1; // 切换每页条数时，重置为第一页
+    pagination.pageSize = size;
+    fetchLogData(); // 重新获取数据
+  }
+});
+
+// 登录统计数据
+const loginStatistics = ref({
+  todayLoginCount: 0,
+  todayFailCount: 0,
+  weekLoginCount: 0,
+  monthLoginCount: 0,
+  todayLoginUsers: 0,
+});
+
 
 // 表格列定义
 const columns = [
@@ -742,25 +794,7 @@ const columns = [
   }
 ];
 
-// 日志数据和加载状态
-const loading = ref(false);
-const logData = ref([]);
-const pagination = reactive({
-  current: 1,
-  pageSize: 10,
-  total: 0,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total) => `共 ${total} 条`,
-  // 添加下面的页码大小选项配置
-  pageSizeOptions: ['10', '20', '50', '100'],
-  // 添加onShowSizeChange回调函数
-  onShowSizeChange: (current, size) => {
-    pagination.current = 1; // 切换每页条数时，重置为第一页
-    pagination.pageSize = size;
-    fetchTagData(); // 重新获取数据
-  }
-});
+
 
 // 搜索表单数据
 const searchForm = reactive({
@@ -773,57 +807,6 @@ const searchForm = reactive({
   browser: undefined,
 });
 
-// 视图模式
-const viewMode = ref('list');
-const analysisTimeRange = ref('30');
-
-// 选中行数据
-const selectedRowKeys = ref([]);
-const hasSelected = computed(() => selectedRowKeys.value.length > 0);
-
-// 弹窗状态
-const logDetailVisible = ref(false);
-const userAnalysisVisible = ref(false);
-const selectedLog = ref(null);
-
-// 排序字段和顺序
-const sortField = ref('');
-const sortOrder = ref('');
-
-// 登录统计数据
-const loginStatistics = ref({
-  todayLoginCount: 0,
-  todayFailCount: 0,
-  weekLoginCount: 0,
-  monthLoginCount: 0,
-  todayLoginUsers: 0,
-});
-
-// 根据用户名判断用户角色
-function getUserRole(role) {
-  if (!role) return '未知';
-
-  const roleMap = {
-    'user': '普通用户',
-    'admin': '管理员',
-    'superadmin': '超级管理员'
-  };
-
-  return roleMap[role] || '未知用户';
-}
-
-// 根据角色返回样式类名
-function getUserRoleClass(role) {
-  if (!role) return 'role-unknown';
-
-  const classMap = {
-    'user': 'role-user',
-    'admin': 'role-admin',
-    'superadmin': 'role-superadmin'
-  };
-
-  return classMap[role] || 'role-unknown';
-}
 
 // 顶部卡片数据
 const statCards = reactive([
@@ -857,9 +840,111 @@ const statCards = reactive([
   },
 ]);
 
+// 根据用户名判断用户角色
+const getUserRole = (role) => {
+  if (!role) return '未知';
+
+  const roleMap = {
+    'user': '普通用户',
+    'admin': '管理员',
+    'superadmin': '超级管理员'
+  };
+
+  return roleMap[role] || '未知用户';
+};
+
+// 根据角色返回样式类名
+const getUserRoleClass = (role) => {
+  if (!role) return 'role-unknown';
+
+  const classMap = {
+    'user': 'role-user',
+    'admin': 'role-admin',
+    'superadmin': 'role-superadmin'
+  };
+
+  return classMap[role] || 'role-unknown';
+};
+
+// 获取头像背景色
+const getAvatarColor = (userId) => {
+  const colors = ['#1890FF', '#52C41A', '#FAAD14', '#F5222D', '#722ED1', '#13C2C2', '#EB2F96'];
+  const index = userId % colors.length;
+  return colors[index];
+};
+
+// 获取设备图标
+const getDeviceIcon = (device) => {
+  // 如果设备类型是PC，返回桌面电脑图标
+  if (device && device.toLowerCase() === 'pc') {
+    return DesktopOutlined;
+  }
+
+  // 其他设备类型的判断逻辑
+  if (!device) return LaptopOutlined;
+
+  if (device.toLowerCase().includes('iphone') || device.toLowerCase().includes('ipad')) {
+    return AppleOutlined;
+  } else if (device.toLowerCase().includes('mac')) {
+    return AppleOutlined;
+  } else if (device.toLowerCase().includes('android')) {
+    return AndroidOutlined;
+  } else {
+    return LaptopOutlined;
+  }
+};
+
+// 获取操作系统图标
+const getOSIcon = (os) => {
+  if (!os) return DesktopOutlined;
+
+  if (os.toLowerCase().includes('Windows')) {
+    return WindowsOutlined;
+  } else if (os.toLowerCase().includes('Mac OS X') || os.toLowerCase().includes('IOS')) {
+    return AppleOutlined;
+  } else if (os.toLowerCase().includes('Android')) {
+    return AndroidOutlined;
+  } else if (os.toLowerCase().includes('Linux')) {
+    return DesktopOutlined;
+  } else {
+    return DesktopOutlined;
+  }
+};
+
+// 获取浏览器图标
+const getBrowserIcon = (browser) => {
+  if (!browser) return GlobalOutlined;
+
+  if (browser.toLowerCase().includes('chrome')) {
+    return ChromeOutlined;
+  } else if (browser.toLowerCase().includes('firefox')) {
+    return IeOutlined;
+  } else if (browser.toLowerCase().includes('safari')) {
+    return SafariOutlined;
+  } else if (browser.toLowerCase().includes('edge')) {
+    return IeOutlined;
+  } else {
+    return GlobalOutlined;
+  }
+};
+
+// 获取安全级别颜色
+const getSecurityLevelColor = (level) => {
+  const levelMap = {
+    '高': 'green',
+    '中': 'orange',
+    '低': 'red'
+  };
+  return levelMap[level] || 'blue';
+};
+
+
 // 获取登录统计数据
-async function fetchLoginStatistics() {
-  loading.value = true;
+const fetchLoginStatistics = async () => {
+  // 避免重复请求
+  if (isRefreshing.value) return;
+
+  isRefreshing.value = true;
   try {
     const response = await getLoginStatisticsUsingGet();
 
@@ -880,59 +965,61 @@ async function fetchLoginStatistics() {
       statCards[0].change = statsData.growthRate || 0;
 
       statCards[1].value = formatNumber(statsData.activeUserCount || 0);
-      statCards[1].change = statsData.growthRate || 0; // 假设活跃用户增长率与总体相同
+      statCards[1].change = statsData.growthRate || 0;
 
       statCards[2].value = `${(statsData.successRate || 0).toFixed(1)}%`;
-      statCards[2].change = 0.5; // 成功率变化较小，可以设定一个小的正值
+      statCards[2].change = 0.5;
 
       statCards[3].value = formatNumber(statsData.abnormalLoginCount || 0);
-      statCards[3].change = -2.3; // 异常登录减少通常是好事，用负值表示
+      statCards[3].change = -2.3;
+
+      // 记录最后刷新时间
+      lastRefreshTime.value = new Date();
     } else {
-      message.error(response.data?.message || '获取登录统计信息失败');
+      console.error('获取登录统计信息失败:', response.data?.message);
     }
   } catch (error) {
     console.error('获取登录统计信息出错:', error);
-    message.error('获取登录统计信息异常');
   } finally {
-    loading.value = false;
+    isRefreshing.value = false;
   }
-}
+};
 
-// 更新统计卡片数据
-function updateStatCards(statsData) {
-  const totalLogins = statsData.todayLoginCount + statsData.weekLoginCount + statsData.monthLoginCount || 0;
-  const totalSuccess = totalLogins - (statsData.todayFailCount || 0);
-  const successRate = totalLogins > 0 ? ((totalSuccess / totalLogins) * 100).toFixed(1) : 0;
+// 启动定时刷新
+const startAutoRefresh = () => {
+  // 确保不会创建多个定时器
+  stopAutoRefresh();
 
-  statCards[0].value = formatNumber(totalLogins);
-  statCards[0].change = calculateChange(totalLogins, totalLogins * 0.9); // 模拟环比增长
+  // 设置60秒定时器
+  statsRefreshTimer.value = setInterval(() => {
+    fetchLoginStatistics();
+  }, 60000); // 60秒
+};
 
-  statCards[1].value = formatNumber(statsData.todayLoginUsers || 0);
-  statCards[1].change = calculateChange(statsData.todayLoginUsers || 0, (statsData.todayLoginUsers || 0) * 0.85);
+// 停止定时刷新
+const stopAutoRefresh = () => {
+  if (statsRefreshTimer.value) {
+    clearInterval(statsRefreshTimer.value);
+    statsRefreshTimer.value = null;
+  }
+};
 
-  statCards[2].value = `${successRate}%`;
-  statCards[2].change = calculateChange(parseFloat(successRate), parseFloat(successRate) * 0.98);
+// 手动刷新统计数据
+const refreshStatistics = () => {
+  fetchLoginStatistics();
+};
 
-  statCards[3].value = formatNumber(statsData.todayFailCount || 0);
-  statCards[3].change = calculateChange(statsData.todayFailCount || 0, (statsData.todayFailCount || 0) * 1.1) * -1; // 负值表示降低是好事
-}
-
-// 计算环比变化
-function calculateChange(current, previous) {
-  if (previous === 0) return 0;
-  return Math.round((current - previous) / previous * 100);
-}
 
 // 格式化数字
-function formatNumber(num) {
+const formatNumber = (num) => {
   if (num >= 1000) {
     return (num / 1000).toFixed(1) + 'k';
   }
   return num.toString();
-}
+};
 
 // 获取日志数据
-async function fetchLogData() {
+const fetchLogData = async () => {
   loading.value = true;
 
   try {
@@ -975,15 +1062,15 @@ async function fetchLogData() {
   } finally {
     loading.value = false;
   }
-}
+};
 
 // 格式化日期时间
-function formatDateTime(timestamp) {
+const formatDateTime = (timestamp) => {
   return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss');
-}
+};
 
 // 计算会话持续时间
-function calculateSessionDuration(log) {
+const calculateSessionDuration = (log) => {
   if (!log.logoutTime || log.status === 0) {
     return '无会话';
   }
@@ -993,88 +1080,18 @@ function calculateSessionDuration(log) {
   const minutes = duration % 60;
 
   return `${hours}小时${minutes}分钟`;
-}
+};
 
-// 获取头像背景色
-function getAvatarColor(userId) {
-  const colors = ['#1890FF', '#52C41A', '#FAAD14', '#F5222D', '#722ED1', '#13C2C2', '#EB2F96'];
-  const index = userId % colors.length;
-  return colors[index];
-}
 
-// 获取设备图标
-function getDeviceIcon(device) {
-  // 如果设备类型是PC，返回桌面电脑图标
-  if (device && device.toLowerCase() === 'pc') {
-    return DesktopOutlined;
-  }
-
-  // 其他设备类型的判断逻辑
-  if (!device) return LaptopOutlined;
-
-  if (device.toLowerCase().includes('iphone') || device.toLowerCase().includes('ipad')) {
-    return AppleOutlined;
-  } else if (device.toLowerCase().includes('mac')) {
-    return AppleOutlined;
-  } else if (device.toLowerCase().includes('android')) {
-    return AndroidOutlined;
-  } else {
-    return LaptopOutlined;
-  }
-}
-
-// 获取操作系统图标
-function getOSIcon(os) {
-  if (!os) return DesktopOutlined;
-
-  if (os.toLowerCase().includes('Windows')) {
-    return WindowsOutlined;
-  } else if (os.toLowerCase().includes('Mac OS X') || os.toLowerCase().includes('IOS')) {
-    return AppleOutlined;
-  } else if (os.toLowerCase().includes('Android')) {
-    return AndroidOutlined;
-  } else if (os.toLowerCase().includes('Linux')) {
-    return DesktopOutlined;
-  } else {
-    return DesktopOutlined;
-  }
-}
-
-// 获取浏览器图标
-function getBrowserIcon(browser) {
-  if (!browser) return GlobalOutlined;
-
-  if (browser.toLowerCase().includes('chrome')) {
-    return ChromeOutlined;
-  } else if (browser.toLowerCase().includes('firefox')) {
-    return IeOutlined;
-  } else if (browser.toLowerCase().includes('safari')) {
-    return SafariOutlined;
-  } else if (browser.toLowerCase().includes('edge')) {
-    return IeOutlined;
-  } else {
-    return GlobalOutlined;
-  }
-}
-
-// 获取安全级别颜色
-function getSecurityLevelColor(level) {
-  const levelMap = {
-    '高': 'green',
-    '中': 'orange',
-    '低': 'red'
-  };
-  return levelMap[level] || 'blue';
-}
 
 // 搜索处理
-function handleSearch() {
+const handleSearch = () => {
   pagination.current = 1;
   fetchLogData();
-}
+};
 
 // 重置搜索表单
-function resetSearchForm() {
+const resetSearchForm = () => {
   searchForm.userId = '';
   searchForm.status = undefined;
   searchForm.ip = '';
@@ -1091,17 +1108,17 @@ function resetSearchForm() {
   fetchLogData();
 
   message.success('搜索条件已重置');
-}
+};
 
 // 刷新表格数据
-function handleRefresh() {
+const handleRefresh = () => {
   fetchLogData();
   selectedRowKeys.value = [];
   message.success('数据已刷新');
-}
+};
 
 // 导出数据
-async function handleExport() {
+const handleExport = async () => {
   loading.value = true;
 
   try {
@@ -1146,15 +1163,15 @@ async function handleExport() {
   } finally {
     loading.value = false;
   }
-}
+};
 
 // 表格选择变化
-function onSelectChange(selected) {
+const onSelectChange = (selected) => {
   selectedRowKeys.value = selected;
-}
+};
 
 // 表格变化处理
-function handleTableChange(pag, filters, sorter) {
+const handleTableChange = (pag, filters, sorter) => {
   pagination.current = pag.current;
   pagination.pageSize = pag.pageSize;
 
@@ -1173,10 +1190,10 @@ function handleTableChange(pag, filters, sorter) {
   }
 
   fetchLogData();
-}
+};
 
 // 查看日志详情
-async function viewLogDetails(record) {
+const viewLogDetails = async (record) => {
   loading.value = true;
 
   try {
@@ -1194,10 +1211,10 @@ async function viewLogDetails(record) {
   } finally {
     loading.value = false;
   }
-}
+};
 
 // 批量删除
-function handleBatchDelete() {
+const handleBatchDelete = () => {
   if (selectedRowKeys.value.length === 0) {
     message.warning('请先选择要删除的记录');
     return;
@@ -1213,7 +1230,9 @@ function handleBatchDelete() {
       loading.value = true;
 
       try {
+        console.log('批量删除ID列表:', selectedRowKeys.value); // 添加调试日志
         const response = await batchDeleteLoginLogsUsingDelete(selectedRowKeys.value);
+        console.log('批量删除响应:', response); // 添加调试日志
 
         if (response.data && response.data.code === 200 && response.data.data) {
           message.success(`已批量删除 ${selectedRowKeys.value.length} 条记录`);
@@ -1225,16 +1244,16 @@ function handleBatchDelete() {
         }
       } catch (error) {
         console.error('批量删除登录日志异常:', error);
-        message.error('批量删除登录日志发生异常');
+        message.error('批量删除登录日志发生异常: ' + (error.message || '未知错误'));
       } finally {
         loading.value = false;
       }
     }
   });
-}
+};
 
 // 批量分析
-function handleBatchAnalyze() {
+const handleBatchAnalyze = () => {
   if (selectedRowKeys.value.length === 0) {
     message.warning('请先选择要分析的记录');
     return;
@@ -1247,10 +1266,10 @@ function handleBatchAnalyze() {
 
   message.success(`正在分析 ${selectedRowKeys.value.length} 条记录的行为模式`);
   // 实际应用中这里会进行数据分析或跳转到分析页面
-}
+};
 
 // 显示删除确认对话框
-function showDeleteConfirm(record) {
+const showDeleteConfirm = (record) => {
   Modal.confirm({
     title: '确定要删除此记录吗?',
     content: '删除后将无法恢复，请谨慎操作。',
@@ -1261,14 +1280,17 @@ function showDeleteConfirm(record) {
       deleteLog(record.id);
     }
   });
-}
+};
 
 // 删除日志
-async function deleteLog(id) {
+const deleteLog = async (id) => {
   loading.value = true;
+  console.log('准备删除日志ID:', id); // 添加调试日志
 
   try {
-    const response = await deleteLoginLogUsingDelete({id});
+    const params = { id }; // 确保正确构造参数
+    const response = await deleteLoginLogUsingDelete(params);
+    console.log('删除日志响应:', response); // 添加调试日志
 
     if (response.data && response.data.code === 200 && response.data.data) {
       message.success('记录已删除');
@@ -1291,37 +1313,40 @@ async function deleteLog(id) {
     }
   } catch (error) {
     console.error('删除登录日志异常:', error);
-    message.error('删除登录日志发生异常');
+    message.error('删除登录日志发生异常: ' + (error.message || '未知错误'));
   } finally {
     loading.value = false;
   }
-}
+};
 
 // 用户行为分析
-function analyzeUserLogin(record) {
+const analyzeUserLogin = (record) => {
   selectedLog.value = record;
   userAnalysisVisible.value = true;
-}
+};
 
 // 查看地理位置
-function checkGeoLocation(record) {
+const checkGeoLocation = (record) => {
   // 在实际应用中这里会打开地图或导航到地理位置页面
-  message.info(`正在查看 ${record.userName} 的登录地理位置: ${record.location || '未知'}`);
-}
+  message.info(`正在查看 ${record.userName || record.username} 的登录地理位置: ${record.location || '未知'}`);
+};
 
 // 导出分析报告
-function exportAnalysisReport() {
+const exportAnalysisReport = () => {
   message.success('分析报告已导出');
-}
+};
 
-
-// 组件挂载时获取数据
+// 组件挂载时启动定时器
 onMounted(() => {
   fetchLoginStatistics();
   fetchLogData();
+  startAutoRefresh();
 });
 
-
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  stopAutoRefresh();
+});
 </script>
 
 <style scoped>
@@ -1721,7 +1746,7 @@ onMounted(() => {
   padding: 14px 16px;
 }
 
-/* 优化用户信息显示样式 */
+/* 用户信息显示样式 */
 .user-info {
   display: flex;
   align-items: center;
