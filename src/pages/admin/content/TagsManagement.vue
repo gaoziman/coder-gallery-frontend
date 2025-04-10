@@ -439,8 +439,10 @@
                   />
                   <!-- 显示颜色选择器按钮 - 使用更可靠的图标 -->
                   <a-button class="color-picker-button" @click="openColorPicker">
-                    <svg viewBox="64 64 896 896" data-icon="bg-colors" width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false" class="">
-                      <path d="M766.4 744.3c43.7 0 79.4-36.2 79.4-80.5 0-53.5-79.4-140.8-79.4-140.8S687 610.3 687 663.8c0 44.3 35.7 80.5 79.4 80.5zm-377.1-44.1c7.1 7.1 18.6 7.1 25.6 0l256.1-256c7.1-7.1 7.1-18.6 0-25.6l-256-256c-7.1-7.1-18.6-7.1-25.6 0-7.1 7.1-7.1 18.6 0 25.6l230.4 230.6L389.3 675.6a18.15 18.15 0 000 24.6zm261.3-105.5c3.2 3.2 3.2 8.4 0 11.6l-28.4 28.4c-3.2 3.2-8.4 3.2-11.6 0l-56.7-56.7a8.15 8.15 0 010-11.6l28.4-28.4c3.2-3.2 8.4-3.2 11.6 0l56.7 56.7zM675.3 150l-166 166c-3.2 3.2-8.4 3.2-11.6 0l-56.8-56.8c-3.2-3.2-3.2-8.4 0-11.6l166-166c3.2-3.2 8.4-3.2 11.6 0l56.8 56.8c3.2 3.2 3.2 8.4 0 11.6z"></path>
+                    <svg viewBox="64 64 896 896" data-icon="bg-colors" width="1em" height="1em" fill="currentColor"
+                         aria-hidden="true" focusable="false" class="">
+                      <path
+                          d="M766.4 744.3c43.7 0 79.4-36.2 79.4-80.5 0-53.5-79.4-140.8-79.4-140.8S687 610.3 687 663.8c0 44.3 35.7 80.5 79.4 80.5zm-377.1-44.1c7.1 7.1 18.6 7.1 25.6 0l256.1-256c7.1-7.1 7.1-18.6 0-25.6l-256-256c-7.1-7.1-18.6-7.1-25.6 0-7.1 7.1-7.1 18.6 0 25.6l230.4 230.6L389.3 675.6a18.15 18.15 0 000 24.6zm261.3-105.5c3.2 3.2 3.2 8.4 0 11.6l-28.4 28.4c-3.2 3.2-8.4 3.2-11.6 0l-56.7-56.7a8.15 8.15 0 010-11.6l28.4-28.4c3.2-3.2 8.4-3.2 11.6 0l56.7 56.7zM675.3 150l-166 166c-3.2 3.2-8.4 3.2-11.6 0l-56.8-56.8c-3.2-3.2-3.2-8.4 0-11.6l166-166c3.2-3.2 8.4-3.2 11.6 0l56.8 56.8c3.2 3.2 3.2 8.4 0 11.6z"></path>
                     </svg>
                   </a-button>
                 </div>
@@ -468,8 +470,8 @@
                 v-model:value="tagForm.description"
                 placeholder="请输入标签描述（选填）"
                 :rows="2"
-            :maxLength="100"
-            showCount
+                :maxLength="100"
+                showCount
             />
           </a-form-item>
 
@@ -613,8 +615,8 @@
               <link-outlined/>
               <span>关联内容 (TOP 5)</span>
               <div class="collapse-icon">
-                <down-outlined v-if="!relatedContentExpanded" />
-                <up-outlined v-else />
+                <down-outlined v-if="!relatedContentExpanded"/>
+                <up-outlined v-else/>
               </div>
             </div>
 
@@ -622,7 +624,7 @@
             <div class="related-content-container" :class="{ 'expanded': relatedContentExpanded }">
               <a-spin :spinning="relatedContentLoading">
                 <div v-if="relatedContentExpanded">
-                  <a-empty v-if="relatedContent.length === 0" description="暂无关联内容" />
+                  <a-empty v-if="relatedContent.length === 0" description="暂无关联内容"/>
                   <a-table
                       v-else
                       :columns="relatedColumns"
@@ -2949,7 +2951,7 @@ button[class*="ant-dropdown-trigger"],
 .color-form-item .ant-form-item-control-input {
   min-height: auto;
 }
-˚
+
 .color-picker-button {
   color: #666;
   transition: all 0.3s;
