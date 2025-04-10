@@ -113,10 +113,32 @@ declare namespace API {
   type CategoryStatisticsVO = {
     /** 激活状态的分类数量 */
     activeCategories?: number;
+    /** 最近一月活跃分类数 */
+    activeLastMonthCategories?: number;
+    /** 最近一周活跃分类数 */
+    activeLastWeekCategories?: number;
+    /** 平均子分类数 */
+    averageChildrenCount?: number;
+    /** 平均每个分类的内容数 */
+    averageItemsPerCategory?: number;
     /** 分类总增长率(与上月相比) */
     categoryGrowthRate?: number;
+    /** 分类深度分布占比 */
+    depthDistributionPercentage?: Record<string, any>;
     /** 禁用状态的分类数量 */
     disabledCategories?: number;
+    /** 空分类数量(不包含任何内容) */
+    emptyCategoriesCount?: number;
+    /** 上月分类总数 */
+    lastMonthTotalCategories?: number;
+    /** 最少使用的分类ID */
+    leastContentsCategory?: number;
+    /** 最少使用的分类名称 */
+    leastContentsCategoryName?: string;
+    /** 最少使用的分类内容数 */
+    leastContentsCount?: number;
+    /** 各层级的分类数量分布 */
+    levelDistribution?: Record<string, any>;
     /** 最大分类层级 */
     maxCategoryLevel?: number;
     /** 最多内容的分类ID */
@@ -129,10 +151,22 @@ declare namespace API {
     newCategoriesOfMonth?: number;
     /** 今日新增分类数 */
     newCategoriesOfToday?: number;
+    /** 本周新增分类数 */
+    newCategoriesOfWeek?: number;
+    /** 统计数据更新时间 */
+    statisticsUpdateTime?: string;
+    /** 今日分类增长率 */
+    todayCategoryGrowthRate?: number;
     /** 顶级分类数量 */
     topLevelCategories?: number;
+    /** 分类使用率排名(前10个) */
+    topUsedCategories?: Record<string, any>;
     /** 分类总数 */
     totalCategories?: number;
+    /** 内容总数量 */
+    totalItems?: number;
+    /** 本周分类增长率 */
+    weeklyCategoryGrowthRate?: number;
   };
 
   type CategoryTreeVO = {
@@ -222,6 +256,15 @@ declare namespace API {
     urlName?: string;
   };
 
+  type checkRelationExistsUsingGETParams = {
+    /** 内容ID */
+    contentId: number;
+    /** 内容类型 */
+    contentType: string;
+    /** 标签ID */
+    tagId: number;
+  };
+
   type countContentsByCategoryUsingGETParams = {
     /** 分类ID */
     categoryId?: number;
@@ -236,6 +279,22 @@ declare namespace API {
     contentId?: number;
     /** 内容类型 */
     contentType?: string;
+  };
+
+  type createTagRelationUsingPOSTParams = {
+    /** 内容ID */
+    contentId: number;
+    /** 内容类型 */
+    contentType: string;
+    /** 标签ID */
+    tagId: number;
+  };
+
+  type deleteAllRelationsByContentUsingDELETE1Params = {
+    /** 内容ID */
+    contentId: number;
+    /** 内容类型 */
+    contentType: string;
   };
 
   type deleteAllRelationsByContentUsingDELETEParams = {
@@ -257,6 +316,20 @@ declare namespace API {
   type deleteCategoryUsingDELETEParams = {
     /** 分类ID */
     id?: number;
+  };
+
+  type deleteTagRelationUsingDELETEParams = {
+    /** 内容ID */
+    contentId: number;
+    /** 内容类型 */
+    contentType: string;
+    /** 标签ID */
+    tagId: number;
+  };
+
+  type deleteTagUsingDELETEParams = {
+    /** 标签ID */
+    id: number;
   };
 
   type deleteUserUsingDELETEParams = {
@@ -297,6 +370,38 @@ declare namespace API {
     type?: string;
   };
 
+  type getTagByIdUsingGETParams = {
+    /** 标签ID */
+    id: number;
+  };
+
+  type getTagIdsByContentUsingGETParams = {
+    /** 内容ID */
+    contentId: number;
+    /** 内容类型 */
+    contentType: string;
+  };
+
+  type getTagRelatedItemsUsingGETParams = {
+    /** contentType */
+    contentType?: string;
+    /** pageNum */
+    pageNum?: number;
+    /** pageSize */
+    pageSize?: number;
+    /** tagId */
+    tagId: number;
+  };
+
+  type getTagUsageTrendUsingGETParams = {
+    /** endDate */
+    endDate: string;
+    /** startDate */
+    startDate: string;
+    /** tagId */
+    tagId: number;
+  };
+
   type getUserByIdUsingGETParams = {
     /** id */
     id: number;
@@ -331,6 +436,21 @@ declare namespace API {
     status?: string;
     /** 分类类型 */
     type?: string;
+  };
+
+  type listTagByPageUsingGETParams = {
+    /** 创建结束时间 */
+    createTimeEnd?: string;
+    /** 创建开始时间 */
+    createTimeStart?: string;
+    /** 标签名称(模糊查询) */
+    name?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 状态(active-已启用,inactive-未启用) */
+    status?: string;
   };
 
   type listUserByPageUsingGETParams = {
@@ -471,6 +591,26 @@ declare namespace API {
     total?: number;
   };
 
+  type PageResultTagRelatedItemVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: TagRelatedItemVO[];
+    total?: number;
+  };
+
+  type PageResultTagVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: TagVO[];
+    total?: number;
+  };
+
   type PageResultUserVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
@@ -546,6 +686,12 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultListTagUsageTrendVO_ = {
+    code?: number;
+    data?: TagUsageTrendVO[];
+    message?: string;
+  };
+
   type ResultLoginUserVO_ = {
     code?: number;
     data?: LoginUserVO;
@@ -570,6 +716,18 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultPageResultTagRelatedItemVO_ = {
+    code?: number;
+    data?: PageResultTagRelatedItemVO_;
+    message?: string;
+  };
+
+  type ResultPageResultTagVO_ = {
+    code?: number;
+    data?: PageResultTagVO_;
+    message?: string;
+  };
+
   type ResultPageResultUserVO_ = {
     code?: number;
     data?: PageResultUserVO_;
@@ -579,6 +737,18 @@ declare namespace API {
   type ResultString_ = {
     code?: number;
     data?: string;
+    message?: string;
+  };
+
+  type ResultTagStatisticsVO_ = {
+    code?: number;
+    data?: TagStatisticsVO;
+    message?: string;
+  };
+
+  type ResultTagVO_ = {
+    code?: number;
+    data?: TagVO;
     message?: string;
   };
 
@@ -592,6 +762,135 @@ declare namespace API {
     code?: number;
     data?: UserVO;
     message?: string;
+  };
+
+  type TagBatchDeleteRequest = {
+    /** ID列表 */
+    ids: number[];
+  };
+
+  type TagBatchTagStatusUpdateRequest = {
+    /** 标签ID列表 */
+    ids: number[];
+    /** 状态(active-已启用,inactive-未启用) */
+    status: string;
+  };
+
+  type TagCreateRequest = {
+    /** 标签颜色(HEX格式) */
+    color?: string;
+    /** 标签描述 */
+    description?: string;
+    /** 标签名称 */
+    name: string;
+    /** 排序优先级 */
+    sortOrder?: number;
+    /** 标签状态 */
+    status?: string;
+  };
+
+  type TagRelatedItemVO = {
+    /** 创建时间 */
+    createTime?: string;
+    /** 创建人 */
+    creator?: string;
+    /** 内容描述 */
+    description?: string;
+    /** 内容ID */
+    id?: number;
+    /** 缩略图URL */
+    thumbnailUrl?: string;
+    /** 内容标题 */
+    title?: string;
+    /** 内容类型 */
+    type?: string;
+  };
+
+  type TagRelationBatchCreateRequest = {
+    /** 内容ID */
+    contentId: number;
+    /** 内容类型 */
+    contentType: string;
+    /** 标签ID列表 */
+    tagIds: number[];
+  };
+
+  type TagRelationUpdateRequest = {
+    /** 内容ID */
+    contentId: number;
+    /** 内容类型 */
+    contentType: string;
+    /** 标签ID列表 */
+    tagIds?: number[];
+  };
+
+  type TagStatisticsVO = {
+    /** 已启用标签数 */
+    activeCount?: number;
+    /** 未启用标签数 */
+    inactiveCount?: number;
+    /** 本月新增标签数 */
+    monthCount?: number;
+    /** 今日创建标签数 */
+    todayCount?: number;
+    /** 标签总数 */
+    totalCount?: number;
+    /** 引用总数 */
+    totalReferenceCount?: number;
+    /** 未使用的标签数 */
+    unusedTag?: number;
+    /** 本周新增标签数 */
+    weekCount?: number;
+  };
+
+  type TagStatusUpdateRequest = {
+    /** 标签ID */
+    id: number;
+    /** 状态(active-已启用,inactive-未启用) */
+    status: string;
+  };
+
+  type TagUpdateRequest = {
+    /** 标签颜色(HEX格式) */
+    color?: string;
+    /** 标签描述 */
+    description?: string;
+    /** 标签ID */
+    id: number;
+    /** 标签名称 */
+    name: string;
+    /** 排序优先级 */
+    sortOrder?: number;
+    /** 标签状态 */
+    status?: string;
+  };
+
+  type TagUsageTrendVO = {
+    /** 使用次数 */
+    count?: number;
+    /** 日期 */
+    date?: string;
+  };
+
+  type TagVO = {
+    /** 标签颜色(HEX格式) */
+    color?: string;
+    /** 创建时间 */
+    createTime?: string;
+    /** 创建人 */
+    creator?: string;
+    /** 标签描述 */
+    description?: string;
+    /** 标签ID */
+    id?: number;
+    /** 标签名称 */
+    name?: string;
+    /** 引用次数 */
+    referenceCount?: number;
+    /** 排序优先级 */
+    sortOrder?: number;
+    /** 状态(active-已启用,inactive-未启用) */
+    status?: string;
   };
 
   type unbanUserUsingPOSTParams = {

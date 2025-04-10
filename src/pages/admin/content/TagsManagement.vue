@@ -25,7 +25,7 @@
                 <calendar-outlined/>
                 今日创建
               </div>
-              <div class="tm-metric-value">14</div>
+              <div class="tm-metric-value">{{ tagStatistics.todayCount || 0 }}</div>
             </div>
             <div class="tm-divider"></div>
             <div class="tm-metric-item">
@@ -33,7 +33,7 @@
                 <team-outlined/>
                 本周新增
               </div>
-              <div class="tm-metric-value">46</div>
+              <div class="tm-metric-value">{{ tagStatistics.weekCount || 0 }}</div>
             </div>
             <div class="tm-divider"></div>
             <div class="tm-metric-item">
@@ -41,7 +41,7 @@
                 <link-outlined/>
                 引用总数
               </div>
-              <div class="tm-metric-value">2.3k</div>
+              <div class="tm-metric-value">{{ formatNumber(tagStatistics.totalReferenceCount || 0) }}</div>
             </div>
           </div>
         </div>
@@ -62,8 +62,8 @@
                 <div class="stat-title">{{ card.title }}</div>
                 <div class="stat-value">{{ card.value }}
                   <span class="stat-trend">
-                <trend-badge :value="card.change"/>
-              </span>
+                  <trend-badge :value="card.change"/>
+                  </span>
                 </div>
                 <div class="stat-change" :class="{ 'increase': card.change > 0, 'decrease': card.change < 0 }">
                   <arrow-up-outlined v-if="card.change > 0"/>
@@ -89,10 +89,9 @@
         <a-form layout="inline" :model="searchForm" @finish="handleSearch" class="search-form">
           <div class="search-form-items">
             <!-- 标签名称 -->
-            <a-form-item label="标签名称" name="tagName">
-              <a-input v-model:value="searchForm.tagName" placeholder="请输入标签名称" allowClear/>
+            <a-form-item label="标签名称" name="name">
+              <a-input v-model:value="searchForm.name" placeholder="请输入标签名称" allowClear/>
             </a-form-item>
-
 
             <!-- 状态 -->
             <a-form-item label="状态" name="status">
@@ -103,7 +102,7 @@
                   allowClear
               >
                 <a-select-option value="active">已启用</a-select-option>
-                <a-select-option value="inactive">未启用</a-select-option>
+                <a-select-option value="inactive">已禁用</a-select-option>
               </a-select>
             </a-form-item>
 
@@ -119,7 +118,7 @@
 
             <!-- 操作按钮 -->
             <div class="search-buttons">
-              <a-button type="primary" html-type="submit" class="search-button">
+              <a-button type="primary" html-type="submit" class="search-button" :loading="loading">
                 <search-outlined/>
                 查询
               </a-button>
@@ -141,7 +140,7 @@
             <plus-outlined/>
             新建标签
           </a-button>
-          <a-button @click="handleRefresh">
+          <a-button @click="handleRefresh" :loading="loading">
             <reload-outlined/>
             刷新
           </a-button>
@@ -207,14 +206,14 @@
             {{ formatDateTime(record.createTime) }}
           </template>
 
-          <!-- 引用次数列 -->
-          <template v-if="column.dataIndex === 'usageCount'">
-            <a-badge :count="record.usageCount" :number-style="{ backgroundColor: '#52C41A' }"/>
-          </template>
 
           <!-- 操作列 -->
           <template v-if="column.dataIndex === 'action'">
             <a-space>
+              <a-button type="link" size="small" @click="viewTagDetails(record)">
+                <eye-outlined/>
+                查看
+              </a-button>
               <a-button type="link" size="small" @click="editTag(record)">
                 <edit-outlined/>
                 编辑
@@ -231,10 +230,6 @@
               <a-dropdown>
                 <template #overlay>
                   <a-menu>
-                    <a-menu-item key="1" @click="viewTagDetails(record)">
-                      <eye-outlined/>
-                      查看详情
-                    </a-menu-item>
                     <a-menu-item key="2" @click="copyTag(record)">
                       <copy-outlined/>
                       复制
@@ -273,62 +268,78 @@
 
         <a-row :gutter="[16, 16]">
           <a-col :xs="12" :sm="8" :md="6" :lg="6" :xl="6" v-for="tag in tagData" :key="tag.id">
-            <div
-                class="tag-card"
-                :class="{ 'tag-card-selected': selectedRowKeys.includes(tag.id) }"
-                @click="toggleTagSelection(tag.id)"
-            >
-              <div class="tag-card-header">
-                <a-checkbox :checked="selectedRowKeys.includes(tag.id)" @click.stop/>
-                <a-badge :status="getStatusType(tag.status)" :text="getStatusText(tag.status)"/>
+            <div class="tag-card" :class="{ 'tag-card-selected': selectedRowKeys.includes(tag.id) }"
+                 :style="{ '--tag-color': tag.color, '--tag-color-light': lightenColor(tag.color, 20) }"
+                 @click="toggleTagSelection(tag.id)">
+              <!-- 状态标签 -->
+              <div class="tag-label" :class="tag.status === 'active' ? 'tag-label-active' : 'tag-label-inactive'">
+                <check-circle-outlined v-if="tag.status === 'active'"/>
+                <stop-outlined v-else/>
+                {{ getStatusText(tag.status) }}
               </div>
-              <div class="tag-card-body">
-                <div class="tag-display">
-                  <a-tag
-                      :color="tag.color"
-                      style="margin: 0; padding: 4px 12px; font-size: 14px;"
-                  >
-                    {{ tag.name }}
-                  </a-tag>
+
+              <!-- 卡片标题区 -->
+              <div class="tag-card-title">
+                <div class="tag-icon" :style="{ backgroundColor: tag.color }">
+                  <component :is="getTagIcon(tag.category)"/>
+                </div>
+                <h3 class="tag-title-text">{{ tag.name }}</h3>
+              </div>
+
+              <!-- 卡片内容区 -->
+              <div class="tag-card-content">
+                <p class="tag-description">{{ tag.description || '暂无描述信息' }}</p>
+
+                <!-- 使用情况指标 -->
+                <div class="tag-stats">
+                  <div class="tag-stat-item">
+                    <link-outlined/>
+                    <span>引用次数: {{ tag.referenceCount || 0 }}</span>
+                  </div>
                 </div>
               </div>
-              <div class="tag-card-footer">
-                <div class="tag-create-info">创建于: {{ formatDateTime(tag.createTime) }}</div>
+
+              <!-- 卡片底部信息 -->
+              <div class="tag-card-meta">
+                <div class="tag-create-info">
+                  <calendar-outlined/>
+                  创建于: {{ formatDateTime(tag.createTime, true) }}
+                </div>
+
                 <div class="tag-actions">
-                  <a-button type="link" size="small" @click.stop="editTag(tag)">
+                  <a-button class="tag-action-btn" @click.stop="editTag(tag)">
                     <edit-outlined/>
                   </a-button>
-                  <a-button
-                      type="link"
-                      size="small"
-                      @click.stop="toggleTagStatus(tag)"
-                      :style="{ color: tag.status === 'active' ? '#ff4d4f' : '#52C41A' }"
-                  >
-                    <component :is="tag.status === 'active' ? 'stop-outlined' : 'check-circle-outlined'"/>
+                  <a-button class="tag-action-btn" @click.stop="viewTagDetails(tag)">
+                    <eye-outlined/>
+                  </a-button>
+                  <a-button class="tag-action-btn" @click.stop="toggleTagStatus(tag)">
+                    <component :is="tag.status === 'active' ?  StopOutlined : CheckCircleOutlined"/>
                   </a-button>
                   <a-dropdown>
+                    <button class="tag-action-btn" @click.stop>
+                      <more-outlined/>
+                    </button>
                     <template #overlay>
                       <a-menu>
-                        <a-menu-item key="1" @click.stop="viewTagDetails(tag)">
-                          <eye-outlined/>
-                          查看详情
-                        </a-menu-item>
-                        <a-menu-item key="2" @click.stop="copyTag(tag)">
+                        <a-menu-item key="1" @click.stop="copyTag(tag)">
                           <copy-outlined/>
                           复制
                         </a-menu-item>
                         <a-menu-divider/>
-                        <a-menu-item key="3" danger @click.stop="showDeleteConfirm(tag)">
+                        <a-menu-item key="2" danger @click.stop="showDeleteConfirm(tag)">
                           <delete-outlined/>
                           删除
                         </a-menu-item>
                       </a-menu>
                     </template>
-                    <a-button type="link" size="small" @click.stop>
-                      <more-outlined/>
-                    </a-button>
                   </a-dropdown>
                 </div>
+              </div>
+
+              <!-- 装饰元素 -->
+              <div class="card-decoration">
+                <div class="decoration-shape" :style="{ backgroundColor: tag.color }"></div>
               </div>
             </div>
           </a-col>
@@ -351,7 +362,6 @@
       </a-spin>
     </div>
 
-    <!-- 新建/编辑标签弹窗 -->
     <a-modal
         v-model:visible="tagModalVisible"
         :title="isEditing ? '编辑标签' : '新建标签'"
@@ -359,130 +369,121 @@
         :mask-closable="false"
         :destroyOnClose="true"
         :footer="null"
-        class="custom-tag-modal"
+        class="custom-tag-modal compact-tag-modal"
     >
-      <div class="modal-header">
+      <!-- 精简头部区域 -->
+      <div class="modal-header-compact">
         <div class="header-icon">
           <component :is="isEditing ? EditOutlined : PlusOutlined"/>
         </div>
         <div class="header-title">
           <h2>{{ isEditing ? '编辑标签信息' : '创建新标签' }}</h2>
-          <p>{{ isEditing ? '修改标签的基本信息和分类等配置' : '创建一个新的标签，用于内容分类和组织' }}</p>
+          <p>{{ isEditing ? '修改标签的基本信息和配置' : '创建一个新的标签，用于内容分类和组织' }}</p>
         </div>
       </div>
 
-      <a-divider/>
+      <!-- 移除多余的分隔线，减少垂直间距 -->
 
       <a-form
           :model="tagForm"
           :rules="tagRules"
           ref="tagFormRef"
           layout="vertical"
+          class="compact-form"
       >
-        <div class="tag-tabs">
-          <div class="tab-item" :class="{ active: activeTab === 'basic' }" @click="activeTab = 'basic'">
-            <tag-outlined/>
-            <span>基本信息</span>
-          </div>
-          <div class="tab-item" :class="{ active: activeTab === 'settings' }" @click="activeTab = 'settings'">
-            <setting-outlined/>
-            <span>标签设置</span>
-          </div>
-        </div>
-
         <div class="form-content">
-          <!-- 基本信息面板 -->
-          <div v-show="activeTab === 'basic'" class="tab-panel">
-            <a-form-item label="标签名称" name="name">
-              <a-input
-                  v-model:value="tagForm.name"
-                  placeholder="请输入标签名称"
-                  :maxLength="20"
-                  showCount
-              >
-                <template #prefix>
-                  <font-outlined style="color: rgba(0, 0, 0, 0.25)"/>
-                </template>
-              </a-input>
-            </a-form-item>
-
-            <a-form-item label="标签分类" name="category">
-              <a-select
-                  v-model:value="tagForm.category"
-                  placeholder="请选择标签分类"
-                  :options="categoryOptions"
-              >
-                <template #suffixIcon>
-                  <appstore-outlined/>
-                </template>
-              </a-select>
-            </a-form-item>
-
-            <a-form-item label="标签描述" name="description">
-              <a-textarea
-                  v-model:value="tagForm.description"
-                  placeholder="请输入标签描述信息（选填）"
-                  :rows="4"
-                  :maxLength="200"
-                  :showCount="true"
-              />
-            </a-form-item>
-          </div>
-
-          <!-- 标签设置面板 -->
-          <div v-show="activeTab === 'settings'" class="tab-panel">
-            <a-form-item label="标签颜色" name="color">
-              <div class="color-selector-wrapper">
-                <div class="color-presets">
-                  <template v-for="color in presetColors" :key="color">
-                    <div
-                        class="color-preset-item"
-                        :class="{ active: tagForm.color === color }"
-                        :style="{ backgroundColor: color }"
-                        @click="tagForm.color = color"
-                    ></div>
+          <!-- 横向三列布局，更有效利用空间 -->
+          <div class="integrated-form-compact">
+            <!-- 第一列：标签名称 -->
+            <div class="form-column">
+              <a-form-item label="标签名称" name="name" required>
+                <a-input
+                    v-model:value="tagForm.name"
+                    placeholder="请输入标签名称"
+                    :maxLength="20"
+                    showCount
+                >
+                  <template #prefix>
+                    <font-outlined style="color: rgba(0, 0, 0, 0.25)"/>
                   </template>
-                </div>
-                <div class="color-input-container">
+                </a-input>
+              </a-form-item>
+            </div>
+
+            <!-- 第二列：标签状态 -->
+            <div class="form-column">
+              <a-form-item label="标签状态" name="status" required>
+                <a-select
+                    v-model:value="tagForm.status"
+                    placeholder="请选择标签状态"
+                    :options="statusOptions"
+                >
+                  <template #suffixIcon>
+                    <check-circle-outlined/>
+                  </template>
+                </a-select>
+              </a-form-item>
+            </div>
+
+            <!-- 第三列：标签颜色 -->
+            <div class="form-column">
+              <a-form-item label="标签颜色" name="color" required class="color-form-item">
+                <div class="color-display-row">
+                  <!-- 颜色预览 -->
+                  <div class="selected-color-preview" :style="{ backgroundColor: tagForm.color }"></div>
+                  <!-- 颜色输入框 -->
                   <a-input
                       v-model:value="tagForm.color"
                       placeholder="#颜色代码"
                       class="color-input"
-                  >
-                    <template #prefix>
-                      <div class="color-display" :style="{ backgroundColor: tagForm.color }"></div>
-                    </template>
-                  </a-input>
+                  />
+                  <!-- 显示颜色选择器按钮 - 使用更可靠的图标 -->
+                  <a-button class="color-picker-button" @click="openColorPicker">
+                    <svg viewBox="64 64 896 896" data-icon="bg-colors" width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false" class="">
+                      <path d="M766.4 744.3c43.7 0 79.4-36.2 79.4-80.5 0-53.5-79.4-140.8-79.4-140.8S687 610.3 687 663.8c0 44.3 35.7 80.5 79.4 80.5zm-377.1-44.1c7.1 7.1 18.6 7.1 25.6 0l256.1-256c7.1-7.1 7.1-18.6 0-25.6l-256-256c-7.1-7.1-18.6-7.1-25.6 0-7.1 7.1-7.1 18.6 0 25.6l230.4 230.6L389.3 675.6a18.15 18.15 0 000 24.6zm261.3-105.5c3.2 3.2 3.2 8.4 0 11.6l-28.4 28.4c-3.2 3.2-8.4 3.2-11.6 0l-56.7-56.7a8.15 8.15 0 010-11.6l28.4-28.4c3.2-3.2 8.4-3.2 11.6 0l56.7 56.7zM675.3 150l-166 166c-3.2 3.2-8.4 3.2-11.6 0l-56.8-56.8c-3.2-3.2-3.2-8.4 0-11.6l166-166c3.2-3.2 8.4-3.2 11.6 0l56.8 56.8c3.2 3.2 3.2 8.4 0 11.6z"></path>
+                    </svg>
+                  </a-button>
                 </div>
-              </div>
-            </a-form-item>
+              </a-form-item>
+            </div>
+          </div>
 
-            <a-form-item label="标签状态" name="status">
-              <a-select
-                  v-model:value="tagForm.status"
-                  placeholder="请选择标签状态"
-                  :options="statusOptions"
-              >
-                <template #suffixIcon>
-                  <check-circle-outlined/>
-                </template>
-              </a-select>
-            </a-form-item>
+          <!-- 紧凑排列的颜色预设 -->
+          <div class="color-selector-compact">
+            <div class="color-preset-grid">
+              <template v-for="color in presetColors.slice(0, 15)" :key="color">
+                <div
+                    class="color-preset-item"
+                    :class="{ active: tagForm.color === color }"
+                    :style="{ backgroundColor: color }"
+                    @click="tagForm.color = color"
+                ></div>
+              </template>
+            </div>
+          </div>
+
+          <!-- 可选的描述字段 - 减小高度 -->
+          <a-form-item label="标签描述" name="description">
+            <a-textarea
+                v-model:value="tagForm.description"
+                placeholder="请输入标签描述（选填）"
+                :rows="2"
+            :maxLength="100"
+            showCount
+            />
+          </a-form-item>
+
+          <!-- 标签预览 - 精简高度，移到底部 -->
+          <div class="tag-preview-compact">
+            <div class="preview-title">预览效果:</div>
+            <a-tag :color="tagForm.color" style="margin: 0; padding: 5px 12px; font-size: 14px;">
+              {{ tagForm.name || '标签预览' }}
+            </a-tag>
           </div>
         </div>
 
-        <a-form-item label="标签预览">
-          <div class="tag-preview">
-            <div class="preview-header">预览效果</div>
-            <div class="preview-content">
-              <a-tag :color="tagForm.color" style="margin: 0; padding: 6px 16px; font-size: 16px;">
-                {{ tagForm.name || '标签预览' }}
-              </a-tag>
-            </div>
-          </div>
-        </a-form-item>
-
-        <div class="form-footer">
+        <!-- 表单底部按钮 - 减少上边距 -->
+        <div class="form-footer-compact">
           <a-space>
             <a-button @click="handleTagCancel">取消</a-button>
             <a-button type="primary" @click="handleTagSubmit" :loading="submitLoading">
@@ -494,6 +495,51 @@
           </a-space>
         </div>
       </a-form>
+    </a-modal>
+
+
+    <a-modal
+        v-model:visible="colorPickerVisible"
+        title="高级颜色选择器"
+        :footer="null"
+        width="360px"
+        :destroyOnClose="true"
+        class="color-picker-modal"
+    >
+      <!-- 简化颜色选择器内容，确保组件正确加载 -->
+      <div class="advanced-color-selector">
+        <!-- 预设颜色选择网格 -->
+        <div class="color-grid">
+          <div
+              v-for="color in presetColors"
+              :key="color"
+              class="color-grid-item"
+              :style="{ backgroundColor: color }"
+              :class="{ active: tagForm.color === color }"
+              @click="selectColor(color)"
+          ></div>
+        </div>
+
+        <!-- 自定义颜色输入 -->
+        <div class="custom-color-input">
+          <span class="color-input-label">自定义颜色:</span>
+          <div class="color-input-container">
+            <div class="color-preview" :style="{ backgroundColor: tagForm.color }"></div>
+            <a-input
+                v-model:value="tagForm.color"
+                placeholder="#颜色代码"
+                :maxLength="7"
+                @change="validateColorCode"
+            />
+          </div>
+        </div>
+
+        <!-- 底部确认按钮 -->
+        <div class="color-picker-footer">
+          <a-button @click="colorPickerVisible = false">取消</a-button>
+          <a-button type="primary" @click="confirmColorSelection">确定</a-button>
+        </div>
+      </div>
     </a-modal>
 
     <!-- 标签详情弹窗 -->
@@ -512,11 +558,6 @@
               {{ selectedTag.name }}
             </a-tag>
             <a-badge :status="getStatusType(selectedTag.status)" :text="getStatusText(selectedTag.status)"/>
-          </div>
-          <div class="detail-category">
-            <a-tag :color="getCategoryColor(selectedTag.category)">
-              {{ getCategoryName(selectedTag.category) }}
-            </a-tag>
           </div>
         </div>
 
@@ -543,14 +584,14 @@
               </div>
               <div class="detail-info-row">
                 <div class="detail-label">引用次数</div>
-                <div class="detail-value">{{ selectedTag.usageCount }}</div>
+                <div class="detail-value">{{ selectedTag.referenceCount }}</div>
               </div>
               <div class="detail-info-row">
                 <div class="detail-label">颜色代码</div>
                 <div class="detail-value">
-                  <div class="color-display">
+                  <div class="color-display-wrapper">
                     <div class="color-square" :style="{ backgroundColor: selectedTag.color }"></div>
-                    <span>{{ selectedTag.color }}</span>
+                    <span class="color-code">{{ selectedTag.color }}</span>
                   </div>
                 </div>
               </div>
@@ -568,37 +609,30 @@
           </div>
 
           <div class="detail-section">
-            <div class="section-title">
-              <bar-chart-outlined/>
-              <span>使用情况</span>
-            </div>
-            <div class="usage-graph">
-              <div class="usage-header">
-                <span>最近30天引用趋势</span>
-              </div>
-              <div class="usage-chart">
-                <!-- 这里可以放趋势图表，示例中用简单的条状图展示 -->
-                <div class="bar-chart">
-                  <div v-for="(value, index) in usageData" :key="index" class="bar-container">
-                    <div class="bar" :style="{ height: `${(value / Math.max(...usageData)) * 150}px` }"></div>
-                    <div class="bar-label">{{ index + 1 }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <div class="section-title">
+            <div class="section-title collapsible" @click="toggleRelatedContent">
               <link-outlined/>
               <span>关联内容 (TOP 5)</span>
+              <div class="collapse-icon">
+                <down-outlined v-if="!relatedContentExpanded" />
+                <up-outlined v-else />
+              </div>
             </div>
-            <a-table
-                :columns="relatedColumns"
-                :data-source="relatedContent"
-                :pagination="false"
-                size="small"
-            />
+
+            <!-- 使用 a-collapse 组件 -->
+            <div class="related-content-container" :class="{ 'expanded': relatedContentExpanded }">
+              <a-spin :spinning="relatedContentLoading">
+                <div v-if="relatedContentExpanded">
+                  <a-empty v-if="relatedContent.length === 0" description="暂无关联内容" />
+                  <a-table
+                      v-else
+                      :columns="relatedColumns"
+                      :data-source="relatedContent"
+                      :pagination="false"
+                      size="small"
+                  />
+                </div>
+              </a-spin>
+            </div>
           </div>
         </div>
 
@@ -626,8 +660,7 @@ import {
   ref,
   reactive,
   onMounted,
-  computed,
-  h
+  computed
 } from 'vue';
 import {
   SearchOutlined,
@@ -640,8 +673,6 @@ import {
   InfoCircleOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
-  WarningOutlined,
-  SettingOutlined,
   PlusOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
@@ -651,13 +682,173 @@ import {
   CopyOutlined,
   TeamOutlined,
   TagOutlined,
+  BgColorsOutlined,
   StopOutlined,
   FileTextOutlined,
-  BarChartOutlined,
+  DownOutlined,
+  UpOutlined
 } from '@ant-design/icons-vue';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import dayjs from 'dayjs';
+import {
+  listTagByPageUsingGet,
+  createTagUsingPost,
+  updateTagUsingPut,
+  deleteTagUsingDelete,
+  batchDeleteTagsUsingDelete,
+  updateTagStatusUsingPut,
+  batchUpdateTagStatusUsingPut,
+  getTagStatisticsUsingGet,
+  getTagRelatedItemsUsingGet,
+} from '@/api/biaoqianguanli';
 import TrendBadge from "@/components/common/TrendBadge.vue";
+
+
+// 视图模式
+const viewMode = ref('list');
+
+// 选中行数据
+const selectedRowKeys = ref([]);
+const hasSelected = computed(() => selectedRowKeys.value.length > 0);
+const isAllSelected = computed(() => selectedRowKeys.value.length > 0 && selectedRowKeys.value.length === tagData.value.length);
+const isIndeterminate = computed(() => selectedRowKeys.value.length > 0 && selectedRowKeys.value.length < tagData.value.length);
+
+// 已选标签数据
+const selectedTag = ref(null);
+const detailModalVisible = ref(false);
+const relatedContentLoading = ref(false);
+const relatedContent = ref([]);
+
+
+// 其他必要的变量和方法
+const tagModalVisible = ref(false);
+const isEditing = ref(false);
+const submitLoading = ref(false);
+const tagFormRef = ref(null);
+
+// 控制关联内容是否展开的状态
+const relatedContentExpanded = ref(false);
+
+// 排序字段和顺序
+const sortField = ref('');
+const sortOrder = ref('');
+
+const colorPickerVisible = ref(false);
+
+// 表格数据和加载状态
+const loading = ref(false);
+const tagData = ref([]);
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
+  showSizeChanger: true,
+  showQuickJumper: true,
+  showTotal: (total) => `共 ${total} 条`,
+  // 添加下面的页码大小选项配置
+  pageSizeOptions: ['10', '20', '50', '100'],
+  // 添加onShowSizeChange回调函数
+  onShowSizeChange: (current, size) => {
+    pagination.current = 1; // 切换每页条数时，重置为第一页
+    pagination.pageSize = size;
+    fetchTagData(); // 重新获取数据
+  }
+});
+
+
+// 顶部卡片数据
+const statCards = ref([]);
+
+// 搜索表单数据
+const searchForm = reactive({
+  name: '',
+  category: undefined,
+  status: undefined,
+  createTime: [],
+});
+
+
+// 统计信息
+const tagStatistics = ref({
+  todayCreated: 0,
+  weekCount: 0,
+  monthCreated: 0,
+  totalCount: 0,
+  activeCount: 0,
+  inactiveCount: 0,
+  totalUsage: 0,
+});
+
+// 标签表单
+const tagForm = reactive({
+  id: '',
+  name: '',
+  color: '#1890FF',
+  status: 'active',
+  description: '',
+});
+
+
+// 扩展预设颜色数组，添加更多颜色选择
+const presetColors = ref([
+  '#1890FF', '#52C41A', '#FAAD14', '#F5222D', '#722ED1',
+  '#13C2C2', '#EB2F96', '#FA541C', '#2F54EB', '#00B96B',
+  // 额外添加一些常用颜色
+  '#F759AB', '#9254DE', '#D4380D', '#006D75', '#237804',
+  '#AD8B00', '#D48806', '#D46B08', '#7CB305', '#389E0D',
+  '#08979C', '#096DD9', '#1D39C4', '#531DAB', '#C41D7F'
+]);
+
+
+// 状态选项
+const statusOptions = [
+  {value: 'active', label: '已启用', tagColor: 'success'},
+  {value: 'inactive', label: '已禁用', tagColor: 'danger'},
+];
+
+// 创建响应式数据
+const tagStats = ref({
+  totalCount: 0,
+  activeCount: 0,
+  inactiveCount: 0,
+  todayCount: 0,
+  monthCount: 0,
+  weekCount: 0,
+  unusedTag: 0,
+  totalReferenceCount: 0
+});
+
+// 保存上一次统计数据，用于计算环比
+const previousStats = reactive({
+  totalCount: 0,
+  activeCount: 0,
+  inactiveCount: 0,
+  todayCount: 0,
+  monthCount: 0,
+  weekCount: 0,
+  unusedTag: 0,
+  totalReferenceCount: 0
+});
+
+// 标签表单验证规则
+const tagRules = {
+  name: [
+    {required: true, message: '请输入标签名称', trigger: 'blur'},
+    {max: 20, message: '标签名称不能超过20个字符', trigger: 'blur'}
+  ],
+  color: [
+    {required: true, message: '请选择标签颜色', trigger: 'change'},
+    {
+      pattern: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
+      message: '请输入有效的颜色代码',
+      trigger: 'blur'
+    }
+  ],
+  status: [
+    {required: true, message: '请选择标签状态', trigger: 'change'}
+  ],
+};
+
 
 // 表格列定义
 const columns = [
@@ -665,7 +856,7 @@ const columns = [
     title: 'ID',
     dataIndex: 'id',
     align: 'center',
-    width: 70,
+    width: 170,
   },
   {
     title: '标签名称',
@@ -701,7 +892,7 @@ const columns = [
   },
   {
     title: '引用次数',
-    dataIndex: 'usageCount',
+    dataIndex: 'referenceCount',
     align: 'center',
     width: 100,
     sorter: true
@@ -737,452 +928,339 @@ const relatedColumns = [
   }
 ];
 
-// 顶部卡片数据
-const statCards = reactive([
-  {
-    title: '标签总数',
-    value: '1,248',
-    change: 12.5,
-    color: 'purple',
-    icon: TagOutlined,
-  },
-  {
-    title: '本月新增',
-    value: '143',
-    change: 8.2,
-    color: 'blue',
-    icon: PlusOutlined,
-  },
-  {
-    title: '活跃标签',
-    value: '892',
-    change: 5.7,
-    color: 'green',
-    icon: CheckCircleOutlined,
-  },
-  {
-    title: '未使用标签',
-    value: '356',
-    change: -3.6,
-    color: 'gold',
-    icon: WarningOutlined,
-  },
-]);
 
+// 获取标签对应的图标 - 箭头函数
+const getTagIcon = (category) => {
+  const iconMap = {
+    'marketing': 'fund-outlined',
+    'analytics': 'area-chart-outlined',
+    'design': 'sketch-outlined',
+    'user': 'user-outlined',
+    'product': 'shopping-outlined',
+    'default': 'tag-outlined'
+  };
 
-// 搜索表单数据
-const searchForm = reactive({
-  tagName: '',
-  category: undefined,
-  status: undefined,
-  createTime: [],
-});
-
-// 标签表单
-const tagForm = reactive({
-  id: '',
-  name: '',
-  color: '#1890FF',
-  status: 'active',
-  description: '',
-});
-
-// 预设颜色
-const presetColors = ref([
-  '#1890FF', '#52C41A', '#FAAD14', '#F5222D', '#722ED1',
-  '#13C2C2', '#EB2F96', '#FA541C', '#2F54EB', '#00B96B'
-]);
-
-// 类别选项
-const categoryOptions = [
-  {value: 'content', label: '内容分类'},
-  {value: 'marketing', label: '营销活动'},
-  {value: 'product', label: '产品标签'},
-  {value: 'user', label: '用户标签'},
-  {value: 'feature', label: '功能标记'}
-];
-
-// 状态选项
-const statusOptions = [
-  {value: 'active', label: '已启用', tagColor: 'success'},
-  {value: 'inactive', label: '未启用', tagColor: 'warning'}
-];
-
-// 其他必要的变量和方法
-const tagModalVisible = ref(false);
-const isEditing = ref(false);
-const submitLoading = ref(false);
-const tagFormRef = ref(null);
-
-
-// 表格数据和加载状态
-const loading = ref(false);
-const tagData = ref([]);
-const pagination = reactive({
-  current: 1,
-  pageSize: 12,
-  total: 0,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total) => `共 ${total} 条`,
-});
-
-// 视图模式
-const viewMode = ref('list');
-const activeTab = ref('basic');
-// 选中行数据
-const selectedRowKeys = ref([]);
-const hasSelected = computed(() => selectedRowKeys.value.length > 0);
-const isAllSelected = computed(() => selectedRowKeys.value.length > 0 && selectedRowKeys.value.length === tagData.value.length);
-const isIndeterminate = computed(() => selectedRowKeys.value.length > 0 && selectedRowKeys.value.length < tagData.value.length);
-
-// 已选标签数据
-const selectedTag = ref(null);
-
-
-// 标签表单验证规则
-const tagRules = {
-  name: [
-    {required: true, message: '请输入标签名称', trigger: 'blur'},
-    {max: 20, message: '标签名称不能超过20个字符', trigger: 'blur'}
-  ],
-  color: [
-    {required: true, message: '请选择标签颜色', trigger: 'change'}
-  ],
-  status: [
-    {required: true, message: '请选择标签状态', trigger: 'change'}
-  ],
+  return iconMap[category] || iconMap.default;
 };
 
 
-// 使用情况趋势数据模拟
-const usageData = Array.from({length: 30}, () => Math.floor(Math.random() * 100));
+// 切换关联内容的展开/折叠状态
+const toggleRelatedContent = () => {
+  relatedContentExpanded.value = !relatedContentExpanded.value;
 
-// 关联内容数据模拟
-const relatedContent = [
-  {
-    id: 1,
-    type: '文章',
-    title: '如何提高用户转化率的10个技巧',
-    createTime: new Date(2025, 0, 8).getTime()
-  },
-  {
-    id: 2,
-    type: '产品',
-    title: '智能家居控制系统 v2.0',
-    createTime: new Date(2025, 0, 12).getTime()
-  },
-  {
-    id: 3,
-    type: '图片',
-    title: '产品宣传主视觉图片',
-    createTime: new Date(2025, 0, 15).getTime()
-  },
-  {
-    id: 4,
-    type: '文档',
-    title: '2025年Q1营销策略报告',
-    createTime: new Date(2025, 0, 18).getTime()
-  },
-  {
-    id: 5,
-    type: '视频',
-    title: '新品发布会直播回放',
-    createTime: new Date(2025, 0, 20).getTime()
+  // 如果展开且数据为空，则加载数据
+  if (relatedContentExpanded.value && selectedTag.value && relatedContent.value.length === 0) {
+    fetchTagRelatedItems(selectedTag.value.id);
   }
-];
-// 组件挂载时获取数据
-onMounted(() => {
-  fetchTagData();
-});
+};
 
-// 获取标签数据
-function fetchTagData() {
+// 添加颜色选择器相关方法
+const openColorPicker = () => {
+  colorPickerVisible.value = true;
+};
+
+const selectColor = (color) => {
+  tagForm.color = color;
+};
+
+const confirmColorSelection = () => {
+  // 验证颜色代码
+  validateColorCode();
+  // 关闭选择器
+  colorPickerVisible.value = false;
+};
+
+const validateColorCode = () => {
+  // 简单验证颜色代码
+  const colorPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+  if (!colorPattern.test(tagForm.color)) {
+    // 如果格式不正确，设置为默认颜色
+    if (tagForm.color && !tagForm.color.startsWith('#')) {
+      tagForm.color = '#' + tagForm.color;
+    }
+    // 再次检查并重置无效颜色
+    if (!colorPattern.test(tagForm.color)) {
+      tagForm.color = '#1890FF';
+    }
+  }
+};
+
+
+// 创建颜色亮化函数，为卡片顶部渐变效果提供支持 - 箭头函数
+const lightenColor = (color, percent) => {
+  // 移除可能的 # 前缀
+  let hex = color.replace('#', '');
+
+  // 将十六进制转换为 RGB
+  let r = parseInt(hex.substring(0, 2), 16);
+  let g = parseInt(hex.substring(2, 4), 16);
+  let b = parseInt(hex.substring(4, 6), 16);
+
+  // 亮化处理
+  r = Math.min(255, Math.floor(r * (100 + percent) / 100));
+  g = Math.min(255, Math.floor(g * (100 + percent) / 100));
+  b = Math.min(255, Math.floor(b * (100 + percent) / 100));
+
+  // 转回十六进制
+  return `#${(r.toString(16).padStart(2, '0'))}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
+// 获取标签统计信息 - 箭头函数
+const fetchTagStatistics = async () => {
+  loading.value = true;
+  try {
+    const response = await getTagStatisticsUsingGet();
+    console.log('统计数据响应:', response);
+
+    if (response?.data?.code === 200 && response?.data?.data) {
+      // 获取数据
+      const statsData = response.data.data;
+
+      // 保存前一次数据用于环比计算
+      Object.assign(previousStats, tagStats.value);
+
+      // 更新当前数据 - tagStats 用于中间部分的卡片
+      tagStats.value = {
+        totalCount: statsData.totalCount || 0,
+        activeCount: statsData.activeCount || 0,
+        inactiveCount: statsData.inactiveCount || 0,
+        todayCount: statsData.todayCount || 0,
+        monthCount: statsData.monthCount || 0,
+        weekCount: statsData.weekCount || 0,
+        unusedTag: statsData.unusedTag || 0,
+        totalReferenceCount: statsData.totalReferenceCount || 0
+      };
+
+      // 更新顶部指标数据 - tagStatistics 用于顶部指标
+      tagStatistics.value = {
+        todayCount: statsData.todayCount || 0,
+        weekCount: statsData.weekCount || 0,
+        monthCount: statsData.monthCount || 0,
+        totalCount: statsData.totalCount || 0,
+        activeCount: statsData.activeCount || 0,
+        inactiveCount: statsData.inactiveCount || 0,
+        totalReferenceCount: statsData.totalReferenceCount || 0,
+        unusedTag: statsData.unusedTag || 0
+      };
+
+      // 初始化统计卡片数据
+      initStatCards();
+    } else {
+      message.error('获取标签统计数据失败');
+    }
+  } catch (error) {
+    console.error('获取标签统计数据出错:', error);
+    message.error('获取标签统计数据出错');
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 初始化统计卡片数据 - 箭头函数
+const initStatCards = () => {
+  statCards.value = [
+    {
+      title: '标签总数',
+      value: tagStats.value.totalCount,
+      change: calculateChange(tagStats.value.totalCount, previousStats.totalCount),
+      color: 'purple',
+      icon: 'TagOutlined'
+    },
+    {
+      title: '本月新增',
+      value: tagStats.value.monthCount,
+      change: calculateChange(tagStats.value.monthCount, previousStats.monthCount),
+      color: 'blue',
+      icon: 'PlusOutlined'
+    },
+    {
+      title: '活跃标签',
+      value: tagStats.value.activeCount,
+      change: calculateChange(tagStats.value.activeCount, previousStats.activeCount),
+      color: 'green',
+      icon: 'CheckCircleOutlined'
+    },
+    {
+      title: '未使用标签',
+      value: tagStats.value.unusedTag,
+      change: calculateChange(tagStats.value.unusedTag, previousStats.unusedTag),
+      color: 'gold',
+      icon: 'WarningOutlined'
+    }
+  ];
+};
+
+// 计算环比变化 - 箭头函数
+const calculateChange = (current, previous) => {
+  if (previous === 0) return 0;
+  return Math.round((current - previous) / previous * 100);
+};
+
+// 格式化数字 - 箭头函数
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k';
+  }
+  return num.toString();
+};
+
+// 获取标签数据 - 箭头函数
+const fetchTagData = async () => {
   loading.value = true;
 
-  // 模拟API请求获取标签数据
-  setTimeout(() => {
-    const data = [
-      {
-        id: 1,
-        name: '热门推荐',
-        color: '#F5222D',
-        category: 'marketing',
-        description: '用于标记热门推荐内容，显示在首页和推荐栏目',
-        status: 'active',
-        createTime: new Date(2025, 0, 5).getTime(),
-        updateTime: new Date(2025, 0, 5).getTime(),
-        usageCount: 128
-      },
-      {
-        id: 2,
-        name: '新功能',
-        color: '#722ED1',
-        category: 'feature',
-        description: '标记新上线的功能和特性',
-        status: 'active',
-        createTime: new Date(2025, 0, 6).getTime(),
-        updateTime: new Date(2025, 0, 15).getTime(),
-        usageCount: 87
-      },
-      {
-        id: 3,
-        name: '限时优惠',
-        color: '#FAAD14',
-        category: 'marketing',
-        description: '用于标记限时促销商品',
-        status: 'active',
-        createTime: new Date(2025, 0, 7).getTime(),
-        updateTime: new Date(2025, 0, 7).getTime(),
-        usageCount: 95
-      },
-      {
-        id: 4,
-        name: '用户指南',
-        color: '#52C41A',
-        category: 'content',
-        description: '标记用户指南和教程类内容',
-        status: 'active',
-        createTime: new Date(2025, 0, 8).getTime(),
-        updateTime: new Date(2025, 0, 8).getTime(),
-        usageCount: 43
-      },
-      {
-        id: 5,
-        name: '高级会员',
-        color: '#1890FF',
-        category: 'user',
-        description: '标记高级会员专属内容',
-        status: 'active',
-        createTime: new Date(2025, 0, 9).getTime(),
-        updateTime: new Date(2025, 0, 9).getTime(),
-        usageCount: 72
-      },
-      {
-        id: 6,
-        name: '新品上市',
-        color: '#EB2F96',
-        category: 'product',
-        description: '标记新上市的产品',
-        status: 'active',
-        createTime: new Date(2025, 0, 10).getTime(),
-        updateTime: new Date(2025, 0, 10).getTime(),
-        usageCount: 64
-      },
-      {
-        id: 7,
-        name: '技术博客',
-        color: '#13C2C2',
-        category: 'content',
-        description: '标记技术博客和专业文章',
-        status: 'inactive',
-        createTime: new Date(2025, 0, 11).getTime(),
-        updateTime: new Date(2025, 0, 11).getTime(),
-        usageCount: 39
-      },
-      {
-        id: 8,
-        name: '精选案例',
-        color: '#FA541C',
-        category: 'content',
-        description: '标记精选客户案例',
-        status: 'active',
-        createTime: new Date(2025, 0, 12).getTime(),
-        updateTime: new Date(2025, 0, 12).getTime(),
-        usageCount: 27
-      },
-      {
-        id: 9,
-        name: '即将下线',
-        color: '#F5222D',
-        category: 'product',
-        description: '标记即将下线的产品或功能',
-        status: 'inactive',
-        createTime: new Date(2025, 0, 13).getTime(),
-        updateTime: new Date(2025, 0, 13).getTime(),
-        usageCount: 18
-      },
-      {
-        id: 10,
-        name: '社区活动',
-        color: '#2F54EB',
-        category: 'marketing',
-        description: '标记社区活动和线下沙龙',
-        status: 'active',
-        createTime: new Date(2025, 0, 14).getTime(),
-        updateTime: new Date(2025, 0, 14).getTime(),
-        usageCount: 52
-      },
-      {
-        id: 11,
-        name: '新手入门',
-        color: '#52C41A',
-        category: 'content',
-        description: '标记适合新手的入门内容',
-        status: 'active',
-        createTime: new Date(2025, 0, 15).getTime(),
-        updateTime: new Date(2025, 0, 15).getTime(),
-        usageCount: 91
-      },
-      {
-        id: 12,
-        name: '进阶技巧',
-        color: '#722ED1',
-        category: 'content',
-        description: '标记包含进阶技巧的高级内容',
-        status: 'active',
-        createTime: new Date(2025, 0, 16).getTime(),
-        updateTime: new Date(2025, 0, 16).getTime(),
-        usageCount: 63
+  try {
+    // 构建查询参数
+    const params = {
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
+      name: searchForm.name || undefined,
+      status: searchForm.status || undefined,
+    };
+
+    // 处理时间范围
+    if (searchForm.createTime && searchForm.createTime.length === 2) {
+      // 确保两个日期都存在并且是有效的dayjs对象
+      if (searchForm.createTime[0] && searchForm.createTime[1]) {
+        // 开始日期使用当天开始时间 00:00:00
+        params.createTimeStart = searchForm.createTime[0].format('YYYY-MM-DD 00:00:00');
+        // 结束日期使用当天结束时间 23:59:59
+        params.createTimeEnd = searchForm.createTime[1].format('YYYY-MM-DD 23:59:59');
       }
-    ];
+    }
 
-    tagData.value = data;
-    pagination.total = data.length;
+    // 处理排序
+    if (sortField.value && sortOrder.value) {
+      params.sortField = sortField.value;
+      params.sortOrder = sortOrder.value;
+    }
+
+    const response = await listTagByPageUsingGet(params);
+
+    if (response.data.code === 200 && response.data) {
+      tagData.value = response.data.data.records || [];
+      pagination.total = response.data.data.total || 0;
+    } else {
+      message.error(response.data.message || '获取标签数据失败');
+    }
+  } catch (error) {
+    console.error('获取标签数据异常:', error);
+    message.error('获取标签数据发生异常');
+  } finally {
     loading.value = false;
-  }, 500);
-}
+  }
+};
 
-// 获取状态类型
-function getStatusType(status) {
+
+// 获取状态类型 - 箭头函数
+const getStatusType = (status) => {
   const statusMap = {
     active: 'success',
-    inactive: 'warning'
+    inactive: 'error'
   };
   return statusMap[status] || 'default';
-}
+};
 
-// 获取状态文本
-function getStatusText(status) {
+// 获取状态文本 - 箭头函数
+const getStatusText = (status) => {
   const statusMap = {
     active: '已启用',
-    inactive: '未启用'
+    inactive: '已禁用'
   };
   return statusMap[status] || '未知状态';
-}
+};
 
-// 格式化日期时间
-function formatDateTime(timestamp) {
-  return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss');
-}
 
-// 搜索处理
-function handleSearch() {
-  loading.value = true;
+// 格式化日期时间 - 箭头函数
+const formatDateTime = (timestamp, dateOnly = false) => {
+  if (!timestamp) return '未设置';
+  return dayjs(timestamp).format(dateOnly ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss');
+};
 
-  // 模拟搜索过滤
-  setTimeout(() => {
-    // 过滤条件实现
-    const filteredData = tagData.value.filter(tag => {
-      let match = true;
+// 搜索处理 - 箭头函数
+const handleSearch = () => {
+  pagination.current = 1;
+  fetchTagData();
+};
 
-      if (searchForm.tagName && !tag.name.includes(searchForm.tagName)) {
-        match = false;
-      }
-
-      if (searchForm.category && tag.category !== searchForm.category) {
-        match = false;
-      }
-
-      if (searchForm.status && tag.status !== searchForm.status) {
-        match = false;
-      }
-
-      if (searchForm.createTime && searchForm.createTime.length === 2) {
-        const startTime = searchForm.createTime[0].valueOf();
-        const endTime = searchForm.createTime[1].valueOf();
-        if (tag.createTime < startTime || tag.createTime > endTime) {
-          match = false;
-        }
-      }
-
-      return match;
-    });
-
-    tagData.value = filteredData;
-    pagination.total = filteredData.length;
-    pagination.current = 1;
-    loading.value = false;
-
-    message.success('搜索完成');
-  }, 500);
-}
-
-// 重置搜索表单
-function resetSearchForm() {
-  searchForm.tagName = '';
-  searchForm.category = undefined;
+// 重置搜索表单 - 箭头函数
+const resetSearchForm = () => {
+  searchForm.name = '';
   searchForm.status = undefined;
   searchForm.createTime = [];
+  sortField.value = '';
+  sortOrder.value = '';
 
-  // 重新获取所有数据
+  // 重新获取数据
+  pagination.current = 1;
   fetchTagData();
 
   message.success('搜索条件已重置');
-}
+};
 
-// 刷新表格数据
-function handleRefresh() {
+// 刷新表格数据 - 箭头函数
+const handleRefresh = () => {
   fetchTagData();
   selectedRowKeys.value = [];
   message.success('数据已刷新');
-}
+};
 
-// 表格选择变化
-function onSelectChange(selected) {
+// 表格选择变化 - 箭头函数
+const onSelectChange = (selected) => {
   selectedRowKeys.value = selected;
-}
+};
 
-// 选择所有改变
-function onSelectAllChange(e) {
+// 选择所有改变 - 箭头函数
+const onSelectAllChange = (e) => {
   if (e.target.checked) {
     selectedRowKeys.value = tagData.value.map(item => item.id);
   } else {
     selectedRowKeys.value = [];
   }
-}
+};
 
-// 切换标签选择
-function toggleTagSelection(id) {
+// 切换标签选择 - 箭头函数
+const toggleTagSelection = (id) => {
   const index = selectedRowKeys.value.indexOf(id);
   if (index > -1) {
     selectedRowKeys.value.splice(index, 1);
   } else {
     selectedRowKeys.value.push(id);
   }
-}
+};
 
-// 表格变化处理
-function handleTableChange(pag, filters, sorter) {
+// 表格变化处理 - 箭头函数
+const handleTableChange = (pag, filters, sorter) => {
   pagination.current = pag.current;
   pagination.pageSize = pag.pageSize;
 
   // 处理排序
   if (sorter.field && sorter.order) {
-    const order = sorter.order === 'ascend' ? 1 : -1;
-    tagData.value = [...tagData.value].sort((a, b) => {
-      if (typeof a[sorter.field] === 'string') {
-        return order * a[sorter.field].localeCompare(b[sorter.field]);
-      }
-      return order * (a[sorter.field] - b[sorter.field]);
-    });
+    sortField.value = sorter.field;
+    sortOrder.value = sorter.order === 'ascend' ? 'asc' : 'desc';
+  } else {
+    sortField.value = '';
+    sortOrder.value = '';
   }
-}
 
-// 页面变化
-function onPageChange(page, pageSize) {
+  fetchTagData();
+};
+
+// 页面变化 - 箭头函数
+const onPageChange = (page, pageSize) => {
   pagination.current = page;
   pagination.pageSize = pageSize;
-}
+  fetchTagData();
+};
 
-// 每页条数变化
-function onShowSizeChange(current, size) {
+// 每页条数变化 - 箭头函数
+const onShowSizeChange = (current, size) => {
   pagination.pageSize = size;
   pagination.current = 1;
-}
+  fetchTagData();
+};
 
-// 打开创建标签模态框
-function openCreateModal() {
+// 打开创建标签模态框 - 箭头函数
+const openCreateModal = () => {
   // 重置表单
   tagForm.id = '';
   tagForm.name = '';
@@ -1193,10 +1271,10 @@ function openCreateModal() {
 
   isEditing.value = false;
   tagModalVisible.value = true;
-}
+};
 
-// 编辑标签
-function editTag(record) {
+// 编辑标签 - 箭头函数
+const editTag = (record) => {
   // 复制标签数据到编辑表单
   Object.keys(tagForm).forEach(key => {
     if (key in record) {
@@ -1211,63 +1289,108 @@ function editTag(record) {
   if (detailModalVisible.value) {
     detailModalVisible.value = false;
   }
-}
+};
 
-// 处理标签提交
-function handleTagSubmit() {
+// 处理标签提交 - 箭头函数
+const handleTagSubmit = () => {
   tagFormRef.value.validate()
-      .then(() => {
+      .then(async () => {
         submitLoading.value = true;
 
-        // 模拟API调用
-        setTimeout(() => {
+        try {
+          let response;
+
           if (isEditing.value) {
             // 更新标签
-            const index = tagData.value.findIndex(tag => tag.id === tagForm.id);
-            if (index !== -1) {
-              tagData.value[index] = {
-                ...tagData.value[index],
-                ...tagForm,
-                updateTime: new Date().getTime()
-              };
+            const updateRequest = {
+              id: tagForm.id,
+              name: tagForm.name,
+              color: tagForm.color,
+              description: tagForm.description,
+              status: tagForm.status
+            };
+
+            response = await updateTagUsingPut(updateRequest);
+
+            if (response.data.code === 200 && response.data) {
+              message.success('标签信息已更新');
+              tagModalVisible.value = false;
+              fetchTagData();
+            } else {
+              message.error(response.data.message || '更新标签失败');
             }
-            message.success('标签信息已更新');
           } else {
             // 创建标签
-            const newTag = {
-              ...tagForm,
-              id: Math.max(...tagData.value.map(tag => tag.id)) + 1,
-              createTime: new Date().getTime(),
-              updateTime: new Date().getTime(),
-              usageCount: 0
+            const createRequest = {
+              name: tagForm.name,
+              color: tagForm.color,
+              description: tagForm.description,
+              status: tagForm.status
             };
-            tagData.value.unshift(newTag);
-            pagination.total += 1;
-            message.success('标签创建成功');
-          }
 
+            response = await createTagUsingPost(createRequest);
+
+            if (response.data.code === 200 && response.data) {
+              message.success('标签创建成功');
+              tagModalVisible.value = false;
+              fetchTagData();
+              fetchTagStatistics();
+            } else {
+              message.error(response.data.message || '创建标签失败');
+            }
+          }
+        } catch (error) {
+          console.error(isEditing.value ? '更新标签异常:' : '创建标签异常:', error);
+          message.error(isEditing.value ? '更新标签发生异常' : '创建标签发生异常');
+        } finally {
           submitLoading.value = false;
-          tagModalVisible.value = false;
-        }, 500);
+        }
       })
       .catch(error => {
         console.error('表单验证失败', error);
       });
-}
+};
 
-// 取消标签编辑
-function handleTagCancel() {
+// 取消标签编辑 - 箭头函数
+const handleTagCancel = () => {
   tagModalVisible.value = false;
-}
+};
 
-// 查看标签详情
-function viewTagDetails(record) {
+// 查看标签详情 - 箭头函数
+const viewTagDetails = async (record) => {
   selectedTag.value = record;
   detailModalVisible.value = true;
-}
+  relatedContentExpanded.value = false;
+};
 
-// 复制标签
-function copyTag(record) {
+
+// 获取标签关联内容 - 箭头函数
+const fetchTagRelatedItems = async (tagId) => {
+  relatedContentLoading.value = true;
+  try {
+    const response = await getTagRelatedItemsUsingGet({
+      tagId: tagId,
+      pageNum: 1,
+      pageSize: 5
+    });
+
+    // 修改这里的数据处理逻辑
+    if (response.data.code === 200 && response.data.data) {
+      relatedContent.value = response.data.data.records || [];
+    } else {
+      relatedContent.value = [];
+      console.error('获取标签关联内容失败:', response.data.message || '未知错误');
+    }
+  } catch (error) {
+    console.error('获取标签关联内容异常:', error);
+    relatedContent.value = [];
+  } finally {
+    relatedContentLoading.value = false;
+  }
+};
+
+// 复制标签 - 箭头函数
+const copyTag = (record) => {
   // 创建一个标签副本，但设置为新建状态
   const tagCopy = {...record};
   delete tagCopy.id;
@@ -1285,75 +1408,97 @@ function copyTag(record) {
   tagModalVisible.value = true;
 
   message.success('已复制标签，请保存以创建新标签');
-}
+};
 
-// 显示删除确认对话框
-function showDeleteConfirm(record) {
-  window.$modal?.confirm({
+// 显示删除确认对话框 - 箭头函数
+const showDeleteConfirm = (record) => {
+  Modal.confirm({
     title: '确定要删除此标签吗?',
     content: '删除后将无法恢复，请谨慎操作。',
     okText: '确定',
     okType: 'danger',
     cancelText: '取消',
     onOk() {
-      deleteTag(record);
+      deleteTag(record.id);
     }
   });
-}
+};
 
-// 删除标签
-function deleteTag(record) {
+// 删除标签 - 箭头函数
+const deleteTag = async (id) => {
   loading.value = true;
 
-  // 模拟API调用
-  setTimeout(() => {
-    tagData.value = tagData.value.filter(tag => tag.id !== record.id);
-    pagination.total -= 1;
+  try {
+    const response = await deleteTagUsingDelete({id});
+
+    if (response.data.code === 200 && response.data) {
+      message.success('标签已删除');
+
+      // 如果删除的是当前选中的标签，则清除选中状态
+      if (selectedRowKeys.value.includes(id)) {
+        selectedRowKeys.value = selectedRowKeys.value.filter(key => key !== id);
+      }
+
+      // 如果详情模态框显示的是当前删除的标签，关闭它
+      if (detailModalVisible.value && selectedTag.value && selectedTag.value.id === id) {
+        detailModalVisible.value = false;
+      }
+
+      // 重新获取数据
+      fetchTagData();
+      fetchTagStatistics();
+    } else {
+      message.error(response.data.message || '删除标签失败');
+    }
+  } catch (error) {
+    console.error('删除标签异常:', error);
+    message.error('删除标签发生异常');
+  } finally {
     loading.value = false;
-    message.success('标签已删除');
+  }
+};
 
-    // 如果删除的是当前选中的标签，则清除选中状态
-    if (selectedRowKeys.value.includes(record.id)) {
-      selectedRowKeys.value = selectedRowKeys.value.filter(id => id !== record.id);
-    }
-
-    // 如果详情模态框显示的是当前删除的标签，关闭它
-    if (detailModalVisible.value && selectedTag.value && selectedTag.value.id === record.id) {
-      detailModalVisible.value = false;
-    }
-  }, 500);
-}
-
-// 批量删除标签
-function handleBatchDelete() {
+// 批量删除标签 - 箭头函数
+const handleBatchDelete = () => {
   if (selectedRowKeys.value.length === 0) {
     message.warning('请先选择要删除的标签');
     return;
   }
 
-  window.$modal?.confirm({
+  Modal.confirm({
     title: `确定要删除选中的 ${selectedRowKeys.value.length} 个标签吗?`,
     content: '删除后将无法恢复，请谨慎操作。',
     okText: '确定',
     okType: 'danger',
     cancelText: '取消',
-    onOk() {
+    async onOk() {
       loading.value = true;
 
-      // 模拟API调用
-      setTimeout(() => {
-        tagData.value = tagData.value.filter(tag => !selectedRowKeys.value.includes(tag.id));
-        pagination.total -= selectedRowKeys.value.length;
-        selectedRowKeys.value = [];
+      try {
+        const response = await batchDeleteTagsUsingDelete({
+          ids: selectedRowKeys.value
+        });
+
+        if (response.data.code === 200 && response.data) {
+          message.success(`已批量删除 ${selectedRowKeys.value.length} 个标签`);
+          selectedRowKeys.value = [];
+          fetchTagData();
+          fetchTagStatistics();
+        } else {
+          message.error(response.data.message || '批量删除标签失败');
+        }
+      } catch (error) {
+        console.error('批量删除标签异常:', error);
+        message.error('批量删除标签发生异常');
+      } finally {
         loading.value = false;
-        message.success('已批量删除标签');
-      }, 800);
+      }
     }
   });
-}
+};
 
-// 批量启用标签
-function handleBatchEnable() {
+// 批量启用标签 - 箭头函数
+const handleBatchEnable = async () => {
   if (selectedRowKeys.value.length === 0) {
     message.warning('请先选择要启用的标签');
     return;
@@ -1361,22 +1506,28 @@ function handleBatchEnable() {
 
   loading.value = true;
 
-  // 模拟API调用
-  setTimeout(() => {
-    tagData.value = tagData.value.map(tag => {
-      if (selectedRowKeys.value.includes(tag.id)) {
-        return {...tag, status: 'active', updateTime: new Date().getTime()};
-      }
-      return tag;
+  try {
+    const response = await batchUpdateTagStatusUsingPut({
+      ids: selectedRowKeys.value,
+      status: 'active'
     });
 
+    if (response.data.code === 200 && response.data) {
+      message.success(`已启用 ${selectedRowKeys.value.length} 个标签`);
+      fetchTagData();
+    } else {
+      message.error(response.data.message || '批量启用标签失败');
+    }
+  } catch (error) {
+    console.error('批量启用标签异常:', error);
+    message.error('批量启用标签发生异常');
+  } finally {
     loading.value = false;
-    message.success(`已启用 ${selectedRowKeys.value.length} 个标签`);
-  }, 500);
-}
+  }
+};
 
-// 批量禁用标签
-function handleBatchDisable() {
+// 批量禁用标签 - 箭头函数
+const handleBatchDisable = async () => {
   if (selectedRowKeys.value.length === 0) {
     message.warning('请先选择要禁用的标签');
     return;
@@ -1384,42 +1535,70 @@ function handleBatchDisable() {
 
   loading.value = true;
 
-  // 模拟API调用
-  setTimeout(() => {
-    tagData.value = tagData.value.map(tag => {
-      if (selectedRowKeys.value.includes(tag.id)) {
-        return {...tag, status: 'inactive', updateTime: new Date().getTime()};
-      }
-      return tag;
+  try {
+    const response = await batchUpdateTagStatusUsingPut({
+      ids: selectedRowKeys.value,
+      status: 'inactive'
     });
 
-    loading.value = false;
-    message.success(`已禁用 ${selectedRowKeys.value.length} 个标签`);
-  }, 500);
-}
-
-// 切换标签状态
-function toggleTagStatus(record) {
-  loading.value = true;
-
-  // 模拟API调用
-  setTimeout(() => {
-    const index = tagData.value.findIndex(tag => tag.id === record.id);
-    if (index !== -1) {
-      const newStatus = record.status === 'active' ? 'inactive' : 'active';
-      tagData.value[index] = {
-        ...tagData.value[index],
-        status: newStatus,
-        updateTime: new Date().getTime()
-      };
-
-      message.success(`标签已${newStatus === 'active' ? '启用' : '禁用'}`);
+    if (response.data.code === 200 && response.data) {
+      message.success(`已禁用 ${selectedRowKeys.value.length} 个标签`);
+      fetchTagData();
+    } else {
+      message.error(response.data.message || '批量禁用标签失败');
     }
-
+  } catch (error) {
+    console.error('批量禁用标签异常:', error);
+    message.error('批量禁用标签发生异常');
+  } finally {
     loading.value = false;
-  }, 500);
-}
+  }
+};
+
+// 切换标签状态 - 箭头函数
+const toggleTagStatus = async (record) => {
+  loading.value = true;
+  console.log('当前标签状态:', record.status); // 添加日志
+
+  const newStatus = record.status === 'active' ? 'inactive' : 'active';
+  console.log('即将更新为的状态:', newStatus); // 添加日志
+
+  try {
+    // 确保请求结构正确
+    const requestData = {
+      id: record.id,
+      status: newStatus
+    };
+
+    const response = await updateTagStatusUsingPut(requestData);
+
+    // 增加详细的响应日志
+    console.log('状态更新响应:', response);
+
+    // 更全面的响应结构检查
+    if (response.data && response.data.code === 200) {
+      message.success(`标签已${newStatus === 'active' ? '启用' : '禁用'}`);
+      fetchTagData(); // 刷新数据
+    } else {
+      // 显示更详细的错误信息
+      const errorMsg = response.data?.message || response.data.message || `${newStatus === 'active' ? '启用' : '禁用'}标签失败`;
+      message.error(errorMsg);
+    }
+  } catch (error) {
+    console.error('更新标签状态异常:', error);
+    message.error('更新标签状态发生异常: ' + (error.message || '未知错误'));
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchTagStatistics();
+  fetchTagData();
+});
 </script>
+
 <style scoped>
 /* 全局容器样式 */
 .tag-management-container {
@@ -1428,19 +1607,19 @@ function toggleTagStatus(record) {
 
 /* 数据统计卡片样式 start */
 .stat-cards {
-  margin-bottom: 32px; /* 从原来的24px增加到32px */
+  margin-bottom: 32px;
 }
 
 /* 调整搜索表单卡片的间距 */
 .search-form-card {
-  margin-bottom: 32px; /* 从原来的24px增加到32px */
-  padding: 4px 0; /* 在卡片内部增加上下内边距 */
+  margin-bottom: 32px;
+  padding: 4px 0;
 }
 
 /* 调整操作按钮区域的间距 */
 .operation-bar {
-  margin-bottom: 32px; /* 从原来的24px增加到32px */
-  padding: 8px 0; /* 添加内部上下间距 */
+  margin-bottom: 32px;
+  padding: 8px 0;
 }
 
 /* 给表格添加一些顶部间距 */
@@ -1448,9 +1627,9 @@ function toggleTagStatus(record) {
   margin-top: 8px;
 }
 
-/* 调整表格的内部单元格间距，使内容更加宽松 */
+/* 调整表格的内部单元格间距 */
 :deep(.ant-table-cell) {
-  padding: 14px 16px; /* 增加单元格内部填充 */
+  padding: 14px 16px;
 }
 
 .stat-card {
@@ -1567,15 +1746,34 @@ function toggleTagStatus(record) {
   margin-right: 4px;
 }
 
+/* 装饰元素容器 */
 .card-decoration {
   position: absolute;
-  top: 0;
-  right: 0;
   bottom: 0;
-  left: 0;
-  pointer-events: none;
+  right: 0;
+  width: 120px;
+  height: 120px;
   overflow: hidden;
-  z-index: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.08;
+}
+
+/* 装饰形状 - 圆形 */
+.decoration-shape {
+  position: absolute;
+  bottom: -60px;
+  right: -60px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  transform: scale(1);
+  transition: transform 0.3s ease;
+}
+
+/* 悬停时的动画效果 */
+.tag-card:hover .decoration-shape {
+  transform: scale(1.1);
 }
 
 .decoration-circle {
@@ -1722,74 +1920,202 @@ function toggleTagStatus(record) {
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
-/* 标签卡片样式 */
+/* 卡片容器样式优化 */
 .tag-card {
   background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0;
 }
 
 .tag-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(101, 84, 192, 0.12);
+  border-color: rgba(101, 84, 192, 0.2);
 }
 
-.tag-card-selected {
-  border: 2px solid #6554C0;
-  box-shadow: 0 0 0 2px rgba(101, 84, 192, 0.2);
+/* 卡片顶部彩色条带 */
+.tag-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--tag-color), var(--tag-color-light));
 }
 
-.tag-card-header {
+/* 卡片标签样式 */
+.tag-label {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  background: #f9f9f9;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 4px;
 }
 
-.tag-card-body {
-  padding: 16px;
+/*区分不同的样式*/
+.tag-label-active {
+  background-color: rgba(82, 196, 26, 0.1);
+  color: #52C41A;
+}
+
+.tag-label-inactive {
+  background-color: rgba(245, 34, 45, 0.1);
+  color: #F5222D;
+}
+
+
+/* 卡片标题区域 */
+.tag-card-title {
+  padding: 20px 20px 12px;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 12px;
+}
+
+.tag-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
   justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 20px;
+}
+
+.tag-title-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* 卡片内容区域 */
+.tag-card-content {
+  padding: 0 20px 16px;
   flex-grow: 1;
 }
 
-.tag-display {
+.tag-description {
+  font-size: 14px;
+  color: #666;
   margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* 卡片元信息区域 */
+.tag-card-meta {
   display: flex;
-  justify-content: center;
-}
-
-
-.tag-usage-count .anticon {
-  margin-right: 4px;
-  color: #6554C0;
-}
-
-.tag-card-footer {
-  padding: 12px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .tag-create-info {
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 8px;
+  font-size: 13px;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+/* 去除更多按钮的黑色边框 - 更精确的选择器 */
+button.ant-btn,
+.ant-btn:focus,
+.ant-btn-icon-only,
+button[class*="ant-dropdown-trigger"],
+:deep(.ant-btn),
+:deep(.ant-btn:focus),
+:deep(.ant-btn-icon-only),
+:deep(.ant-dropdown-trigger) {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* 确保覆盖所有可能的状态 */
+:deep(.ant-dropdown-trigger):hover,
+:deep(.ant-dropdown-trigger):focus,
+:deep(.ant-dropdown-trigger):active,
+:deep(.ant-btn):hover,
+:deep(.ant-btn):focus,
+:deep(.ant-btn):active {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* 特别针对卡片中的操作按钮 */
+.operation-right .ant-radio-button-wrapper:focus-within,
+.tag-action-btn,
+.tag-action-btn:focus,
+.tag-action-btn:active,
+.tag-actions button,
+.tag-actions button:focus,
+.tag-actions button:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* 卡片操作按钮区域 */
 .tag-actions {
   display: flex;
-  justify-content: space-around;
+  gap: 4px;
+}
+
+.tag-action-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  color: #999;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.tag-action-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #6554C0;
+}
+
+/* 增加卡片选中状态样式 */
+.tag-card-selected {
+  border: 2px solid #6554C0;
+  box-shadow: 0 0 0 3px rgba(101, 84, 192, 0.2);
+}
+
+/* 添加卡片底部装饰元素 */
+.card-decoration {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  opacity: 0.04;
+  pointer-events: none;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom right;
 }
 
 /* 标签管理专用样式 - 使用tm-前缀避免冲突 */
@@ -1927,6 +2253,29 @@ function toggleTagStatus(record) {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* 自定义详情弹窗样式 */
+.custom-detail-modal :deep(.ant-modal-header) {
+  background-color: #f9f9f9;
+  padding: 16px 24px;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.custom-detail-modal :deep(.ant-modal-title) {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.custom-detail-modal :deep(.ant-modal-body) {
+  padding: 0 24px 24px;
+}
+
+.custom-detail-modal :deep(.ant-modal-content) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
 /* 模态框头部样式 */
 .modal-header {
   display: flex;
@@ -1961,45 +2310,175 @@ function toggleTagStatus(record) {
   color: #888;
 }
 
-/* 标签选项卡样式 */
-.tag-tabs {
+/* 整合表单样式 */
+.integrated-form {
   display: flex;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 24px;
   margin-bottom: 24px;
 }
 
-.tab-item {
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  border-bottom: 2px solid transparent;
-  color: #888;
+.form-column {
+  flex: 1;
+  min-width: 0; /* 确保弹性子项可以收缩 */
 }
 
-.tab-item .anticon {
-  margin-right: 8px;
-  font-size: 16px;
+/* 更新颜色选择器样式 */
+.color-selector-wrapper {
+  width: 100%;
+  position: relative;
 }
 
-.tab-item.active {
-  color: #6554C0;
-  border-bottom: 2px solid #6554C0;
-  font-weight: 500;
-}
-
-.tab-item:hover {
-  color: #6554C0;
-}
-
-.form-content {
-  min-height: 320px;
+.color-presets {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
   margin-bottom: 16px;
 }
 
-.tab-panel {
-  padding: 8px 0;
+@media (min-width: 768px) {
+  .color-presets {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .color-presets {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+.color-preset-item {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.color-preset-item:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.color-preset-item.active {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #6554C0;
+}
+
+.color-picker-trigger {
+  background: #f7f7f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  border: 1px dashed #d9d9d9;
+}
+
+.color-picker-trigger:hover {
+  background: #f0f0f0;
+  color: #6554C0;
+  border-color: #6554C0;
+}
+
+.color-input-container {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.color-input {
+  width: 100%;
+}
+
+.color-display {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+
+/* 高级颜色选择器样式 */
+.advanced-color-picker-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.picker-header span {
+  font-weight: 500;
+  color: #333;
+}
+
+/* 确保 vue-color 的选择器正确显示 */
+.advanced-color-picker-container :deep(.vc-sketch) {
+  width: 100% !important;
+  padding: 10px !important;
+  box-shadow: none !important;
+}
+
+/* 标签预览样式优化 */
+.tag-preview {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.preview-header {
+  padding: 12px 16px;
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #666;
+}
+
+.preview-content {
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px;
+  background: white;
+}
+
+/* 响应式调整 */
+@media (max-width: 720px) {
+  .integrated-form {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-column {
+    width: 100%;
+  }
+
+  .color-presets {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .color-presets {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* 颜色选择器样式优化 */
@@ -2082,12 +2561,114 @@ function toggleTagStatus(record) {
   padding-top: 16px;
 }
 
-/* 响应式处理 */
-@media (max-width: 768px) {
-  .custom-tag-modal {
-    width: 95% !important;
-    max-width: 600px;
-  }
+/* 标签详情样式 */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.detail-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-category {
+  display: flex;
+}
+
+.detail-content {
+  padding: 8px 0;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.section-title .anticon {
+  margin-right: 8px;
+  color: #6554C0;
+}
+
+.detail-info-table {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.detail-info-row {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.detail-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  width: 100px;
+  color: #666;
+  font-weight: 500;
+}
+
+.detail-value {
+  flex: 1;
+  color: #333;
+}
+
+.color-square {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.detail-description {
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.color-display-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.color-square {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-right: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.color-code {
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.detail-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
 }
 
 /* 网格视图容器样式 */
@@ -2119,6 +2700,290 @@ function toggleTagStatus(record) {
   justify-content: flex-end;
 }
 
+
+/* 添加折叠相关的样式 */
+.collapsible {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.collapsible:hover {
+  background-color: #f0f0f0;
+}
+
+.collapse-icon {
+  font-size: 14px;
+  color: #999;
+}
+
+.related-content-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.related-content-container.expanded {
+  max-height: 500px; /* 足够大的高度以容纳内容 */
+  transition: max-height 0.5s ease-in;
+}
+
+/* 当没有数据时的样式 */
+.no-data-message {
+  padding: 16px;
+  text-align: center;
+  color: #999;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+
+/* 紧凑型弹窗总体样式 */
+.compact-tag-modal :deep(.ant-modal-body) {
+  padding: 16px 24px;
+}
+
+/* 紧凑型表单样式 */
+.compact-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+/* 紧凑型弹窗头部 */
+.modal-header-compact {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-header-compact .header-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 12px;
+  color: white;
+  font-size: 18px;
+}
+
+.modal-header-compact .header-title h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-header-compact .header-title p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #888;
+}
+
+/* 三列布局表单 */
+.integrated-form-compact {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.integrated-form-compact .form-column {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 颜色选择器紧凑布局 */
+.color-selector-compact {
+  margin-bottom: 16px;
+}
+
+.color-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 8px;
+}
+
+.color-preset-item {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.color-preset-item:hover {
+  transform: scale(1.1);
+}
+
+.color-preset-item.active {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px white, 0 0 0 3px #6554C0;
+}
+
+/* 颜色显示行 */
+.color-display-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-color-preview {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #eee;
+}
+
+.color-input {
+  flex: 1;
+}
+
+.color-picker-button {
+  padding: 0 10px;
+}
+
+/* 紧凑型标签预览 */
+.tag-preview-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #fafafa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.preview-title {
+  font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* 紧凑型表单底部 */
+.form-footer-compact {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+
+/* 高级颜色选择器样式 */
+.advanced-color-selector {
+  padding: 16px 8px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.color-grid-item {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.color-grid-item:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.color-grid-item.active {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #6554C0;
+}
+
+.custom-color-input {
+  margin-bottom: 20px;
+}
+
+.color-input-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.color-input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-preview {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+}
+
+.color-picker-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 修复颜色选择按钮样式 */
+.color-form-item .ant-form-item-control-input {
+  min-height: auto;
+}
+˚
+.color-picker-button {
+  color: #666;
+  transition: all 0.3s;
+}
+
+.color-picker-button:hover {
+  color: #6554C0;
+}
+
+.color-picker-modal :deep(.ant-modal-header) {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.color-picker-modal :deep(.ant-modal-body) {
+  padding: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 720px) {
+  .integrated-form-compact {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .color-preset-grid {
+    grid-template-columns: repeat(10, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .color-preset-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
 
 /* 响应式设计 */
 @media (max-width: 992px) {
@@ -2160,7 +3025,7 @@ function toggleTagStatus(record) {
     font-size: 20px;
   }
 
-  .custom-tag-modal {
+  .custom-tag-modal, .custom-detail-modal {
     width: 95% !important;
     max-width: 500px;
   }
