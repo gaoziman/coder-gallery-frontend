@@ -90,3 +90,16 @@ export async function listOperationLogsUsingGet(
     }
   );
 }
+
+/** 获取操作日志统计信息 GET /api/admin/log/operation/statistics */
+export async function getOperationLogStatisticsUsingGet(options?: {
+  [key: string]: any;
+}) {
+  return request<API.ResultOperationLogStatisticsVO_>(
+    "/api/admin/log/operation/statistics",
+    {
+      method: "GET",
+      ...(options || {}),
+    }
+  );
+}

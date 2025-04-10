@@ -731,13 +731,44 @@ declare namespace API {
     viewName?: string;
   };
 
+  type OperationLogStatisticsVO = {
+    /** 活跃用户数 */
+    activeUsers?: number;
+    /** 活跃用户数环比增长率 */
+    activeUsersGrowthRate?: number;
+    /** 异常操作数 */
+    exceptionOperations?: number;
+    /** 异常操作环比增长率 */
+    exceptionOperationsGrowthRate?: number;
+    /** 本月操作量 */
+    monthlyOperations?: number;
+    /** 本月操作量环比增长率 */
+    monthlyOperationsGrowthRate?: number;
+    /** 操作成功率 */
+    successRate?: number;
+    /** 操作成功率环比增长率 */
+    successRateGrowthRate?: number;
+    /** 今日操作量 */
+    todayOperations?: number;
+    /** 今日操作量环比增长率 */
+    todayOperationsGrowthRate?: number;
+    /** 总操作次数 */
+    totalOperations?: number;
+    /** 总操作次数同比增长率 */
+    totalOperationsGrowthRate?: number;
+  };
+
   type OperationLogVO = {
     /** 操作类型 */
     action?: string;
+    /** 用户头像 */
+    avatar?: string;
     /** 创建时间 */
     createTime?: string;
     /** 错误消息 */
     errorMsg?: string;
+    /** 日志ID */
+    id?: number;
     /** 操作IP */
     ip?: string;
     /** 请求方法 */
@@ -748,6 +779,8 @@ declare namespace API {
     operationTime?: string;
     /** 请求参数 */
     params?: string;
+    /** 用户角色 */
+    role?: string;
     /** 操作状态 */
     status?: number;
     /** 执行时长(毫秒) */
@@ -920,6 +953,12 @@ declare namespace API {
   type ResultLong_ = {
     code?: number;
     data?: number;
+    message?: string;
+  };
+
+  type ResultOperationLogStatisticsVO_ = {
+    code?: number;
+    data?: OperationLogStatisticsVO;
     message?: string;
   };
 
