@@ -318,6 +318,16 @@ declare namespace API {
     id?: number;
   };
 
+  type deleteLoginLogUsingDELETEParams = {
+    /** id */
+    id: number;
+  };
+
+  type deleteOperationLogUsingDELETEParams = {
+    /** id */
+    id: number;
+  };
+
   type deleteTagRelationUsingDELETEParams = {
     /** 内容ID */
     contentId: number;
@@ -335,6 +345,48 @@ declare namespace API {
   type deleteUserUsingDELETEParams = {
     /** ID */
     id: number;
+  };
+
+  type exportLoginLogsUsingGETParams = {
+    /** 浏览器 */
+    browser?: string;
+    /** 创建结束时间 */
+    createTimeEnd?: string;
+    /** 创建开始时间 */
+    createTimeStart?: string;
+    /** 是否导出全部 */
+    exportAll?: boolean;
+    /** 操作系统 */
+    os?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 搜索内容（模糊匹配IP、位置、设备等） */
+    searchContent?: string;
+    /** 登录状态 */
+    status?: number;
+  };
+
+  type exportOperationLogsUsingGETParams = {
+    /** 操作类型 */
+    action?: string;
+    /** 创建结束时间 */
+    createTimeEnd?: string;
+    /** 创建开始时间 */
+    createTimeStart?: string;
+    /** 是否导出全部 */
+    exportAll?: boolean;
+    /** 操作模块 */
+    module?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 搜索内容 */
+    searchContent?: string;
+    /** 操作状态 */
+    status?: boolean;
   };
 
   type getCategoryByIdUsingGETParams = {
@@ -368,6 +420,16 @@ declare namespace API {
   type getCategoryTreeUsingGETParams = {
     /** 分类类型 */
     type?: string;
+  };
+
+  type getLoginLogDetailUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
+  type getOperationLogDetailUsingGETParams = {
+    /** id */
+    id: number;
   };
 
   type getTagByIdUsingGETParams = {
@@ -438,6 +500,48 @@ declare namespace API {
     type?: string;
   };
 
+  type listLoginLogsUsingGETParams = {
+    /** 浏览器 */
+    browser?: string;
+    /** 创建结束时间 */
+    createTimeEnd?: string;
+    /** 创建开始时间 */
+    createTimeStart?: string;
+    /** 是否导出全部 */
+    exportAll?: boolean;
+    /** 操作系统 */
+    os?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 搜索内容（模糊匹配IP、位置、设备等） */
+    searchContent?: string;
+    /** 登录状态 */
+    status?: number;
+  };
+
+  type listOperationLogsUsingGETParams = {
+    /** 操作类型 */
+    action?: string;
+    /** 创建结束时间 */
+    createTimeEnd?: string;
+    /** 创建开始时间 */
+    createTimeStart?: string;
+    /** 是否导出全部 */
+    exportAll?: boolean;
+    /** 操作模块 */
+    module?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 搜索内容 */
+    searchContent?: string;
+    /** 操作状态 */
+    status?: boolean;
+  };
+
   type listTagByPageUsingGETParams = {
     /** 创建结束时间 */
     createTimeEnd?: string;
@@ -474,6 +578,62 @@ declare namespace API {
     status?: string;
     /** 用户名 */
     username?: string;
+  };
+
+  type LoginLogVO = {
+    /** 用户头像 */
+    avatar?: string;
+    /** 浏览器 */
+    browser?: string;
+    /** 创建时间 */
+    createTime?: string;
+    /** 登录设备 */
+    device?: string;
+    /** 日志ID */
+    id?: number;
+    /** 登录IP */
+    ip?: string;
+    /** 登录地点 */
+    location?: string;
+    /** 登录时间 */
+    loginTime?: string;
+    /** 登出时间 */
+    logoutTime?: string;
+    /** 登录消息 */
+    message?: string;
+    /** 操作系统 */
+    os?: string;
+    /** 用户角色 */
+    role?: string;
+    /** 登录状态 */
+    status?: number;
+    /** 用户ID */
+    userId?: number;
+    /** 用户名 */
+    username?: string;
+  };
+
+  type LoginStatisticsVO = {
+    /** 异常登录数 */
+    abnormalLoginCount?: number;
+    /** 活跃用户数 */
+    activeUserCount?: number;
+    /** 环比增长率（%） */
+    growthRate?: number;
+    /** 本月登录次数 */
+    monthLoginCount?: number;
+    /** 登录成功率 */
+    successRate?: number;
+    /** 今日登录失败次数 */
+    todayFailCount?: number;
+    /** 今日登录次数 */
+    todayLoginCount?: number;
+    /** 今日登录用户数 */
+    todayLoginUsers?: number;
+    /** 总登录次数 */
+    totalLoginCount?: number;
+    /** 本周登录次数 */
+    weekLoginCount?: number;
   };
 
   type LoginUserVO = {
@@ -571,6 +731,33 @@ declare namespace API {
     viewName?: string;
   };
 
+  type OperationLogVO = {
+    /** 操作类型 */
+    action?: string;
+    /** 创建时间 */
+    createTime?: string;
+    /** 错误消息 */
+    errorMsg?: string;
+    /** 操作IP */
+    ip?: string;
+    /** 请求方法 */
+    method?: string;
+    /** 操作模块 */
+    module?: string;
+    /** 操作时间 */
+    operationTime?: string;
+    /** 请求参数 */
+    params?: string;
+    /** 操作状态 */
+    status?: number;
+    /** 执行时长(毫秒) */
+    time?: number;
+    /** 用户ID */
+    userId?: number;
+    /** 用户名 */
+    username?: string;
+  };
+
   type PageResultCategoryVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
@@ -578,6 +765,26 @@ declare namespace API {
     pageSize?: number;
     pages?: number;
     records?: CategoryVO[];
+    total?: number;
+  };
+
+  type PageResultLoginLogVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: LoginLogVO[];
+    total?: number;
+  };
+
+  type PageResultOperationLogVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: OperationLogVO[];
     total?: number;
   };
 
@@ -692,6 +899,18 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultLoginLogVO_ = {
+    code?: number;
+    data?: LoginLogVO;
+    message?: string;
+  };
+
+  type ResultLoginStatisticsVO_ = {
+    code?: number;
+    data?: LoginStatisticsVO;
+    message?: string;
+  };
+
   type ResultLoginUserVO_ = {
     code?: number;
     data?: LoginUserVO;
@@ -704,9 +923,27 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultOperationLogVO_ = {
+    code?: number;
+    data?: OperationLogVO;
+    message?: string;
+  };
+
   type ResultPageResultCategoryVO_ = {
     code?: number;
     data?: PageResultCategoryVO_;
+    message?: string;
+  };
+
+  type ResultPageResultLoginLogVO_ = {
+    code?: number;
+    data?: PageResultLoginLogVO_;
+    message?: string;
+  };
+
+  type ResultPageResultOperationLogVO_ = {
+    code?: number;
+    data?: PageResultOperationLogVO_;
     message?: string;
   };
 

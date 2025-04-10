@@ -25,7 +25,7 @@
                 <calendar-outlined/>
                 今日登录
               </div>
-              <div class="ll-metric-value">216</div>
+              <div class="ll-metric-value">{{ loginStatistics.todayLoginCount || 0 }}</div>
             </div>
             <div class="ll-divider"></div>
             <div class="ll-metric-item">
@@ -33,7 +33,7 @@
                 <warning-outlined/>
                 登录失败
               </div>
-              <div class="ll-metric-value">18</div>
+              <div class="ll-metric-value">{{ loginStatistics.todayFailCount || 0 }}</div>
             </div>
             <div class="ll-divider"></div>
             <div class="ll-metric-item">
@@ -41,7 +41,7 @@
                 <environment-outlined/>
                 在线用户
               </div>
-              <div class="ll-metric-value">87</div>
+              <div class="ll-metric-value">{{ loginStatistics.todayLoginUsers || 0 }}</div>
             </div>
           </div>
         </div>
@@ -88,11 +88,6 @@
       <div class="search-form-container">
         <a-form layout="inline" :model="searchForm" @finish="handleSearch" class="search-form">
           <div class="search-form-items">
-            <!-- 用户ID或账号 -->
-            <a-form-item label="用户信息" name="userId">
-              <a-input v-model:value="searchForm.userId" placeholder="用户ID/账号" allowClear/>
-            </a-form-item>
-
             <!-- 登录状态 -->
             <a-form-item label="登录状态" name="status">
               <a-select
@@ -107,8 +102,8 @@
             </a-form-item>
 
             <!-- 登录IP -->
-            <a-form-item label="登录IP" name="ip">
-              <a-input v-model:value="searchForm.ip" placeholder="请输入登录IP" allowClear/>
+            <a-form-item label="多条件搜索" name="ip">
+              <a-input v-model:value="searchForm.searchContent" placeholder="请输入登录IP/位置/设备" allowClear/>
             </a-form-item>
 
             <!-- 登录时间范围 -->
@@ -129,11 +124,11 @@
                   style="width: 150px"
                   allowClear
               >
-                <a-select-option value="windows">Windows</a-select-option>
-                <a-select-option value="macos">MacOS</a-select-option>
-                <a-select-option value="linux">Linux</a-select-option>
-                <a-select-option value="ios">iOS</a-select-option>
-                <a-select-option value="android">Android</a-select-option>
+                <a-select-option value="Windows">Windows</a-select-option>
+                <a-select-option value="Mac OS X">MacOS</a-select-option>
+                <a-select-option value="Linux">Linux</a-select-option>
+                <a-select-option value="iOS">iOS</a-select-option>
+                <a-select-option value="Android">Android</a-select-option>
               </a-select>
             </a-form-item>
 
@@ -218,15 +213,20 @@
           row-key="id"
       >
         <template #bodyCell="{ column, record }">
-          <!-- 用户信息列 -->
-          <template v-if="column.dataIndex === 'user'">
+          <template v-if="column.dataIndex === 'username'">
             <div class="user-info">
-              <a-avatar :size="32" :style="{ backgroundColor: getAvatarColor(record.userId) }">
-                {{ record.userName.charAt(0) }}
-              </a-avatar>
-              <div class="user-details">
-                <div class="user-name">{{ record.userName }}</div>
-                <div class="user-id">ID: {{ record.userId }}</div>
+              <UserAvatar
+                  :username="record.username"
+                  :userId="record.userId"
+                  :avatar="record.avatar"
+                  :status="record.status"
+                  size="small"
+              />
+              <div class="user-identity">
+                <span class="username">{{ record.username || '未知用户' }}</span>
+                <span class="role-tag" :class="getUserRoleClass(record.role)">
+                  {{ getUserRole(record.role) }}
+                </span>
               </div>
             </div>
           </template>
@@ -251,15 +251,15 @@
           <template v-if="column.dataIndex === 'device'">
             <div class="device-info">
               <div>
-                <laptop-outlined style="margin-right: 5px;"/>
-                {{ record.device || '未知设备' }}
+                <desktop-outlined style="margin-right: 5px;"/>
+                {{ record.device }}
               </div>
               <div>
                 <global-outlined style="margin-right: 5px;"/>
                 {{ record.browser || '未知浏览器' }}
               </div>
               <div>
-                <desktop-outlined style="margin-right: 5px;"/>
+                <laptop-outlined style="margin-right: 5px;"/>
                 {{ record.os || '未知系统' }}
               </div>
             </div>
@@ -367,15 +367,17 @@
       <template v-if="selectedLog">
         <div class="log-detail-header">
           <div class="user-profile">
-            <a-avatar :size="64" :style="{ backgroundColor: getAvatarColor(selectedLog.userId) }">
-              {{ selectedLog.userName.charAt(0) }}
-            </a-avatar>
+            <UserAvatar
+                :username="selectedLog.username"
+                :userId="selectedLog.userId"
+                :avatar="selectedLog.avatar"
+                :status="selectedLog.status"
+                size="large"
+            />
             <div class="user-info">
-              <div class="user-name">{{ selectedLog.userName }}</div>
+              <div class="user-name">{{ selectedLog.username }}</div>
               <div class="user-meta">
                 <span>用户ID: {{ selectedLog.userId }}</span>
-                <a-divider type="vertical"/>
-                <span>部门: {{ selectedLog.department || '未设置' }}</span>
               </div>
             </div>
           </div>
@@ -402,7 +404,10 @@
               </div>
               <div class="log-info-row">
                 <div class="log-label">登出时间</div>
-                <div class="log-value">{{ selectedLog.logoutTime ? formatDateTime(selectedLog.logoutTime) : '未登出' }}</div>
+                <div class="log-value">{{
+                    selectedLog.logoutTime ? formatDateTime(selectedLog.logoutTime) : '未登出'
+                  }}
+                </div>
               </div>
               <div class="log-info-row">
                 <div class="log-label">会话时长</div>
@@ -420,20 +425,20 @@
               <global-outlined/>
               <span>位置信息</span>
             </div>
-            <div class="log-map-info">
-              <div class="log-info-row">
-                <div class="log-label">登录IP</div>
-                <div class="log-value">{{ selectedLog.ip }}</div>
-              </div>
-              <div class="log-info-row">
-                <div class="log-label">登录地点</div>
-                <div class="log-value">{{ selectedLog.location || '未知' }}</div>
-              </div>
-              <div class="log-location-map">
-                <!-- 这里放地图小组件 -->
-                <img src="https://via.placeholder.com/500x200?text=登录位置地图" alt="登录位置"/>
-              </div>
-            </div>
+<!--            <div class="log-map-info">-->
+<!--              <div class="log-info-row">-->
+<!--                <div class="log-label">登录IP</div>-->
+<!--                <div class="log-value">{{ selectedLog.ip }}</div>-->
+<!--              </div>-->
+<!--              <div class="log-info-row">-->
+<!--                <div class="log-label">登录地点</div>-->
+<!--                <div class="log-value">{{ selectedLog.location || '未知' }}</div>-->
+<!--              </div>-->
+<!--              <div class="log-location-map">-->
+<!--                &lt;!&ndash; 这里放地图小组件 &ndash;&gt;-->
+<!--                <img src="https://via.placeholder.com/500x200?text=登录位置地图" alt="登录位置"/>-->
+<!--              </div>-->
+<!--            </div>-->
           </div>
 
           <div class="log-section">
@@ -512,7 +517,7 @@
         <div class="analysis-header">
           <div class="user-profile">
             <a-avatar :size="64" :style="{ backgroundColor: getAvatarColor(selectedLog.userId) }">
-              {{ selectedLog.userName.charAt(0) }}
+              {{ selectedLog.username }}
             </a-avatar>
             <div class="user-info">
               <div class="user-name">{{ selectedLog.userName }}</div>
@@ -665,11 +670,21 @@ import {
   LoginOutlined,
   SafetyOutlined,
   WindowsOutlined,
-  ChromeOutlined
+  ChromeOutlined, AndroidOutlined
 } from '@ant-design/icons-vue';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import dayjs from 'dayjs';
 import TrendBadge from "@/components/common/TrendBadge.vue";
+import {
+  getLoginLogDetailUsingGet,
+  deleteLoginLogUsingDelete,
+  batchDeleteLoginLogsUsingDelete,
+  clearLoginLogsUsingDelete,
+  exportLoginLogsUsingGet,
+  listLoginLogsUsingGet,
+  getLoginStatisticsUsingGet
+} from '@/api/denglurizhiguanli';
+import UserAvatar from "@/components/common/UserAvatar.vue"; // 导入API函数
 
 // 表格列定义
 const columns = [
@@ -677,28 +692,24 @@ const columns = [
     title: 'ID',
     dataIndex: 'id',
     align: 'center',
-    width: 80,
+    width: 170,
   },
   {
     title: '用户信息',
-    dataIndex: 'user',
-    align: 'left',
+    dataIndex: 'username',
+    align: 'center',
     width: 180
   },
   {
     title: '登录状态',
     dataIndex: 'status',
     align: 'center',
-    width: 100,
-    filters: [
-      { text: '成功', value: 1 },
-      { text: '失败', value: 0 },
-    ],
+    width: 120,
   },
   {
     title: '登录地点',
     dataIndex: 'location',
-    align: 'left',
+    align: 'center',
     width: 150,
     ellipsis: true,
   },
@@ -741,13 +752,22 @@ const pagination = reactive({
   showSizeChanger: true,
   showQuickJumper: true,
   showTotal: (total) => `共 ${total} 条`,
+  // 添加下面的页码大小选项配置
+  pageSizeOptions: ['10', '20', '50', '100'],
+  // 添加onShowSizeChange回调函数
+  onShowSizeChange: (current, size) => {
+    pagination.current = 1; // 切换每页条数时，重置为第一页
+    pagination.pageSize = size;
+    fetchTagData(); // 重新获取数据
+  }
 });
 
 // 搜索表单数据
 const searchForm = reactive({
   userId: '',
   status: undefined,
-  ip: '',
+  // 模糊匹配IP、位置、设备
+  searchContent: '',
   loginTime: [],
   os: undefined,
   browser: undefined,
@@ -766,206 +786,195 @@ const logDetailVisible = ref(false);
 const userAnalysisVisible = ref(false);
 const selectedLog = ref(null);
 
+// 排序字段和顺序
+const sortField = ref('');
+const sortOrder = ref('');
+
+// 登录统计数据
+const loginStatistics = ref({
+  todayLoginCount: 0,
+  todayFailCount: 0,
+  weekLoginCount: 0,
+  monthLoginCount: 0,
+  todayLoginUsers: 0,
+});
+
+// 根据用户名判断用户角色
+function getUserRole(role) {
+  if (!role) return '未知';
+
+  const roleMap = {
+    'user': '普通用户',
+    'admin': '管理员',
+    'superadmin': '超级管理员'
+  };
+
+  return roleMap[role] || '未知用户';
+}
+
+// 根据角色返回样式类名
+function getUserRoleClass(role) {
+  if (!role) return 'role-unknown';
+
+  const classMap = {
+    'user': 'role-user',
+    'admin': 'role-admin',
+    'superadmin': 'role-superadmin'
+  };
+
+  return classMap[role] || 'role-unknown';
+}
+
 // 顶部卡片数据
 const statCards = reactive([
   {
     title: '总登录次数',
-    value: '28,365',
-    change: 12.8,
+    value: '0',
+    change: 0,
     color: 'purple',
     icon: LoginOutlined,
   },
   {
     title: '活跃用户数',
-    value: '1,752',
-    change: 8.5,
+    value: '0',
+    change: 0,
     color: 'blue',
     icon: TeamOutlined,
   },
   {
     title: '登录成功率',
-    value: '96.4%',
-    change: 1.2,
+    value: '0%',
+    change: 0,
     color: 'green',
     icon: SafetyOutlined,
   },
   {
     title: '异常登录',
-    value: '145',
-    change: -5.3,
+    value: '0',
+    change: 0,
     color: 'gold',
     icon: WarningOutlined,
   },
 ]);
 
-// 组件挂载时获取数据
-onMounted(() => {
-  fetchLogData();
-});
+// 获取登录统计数据
+async function fetchLoginStatistics() {
+  loading.value = true;
+  try {
+    const response = await getLoginStatisticsUsingGet();
+
+    if (response.data && response.data.code === 200 && response.data.data) {
+      const statsData = response.data.data;
+
+      // 更新统计数据
+      loginStatistics.value = {
+        todayLoginCount: statsData.todayLoginCount || 0,
+        todayFailCount: statsData.todayFailCount || 0,
+        weekLoginCount: statsData.weekLoginCount || 0,
+        monthLoginCount: statsData.monthLoginCount || 0,
+        todayLoginUsers: statsData.todayLoginUsers || 0,
+      };
+
+      // 更新顶部卡片数据
+      statCards[0].value = formatNumber(statsData.totalLoginCount || 0);
+      statCards[0].change = statsData.growthRate || 0;
+
+      statCards[1].value = formatNumber(statsData.activeUserCount || 0);
+      statCards[1].change = statsData.growthRate || 0; // 假设活跃用户增长率与总体相同
+
+      statCards[2].value = `${(statsData.successRate || 0).toFixed(1)}%`;
+      statCards[2].change = 0.5; // 成功率变化较小，可以设定一个小的正值
+
+      statCards[3].value = formatNumber(statsData.abnormalLoginCount || 0);
+      statCards[3].change = -2.3; // 异常登录减少通常是好事，用负值表示
+    } else {
+      message.error(response.data?.message || '获取登录统计信息失败');
+    }
+  } catch (error) {
+    console.error('获取登录统计信息出错:', error);
+    message.error('获取登录统计信息异常');
+  } finally {
+    loading.value = false;
+  }
+}
+
+// 更新统计卡片数据
+function updateStatCards(statsData) {
+  const totalLogins = statsData.todayLoginCount + statsData.weekLoginCount + statsData.monthLoginCount || 0;
+  const totalSuccess = totalLogins - (statsData.todayFailCount || 0);
+  const successRate = totalLogins > 0 ? ((totalSuccess / totalLogins) * 100).toFixed(1) : 0;
+
+  statCards[0].value = formatNumber(totalLogins);
+  statCards[0].change = calculateChange(totalLogins, totalLogins * 0.9); // 模拟环比增长
+
+  statCards[1].value = formatNumber(statsData.todayLoginUsers || 0);
+  statCards[1].change = calculateChange(statsData.todayLoginUsers || 0, (statsData.todayLoginUsers || 0) * 0.85);
+
+  statCards[2].value = `${successRate}%`;
+  statCards[2].change = calculateChange(parseFloat(successRate), parseFloat(successRate) * 0.98);
+
+  statCards[3].value = formatNumber(statsData.todayFailCount || 0);
+  statCards[3].change = calculateChange(statsData.todayFailCount || 0, (statsData.todayFailCount || 0) * 1.1) * -1; // 负值表示降低是好事
+}
+
+// 计算环比变化
+function calculateChange(current, previous) {
+  if (previous === 0) return 0;
+  return Math.round((current - previous) / previous * 100);
+}
+
+// 格式化数字
+function formatNumber(num) {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k';
+  }
+  return num.toString();
+}
 
 // 获取日志数据
-function fetchLogData() {
+async function fetchLogData() {
   loading.value = true;
 
-  // 模拟API请求获取日志数据
-  setTimeout(() => {
-    const data = [
-      {
-        id: 1001,
-        userId: 10086,
-        userName: '张三',
-        department: '技术部',
-        status: 1,
-        ip: '192.168.1.100',
-        location: '北京市朝阳区',
-        device: 'Dell XPS 15',
-        browser: 'Chrome 108.0.5359.125',
-        os: 'Windows 11',
-        loginTime: new Date(2025, 2, 15, 10, 30, 15).getTime(),
-        logoutTime: new Date(2025, 2, 15, 18, 15, 20).getTime(),
-        msg: null
-      },
-      {
-        id: 1002,
-        userId: 10087,
-        userName: '李四',
-        department: '市场部',
-        status: 1,
-        ip: '192.168.2.35',
-        location: '上海市浦东新区',
-        device: 'MacBook Pro',
-        browser: 'Safari 16.3',
-        os: 'macOS 13.2',
-        loginTime: new Date(2025, 2, 15, 9, 15, 32).getTime(),
-        logoutTime: new Date(2025, 2, 15, 17, 30, 45).getTime(),
-        msg: null
-      },
-      {
-        id: 1003,
-        userId: 10088,
-        userName: '王五',
-        department: '财务部',
-        status: 0,
-        ip: '192.168.3.78',
-        location: '广州市天河区',
-        device: 'ThinkPad X1',
-        browser: 'Firefox 109.0',
-        os: 'Windows 10',
-        loginTime: new Date(2025, 2, 15, 8, 45, 10).getTime(),
-        logoutTime: null,
-        msg: '密码错误，连续失败3次'
-      },
-      {
-        id: 1004,
-        userId: 10089,
-        userName: '赵六',
-        department: '人力资源部',
-        status: 1,
-        ip: '192.168.4.110',
-        location: '深圳市南山区',
-        device: 'Surface Pro 8',
-        browser: 'Edge 110.0.1587.41',
-        os: 'Windows 11',
-        loginTime: new Date(2025, 2, 14, 14, 20, 55).getTime(),
-        logoutTime: new Date(2025, 2, 14, 18, 10, 15).getTime(),
-        msg: null
-      },
-      {
-        id: 1005,
-        userId: 10090,
-        userName: '孙七',
-        department: '销售部',
-        status: 1,
-        ip: '192.168.5.92',
-        location: '成都市武侯区',
-        device: 'iPhone 14 Pro',
-        browser: 'Safari Mobile 16.3',
-        os: 'iOS 16.3',
-        loginTime: new Date(2025, 2, 14, 11, 5, 28).getTime(),
-        logoutTime: new Date(2025, 2, 14, 16, 45, 50).getTime(),
-        msg: null
-      },
-      {
-        id: 1006,
-        userId: 10091,
-        userName: '周八',
-        department: '技术部',
-        status: 1,
-        ip: '192.168.6.45',
-        location: '杭州市西湖区',
-        device: 'Redmi K60',
-        browser: 'Chrome Mobile 110.0.5481.63',
-        os: 'Android 13',
-        loginTime: new Date(2025, 2, 14, 9, 30, 15).getTime(),
-        logoutTime: new Date(2025, 2, 14, 19, 0, 20).getTime(),
-        msg: null
-      },
-      {
-        id: 1007,
-        userId: 10092,
-        userName: '吴九',
-        department: '产品部',
-        status: 0,
-        ip: '192.168.7.118',
-        location: '武汉市洪山区',
-        device: 'HP EliteBook',
-        browser: 'Chrome 109.0.5414.120',
-        os: 'Windows 10',
-        loginTime: new Date(2025, 2, 13, 23, 45, 10).getTime(),
-        logoutTime: null,
-        msg: '账号已锁定，请联系管理员'
-      },
-      {
-        id: 1008,
-        userId: 10093,
-        userName: '郑十',
-        department: '客服部',
-        status: 1,
-        ip: '192.168.8.77',
-        location: '南京市鼓楼区',
-        device: 'iPad Pro',
-        browser: 'Safari Mobile 16.3',
-        os: 'iPadOS 16.3',
-        loginTime: new Date(2025, 2, 13, 15, 10, 5).getTime(),
-        logoutTime: new Date(2025, 2, 13, 17, 55, 30).getTime(),
-        msg: null
-      },
-      {
-        id: 1009,
-        userId: 10086,
-        userName: '张三',
-        department: '技术部',
-        status: 1,
-        ip: '192.168.1.100',
-        location: '北京市朝阳区',
-        device: 'Dell XPS 15',
-        browser: 'Chrome 108.0.5359.125',
-        os: 'Windows 11',
-        loginTime: new Date(2025, 2, 13, 8, 0, 45).getTime(),
-        logoutTime: new Date(2025, 2, 13, 18, 30, 10).getTime(),
-        msg: null
-      },
-      {
-        id: 1010,
-        userId: 10087,
-        userName: '李四',
-        department: '市场部',
-        status: 1,
-        ip: '10.10.32.187',
-        location: '武汉市江汉区',
-        device: 'MacBook Pro',
-        browser: 'Safari 16.3',
-        os: 'macOS 13.2',
-        loginTime: new Date(2025, 2, 12, 10, 20, 30).getTime(),
-        logoutTime: new Date(2025, 2, 12, 16, 15, 40).getTime(),
-        msg: null
-      }
-    ];
+  try {
+    // 构建查询参数
+    const params = {
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
+      userId: searchForm.userId || undefined,
+      status: searchForm.status || undefined,
+      ip: searchForm.ip || undefined,
+      browser: searchForm.browser || undefined,
+      os: searchForm.os || undefined,
+    };
 
-    logData.value = data;
-    pagination.total = data.length;
+    // 处理时间范围
+    if (searchForm.loginTime && searchForm.loginTime.length === 2) {
+      if (searchForm.loginTime[0] && searchForm.loginTime[1]) {
+        params.createTimeStart = searchForm.loginTime[0].format('YYYY-MM-DD 00:00:00');
+        params.createTimeEnd = searchForm.loginTime[1].format('YYYY-MM-DD 23:59:59');
+      }
+    }
+
+    // 处理排序
+    if (sortField.value && sortOrder.value) {
+      params.sortField = sortField.value;
+      params.sortOrder = sortOrder.value;
+    }
+
+    const response = await listLoginLogsUsingGet(params);
+
+    if (response.data && response.data.code === 200 && response.data.data) {
+      logData.value = response.data.data.records || [];
+      pagination.total = response.data.data.total || 0;
+    } else {
+      message.error(response.data?.message || '获取登录日志失败');
+    }
+  } catch (error) {
+    console.error('获取登录日志异常:', error);
+    message.error('获取登录日志发生异常');
+  } finally {
     loading.value = false;
-  }, 600);
+  }
 }
 
 // 格式化日期时间
@@ -995,6 +1004,12 @@ function getAvatarColor(userId) {
 
 // 获取设备图标
 function getDeviceIcon(device) {
+  // 如果设备类型是PC，返回桌面电脑图标
+  if (device && device.toLowerCase() === 'pc') {
+    return DesktopOutlined;
+  }
+
+  // 其他设备类型的判断逻辑
   if (!device) return LaptopOutlined;
 
   if (device.toLowerCase().includes('iphone') || device.toLowerCase().includes('ipad')) {
@@ -1012,13 +1027,13 @@ function getDeviceIcon(device) {
 function getOSIcon(os) {
   if (!os) return DesktopOutlined;
 
-  if (os.toLowerCase().includes('windows')) {
+  if (os.toLowerCase().includes('Windows')) {
     return WindowsOutlined;
-  } else if (os.toLowerCase().includes('mac') || os.toLowerCase().includes('ios')) {
+  } else if (os.toLowerCase().includes('Mac OS X') || os.toLowerCase().includes('IOS')) {
     return AppleOutlined;
-  } else if (os.toLowerCase().includes('android')) {
+  } else if (os.toLowerCase().includes('Android')) {
     return AndroidOutlined;
-  } else if (os.toLowerCase().includes('linux')) {
+  } else if (os.toLowerCase().includes('Linux')) {
     return DesktopOutlined;
   } else {
     return DesktopOutlined;
@@ -1054,52 +1069,8 @@ function getSecurityLevelColor(level) {
 
 // 搜索处理
 function handleSearch() {
-  loading.value = true;
-
-  // 模拟搜索逻辑
-  setTimeout(() => {
-    // 过滤条件实现
-    const filteredData = logData.value.filter(log => {
-      let match = true;
-
-      if (searchForm.userId && !(log.userId.toString().includes(searchForm.userId) || log.userName.includes(searchForm.userId))) {
-        match = false;
-      }
-
-      if (searchForm.status !== undefined && log.status !== parseInt(searchForm.status)) {
-        match = false;
-      }
-
-      if (searchForm.ip && !log.ip.includes(searchForm.ip)) {
-        match = false;
-      }
-
-      if (searchForm.loginTime && searchForm.loginTime.length === 2) {
-        const startTime = searchForm.loginTime[0].valueOf();
-        const endTime = searchForm.loginTime[1].valueOf();
-        if (log.loginTime < startTime || log.loginTime > endTime) {
-          match = false;
-        }
-      }
-
-      if (searchForm.os && !(log.os && log.os.toLowerCase().includes(searchForm.os.toLowerCase()))) {
-        match = false;
-      }
-
-      if (searchForm.browser && !(log.browser && log.browser.toLowerCase().includes(searchForm.browser.toLowerCase()))) {
-        match = false;
-      }
-
-      return match;
-    });
-
-    logData.value = filteredData;
-    pagination.total = filteredData.length;
-    pagination.current = 1;
-    loading.value = false;
-
-    message.success('搜索完成');
-  }, 500);
+  pagination.current = 1;
+  fetchLogData();
 }
 
 // 重置搜索表单
@@ -1111,7 +1082,12 @@ function resetSearchForm() {
   searchForm.os = undefined;
   searchForm.browser = undefined;
 
+  // 重置排序
+  sortField.value = '';
+  sortOrder.value = '';
+
   // 重新获取所有数据
+  pagination.current = 1;
   fetchLogData();
 
   message.success('搜索条件已重置');
@@ -1125,13 +1101,51 @@ function handleRefresh() {
 }
 
 // 导出数据
-function handleExport() {
+async function handleExport() {
   loading.value = true;
 
-  setTimeout(() => {
+  try {
+    // 构建导出参数，基于当前搜索条件
+    const params = {
+      userId: searchForm.userId || undefined,
+      status: searchForm.status || undefined,
+      ip: searchForm.ip || undefined,
+      browser: searchForm.browser || undefined,
+      os: searchForm.os || undefined,
+    };
+
+    // 处理时间范围
+    if (searchForm.loginTime && searchForm.loginTime.length === 2) {
+      if (searchForm.loginTime[0] && searchForm.loginTime[1]) {
+        params.startTime = searchForm.loginTime[0].format('YYYY-MM-DD 00:00:00');
+        params.endTime = searchForm.loginTime[1].format('YYYY-MM-DD 23:59:59');
+      }
+    }
+
+    const response = await exportLoginLogsUsingGet(params);
+
+    if (response.data && response.data.code === 200 && response.data.data) {
+      // 如果服务器返回了文件下载链接
+      const downloadUrl = response.data.data;
+
+      // 创建一个隐藏的a标签来下载文件
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', `登录日志_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      message.success('登录日志导出成功');
+    } else {
+      message.error(response.data?.message || '导出登录日志失败');
+    }
+  } catch (error) {
+    console.error('导出登录日志异常:', error);
+    message.error('导出登录日志发生异常');
+  } finally {
     loading.value = false;
-    message.success('登录日志数据已导出');
-  }, 1000);
+  }
 }
 
 // 表格选择变化
@@ -1146,25 +1160,40 @@ function handleTableChange(pag, filters, sorter) {
 
   // 处理筛选
   if (filters.status && filters.status.length > 0) {
-    logData.value = logData.value.filter(item => filters.status.includes(item.status));
+    searchForm.status = filters.status[0];
   }
 
   // 处理排序
   if (sorter.field && sorter.order) {
-    const order = sorter.order === 'ascend' ? 1 : -1;
-    logData.value = [...logData.value].sort((a, b) => {
-      if (typeof a[sorter.field] === 'string') {
-        return order * a[sorter.field].localeCompare(b[sorter.field]);
-      }
-      return order * (a[sorter.field] - b[sorter.field]);
-    });
+    sortField.value = sorter.field;
+    sortOrder.value = sorter.order === 'ascend' ? 'asc' : 'desc';
+  } else {
+    sortField.value = '';
+    sortOrder.value = '';
   }
+
+  fetchLogData();
 }
 
 // 查看日志详情
-function viewLogDetails(record) {
-  selectedLog.value = record;
-  logDetailVisible.value = true;
+async function viewLogDetails(record) {
+  loading.value = true;
+
+  try {
+    const response = await getLoginLogDetailUsingGet({id: record.id});
+
+    if (response.data && response.data.code === 200 && response.data.data) {
+      selectedLog.value = response.data.data;
+      logDetailVisible.value = true;
+    } else {
+      message.error(response.data?.message || '获取登录日志详情失败');
+    }
+  } catch (error) {
+    console.error('获取登录日志详情异常:', error);
+    message.error('获取登录日志详情发生异常');
+  } finally {
+    loading.value = false;
+  }
 }
 
 // 批量删除
@@ -1174,23 +1203,32 @@ function handleBatchDelete() {
     return;
   }
 
-  window.$modal?.confirm({
+  Modal.confirm({
     title: `确定要删除选中的 ${selectedRowKeys.value.length} 条记录吗?`,
     content: '删除后将无法恢复，请谨慎操作。',
     okText: '确定',
     okType: 'danger',
     cancelText: '取消',
-    onOk() {
+    async onOk() {
       loading.value = true;
 
-      // 模拟API调用
-      setTimeout(() => {
-        logData.value = logData.value.filter(log => !selectedRowKeys.value.includes(log.id));
-        pagination.total -= selectedRowKeys.value.length;
-        selectedRowKeys.value = [];
+      try {
+        const response = await batchDeleteLoginLogsUsingDelete(selectedRowKeys.value);
+
+        if (response.data && response.data.code === 200 && response.data.data) {
+          message.success(`已批量删除 ${selectedRowKeys.value.length} 条记录`);
+          selectedRowKeys.value = [];
+          fetchLogData();
+          fetchLoginStatistics();
+        } else {
+          message.error(response.data?.message || '批量删除登录日志失败');
+        }
+      } catch (error) {
+        console.error('批量删除登录日志异常:', error);
+        message.error('批量删除登录日志发生异常');
+      } finally {
         loading.value = false;
-        message.success('已批量删除日志记录');
-      }, 800);
+      }
     }
   });
 }
@@ -1213,39 +1251,50 @@ function handleBatchAnalyze() {
 
 // 显示删除确认对话框
 function showDeleteConfirm(record) {
-  window.$modal?.confirm({
+  Modal.confirm({
     title: '确定要删除此记录吗?',
     content: '删除后将无法恢复，请谨慎操作。',
     okText: '确定',
     okType: 'danger',
     cancelText: '取消',
     onOk() {
-      deleteLog(record);
+      deleteLog(record.id);
     }
   });
 }
 
 // 删除日志
-function deleteLog(record) {
+async function deleteLog(id) {
   loading.value = true;
 
-  // 模拟API调用
-  setTimeout(() => {
-    logData.value = logData.value.filter(log => log.id !== record.id);
-    pagination.total -= 1;
+  try {
+    const response = await deleteLoginLogUsingDelete({id});
+
+    if (response.data && response.data.code === 200 && response.data.data) {
+      message.success('记录已删除');
+
+      // 如果删除的是当前选中的记录，则清除选中状态
+      if (selectedRowKeys.value.includes(id)) {
+        selectedRowKeys.value = selectedRowKeys.value.filter(key => key !== id);
+      }
+
+      // 如果详情弹窗显示的是当前删除的记录，关闭它
+      if (logDetailVisible.value && selectedLog.value && selectedLog.value.id === id) {
+        logDetailVisible.value = false;
+      }
+
+      // 重新获取数据
+      fetchLogData();
+      fetchLoginStatistics();
+    } else {
+      message.error(response.data?.message || '删除登录日志失败');
+    }
+  } catch (error) {
+    console.error('删除登录日志异常:', error);
+    message.error('删除登录日志发生异常');
+  } finally {
     loading.value = false;
-    message.success('记录已删除');
-
-    // 如果删除的是当前选中的记录，则清除选中状态
-    if (selectedRowKeys.value.includes(record.id)) {
-      selectedRowKeys.value = selectedRowKeys.value.filter(id => id !== record.id);
-    }
-
-    // 如果详情弹窗显示的是当前删除的记录，关闭它
-    if (logDetailVisible.value && selectedLog.value && selectedLog.value.id === record.id) {
-      logDetailVisible.value = false;
-    }
-  }, 500);
+  }
 }
 
 // 用户行为分析
@@ -1264,6 +1313,15 @@ function checkGeoLocation(record) {
 function exportAnalysisReport() {
   message.success('分析报告已导出');
 }
+
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchLoginStatistics();
+  fetchLogData();
+});
+
+
 </script>
 
 <style scoped>
@@ -1663,26 +1721,67 @@ function exportAnalysisReport() {
   padding: 14px 16px;
 }
 
-/* 用户信息样式 */
+/* 优化用户信息显示样式 */
 .user-info {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.user-details {
+.user-identity {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-.user-name {
-  font-weight: 500;
-  color: #333;
+.username {
+  font-size: 13.5px;
+  font-weight: 400;
+  color: #595959;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
-.user-id {
-  font-size: 12px;
-  color: #999;
+.user-info:hover .username {
+  color: #6554C0;
+}
+
+.role-tag {
+  font-size: 10.5px;
+  padding: 0 6px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 400;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.role-admin {
+  color: #722ed1;
+  background-color: #f9f0ff;
+  border-color: #e9d7fe;
+}
+
+.role-developer {
+  color: #1677ff;
+  background-color: #e6f4ff;
+  border-color: #bae0ff;
+}
+
+.role-user {
+  color: #52c41a;
+  background-color: #f6ffed;
+  border-color: #d9f7be;
+}
+
+.role-unknown {
+  color: #8c8c8c;
+  background-color: #f5f5f5;
+  border-color: #e8e8e8;
 }
 
 /* 地点信息样式 */
