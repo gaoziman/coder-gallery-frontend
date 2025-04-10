@@ -956,6 +956,107 @@ textarea.ant-input:focus,
     background-color: var(--primary-color);
 }
 
+/* ================= 日期范围选择器全面修复 ================= */
+/* 1. 修复范围内日期背景色 */
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range::before,
+.ant-picker-dropdown .ant-picker-panel .ant-picker-cell-in-view.ant-picker-cell-in-range::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range::before,
+html body .ant-picker-dropdown .ant-picker-panel .ant-picker-cell-in-view.ant-picker-cell-in-range::before {
+    background: var(--primary-lighter) !important;
+}
+
+/* 2. 修复范围边框线条样式 - 去除蓝色虚线框 */
+.ant-picker-cell-range-hover-start::after,
+.ant-picker-cell-range-hover-end::after,
+.ant-picker-cell-range-hover::after,
+html body .ant-picker-cell-range-hover-start::after,
+html body .ant-picker-cell-range-hover-end::after,
+html body .ant-picker-cell-range-hover::after {
+    border: 1px dashed var(--primary-color) !important;
+}
+
+/* 3. 修复起始和结束日期的背景色和文字颜色 */
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* 4. 修复日期范围内的元素悬停状态 */
+.ant-picker-dropdown .ant-picker-panel .ant-picker-cell-in-view.ant-picker-cell-in-range:hover::before,
+.ant-picker-dropdown .ant-picker-panel .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-hover::before,
+html body .ant-picker-dropdown .ant-picker-panel .ant-picker-cell-in-view.ant-picker-cell-in-range:hover::before,
+html body .ant-picker-dropdown .ant-picker-panel .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-hover::before {
+    background: rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 5. 强制覆盖所有范围选择时的样式 */
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover::before,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-start::before,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-end::before,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-start.ant-picker-cell-range-hover::before,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-end.ant-picker-cell-range-hover::before,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-start:not(.ant-picker-cell-range-start-single)::before,
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-end:not(.ant-picker-cell-range-end-single)::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-start::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-end::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-start.ant-picker-cell-range-hover::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-end.ant-picker-cell-range-hover::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-start:not(.ant-picker-cell-range-start-single)::before,
+html body .ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-range-end:not(.ant-picker-cell-range-end-single)::before {
+    background: rgba(101, 84, 192, 0.2) !important;
+}
+
+/* 6. 修复虚线选择框的颜色 */
+tr > .ant-picker-cell-in-view.ant-picker-cell-range-hover:first-child::after,
+tr > .ant-picker-cell-in-view.ant-picker-cell-range-hover-end:first-child::after,
+.ant-picker-cell-in-view.ant-picker-cell-range-hover-edge-start:not(.ant-picker-cell-range-hover-edge-start-near-range)::after,
+.ant-picker-cell-in-view.ant-picker-cell-range-hover-start::after,
+tr > .ant-picker-cell-in-view.ant-picker-cell-range-hover:last-child::after,
+tr > .ant-picker-cell-in-view.ant-picker-cell-range-hover-start:last-child::after,
+.ant-picker-cell-in-view.ant-picker-cell-range-hover-edge-end:not(.ant-picker-cell-range-hover-edge-end-near-range)::after,
+.ant-picker-cell-in-view.ant-picker-cell-range-hover-end::after,
+.ant-picker-datetime-panel .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-start .ant-picker-cell-inner::after,
+.ant-picker-datetime-panel .ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-end .ant-picker-cell-inner::after {
+    border-color: var(--primary-color) !important;
+}
+
+/* 7. 确保日期范围内单元格的边框颜色 */
+.ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-start::after,
+.ant-picker-cell-in-view.ant-picker-cell-in-range.ant-picker-cell-range-hover-end::after,
+.ant-picker-cell-in-view.ant-picker-cell-range-start.ant-picker-cell-range-hover-start::after,
+.ant-picker-cell-in-view.ant-picker-cell-range-end.ant-picker-cell-range-hover-end::after {
+    border-color: var(--primary-color) !important;
+}
+
+/* 8. 禁用状态的日期样式 */
+.ant-picker-dropdown .ant-picker-cell-disabled .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-disabled:hover .ant-picker-cell-inner {
+    color: rgba(0, 0, 0, 0.25) !important;
+    background: transparent !important;
+}
+
+/* 9. 修复日期选择器面板样式，确保紫色主题一致性 */
+.ant-picker-dropdown .ant-picker-header {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.ant-picker-dropdown .ant-picker-header-view button:hover {
+    color: var(--primary-color) !important;
+}
+
+.ant-picker-dropdown .ant-picker-today-btn {
+    color: var(--primary-color) !important;
+}
+
+.ant-picker-dropdown .ant-picker-footer {
+    border-top: 1px solid var(--border-color) !important;
+}
+
+
 /* ================= TRANSFER 穿梭框 ================= */
 .ant-transfer-list-content-item:hover {
     background-color: var(--primary-color-bg);
