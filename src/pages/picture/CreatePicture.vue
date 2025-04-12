@@ -42,14 +42,14 @@
             <div class="step-text">上传图片</div>
           </div>
           <div class="step-divider"></div>
-          <div class="step" :class="{ 'active': localPreviewUrl || linkPreviewUrl }">
+          <div class="step" :class="{ 'active': pictureData }">
             <div class="step-icon">
               <form-outlined />
             </div>
             <div class="step-text">填写信息</div>
           </div>
           <div class="step-divider"></div>
-          <div class="step">
+          <div class="step" :class="{ 'active': submitted }">
             <div class="step-icon">
               <check-circle-outlined />
             </div>
@@ -69,318 +69,384 @@
     </div>
 
     <!-- 上传区域 -->
-    <a-card class="upload-card" :bordered="false">
+    <a-card class="upload-card" :bordered="false" v-if="!pictureData">
       <a-tabs v-model:activeKey="activeTabKey">
         <!-- 本地上传选项卡 -->
         <a-tab-pane key="local" tab="本地上传">
-          <div class="upload-area" v-if="!localPreviewUrl">
-            <a-upload-dragger
-                name="file"
-                :multiple="false"
-                :before-upload="beforeLocalUpload"
-                :show-upload-list="false"
-                accept="image/*"
-            >
-              <div class="upload-content">
-                <p class="upload-icon">
-                  <upload-outlined />
-                </p>
-                <p class="upload-text">点击或拖拽图片至此区域上传</p>
-                <p class="upload-hint">支持 JPG、PNG、WebP 等常见图片格式，文件大小不超过 10MB</p>
-              </div>
-            </a-upload-dragger>
-          </div>
-          <div class="preview-area" v-else>
-            <div class="preview-image-wrapper">
-              <img :src="localPreviewUrl" alt="预览图" class="preview-image" />
-              <div class="preview-actions">
-                <a-button type="primary" @click="reuploadLocal">重新上传</a-button>
-              </div>
-            </div>
-          </div>
+          <local-upload-component :onUploadSuccess="handleUploadSuccess" />
         </a-tab-pane>
 
         <!-- 链接上传选项卡 -->
         <a-tab-pane key="link" tab="链接上传">
-          <div class="link-upload-area" v-if="!linkPreviewUrl">
-            <a-form :model="linkForm" layout="vertical">
-              <a-form-item
-                  label="图片链接"
-                  name="imageUrl"
-                  :rules="[{ required: true, message: '请输入图片链接' }]">
-                <a-input
-                    v-model:value="linkForm.imageUrl"
-                    placeholder="输入图片URL链接，如 https://example.com/image.jpg"
-                    class="link-input"
-                    allow-clear
-                >
-                  <template #addonAfter v-if="linkForm.imageUrl">
-                    <a-button type="primary" size="small" @click="previewLink">
-                      预览
-                    </a-button>
-                  </template>
-                </a-input>
-              </a-form-item>
-            </a-form>
-          </div>
-          <div class="preview-area" v-else>
-            <div class="preview-image-wrapper">
-              <img :src="linkPreviewUrl" alt="预览图" class="preview-image" />
-              <div class="preview-actions">
-                <a-button type="primary" @click="reuploadLink">重新上传</a-button>
-              </div>
-            </div>
-          </div>
+          <url-upload-component :onUploadSuccess="handleUploadSuccess" />
         </a-tab-pane>
       </a-tabs>
     </a-card>
 
-    <!-- 表单区域 - 仅当有预览图时显示 -->
-    <a-card
-        v-if="localPreviewUrl || linkPreviewUrl"
-        class="form-card"
-        :bordered="false"
+    <!-- 提示用户上传成功的消息 - 全新设计 -->
+    <a-card v-if="pictureData && !showForm" class="success-card" :bordered="false">
+      <div class="modern-success-container">
+        <!-- 顶部成功信息 -->
+        <div class="success-status-bar">
+          <div class="status-icon-wrapper">
+            <check-circle-filled class="status-icon" />
+          </div>
+          <div class="status-text">
+            <h2 class="status-title">上传成功</h2>
+            <p class="status-description">您的图片已成功上传至平台</p>
+          </div>
+          <div class="status-actions">
+            <a-button type="primary" @click="showForm = true">
+              <form-outlined />
+              完善信息
+            </a-button>
+            <a-button @click="resetUpload">
+              <reload-outlined />
+              重新上传
+            </a-button>
+          </div>
+        </div>
+
+        <!-- 主要内容区 -->
+        <div class="preview-content">
+          <!-- 左侧大图预览 -->
+          <div class="image-preview-section">
+            <div class="image-preview-card">
+              <div class="image-preview-header">
+                <h3><picture-outlined /> 图片预览</h3>
+                <a-tag color="processing">原始尺寸</a-tag>
+              </div>
+              <div class="image-container">
+                <img
+                    :src="pictureData.url || pictureData.thumbnailUrl"
+                    alt="已上传图片"
+                    class="preview-image"
+                    @error="handleImageError"
+                />
+              </div>
+              <div class="image-action-buttons">
+                <a-button type="link" class="image-action-btn">
+                  <copy-outlined />
+                  <span>复制链接</span>
+                </a-button>
+                <a-button type="link" class="image-action-btn">
+                  <download-outlined />
+                  <span>下载图片</span>
+                </a-button>
+                <a-button type="link" class="image-action-btn">
+                  <share-alt-outlined />
+                  <span>分享</span>
+                </a-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧信息与其他内容 -->
+          <div class="info-section">
+            <!-- 图片详情卡片 -->
+            <div class="info-card">
+              <div class="info-card-header">
+                <file-image-outlined />
+                <span>图片信息</span>
+              </div>
+              <div class="info-card-content">
+                <div class="info-row">
+                  <div class="info-label"><idcard-outlined /> ID</div>
+                  <div class="info-value">
+                    <a-tooltip :title="pictureData.id">
+                      <span class="truncated-text">{{ pictureData.id }}</span>
+                    </a-tooltip>
+                    <a-button
+                        type="link"
+                        class="copy-btn"
+                        size="small"
+                        @click="copyToClipboard(pictureData.id)"
+                    >
+                      <copy-outlined />
+                    </a-button>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label"><calendar-outlined /> 上传时间</div>
+                  <div class="info-value">{{ formatDate(pictureData.createTime) }}</div>
+                </div>
+                <div class="info-row" v-if="pictureData.size">
+                  <div class="info-label"><file-outlined /> 文件大小</div>
+                  <div class="info-value">{{ formatSize(pictureData.size) }}</div>
+                </div>
+                <div class="info-row" v-if="pictureData.width && pictureData.height">
+                  <div class="info-label"><column-width-outlined /> 尺寸</div>
+                  <div class="info-value">{{ pictureData.width }} × {{ pictureData.height }} px</div>
+                </div>
+                <div class="info-row" v-if="pictureData.format">
+                  <div class="info-label"><file-image-outlined /> 格式</div>
+                  <div class="info-value">
+                    <a-tag :color="getFormatColor(pictureData.format)">{{ pictureData.format }}</a-tag>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 下一步指引卡片 -->
+            <div class="next-steps-card">
+              <div class="next-steps-header">
+                <bulb-outlined />
+                <span>下一步</span>
+              </div>
+              <div class="next-steps-content">
+                <p class="next-step-item">
+                  <arrow-right-outlined />
+                  <span>完善<strong>标题</strong>和<strong>描述</strong>让您的作品更易被发现</span>
+                </p>
+                <p class="next-step-item">
+                  <arrow-right-outlined />
+                  <span>添加<strong>标签</strong>和<strong>分类</strong>提高图片搜索排名</span>
+                </p>
+                <p class="next-step-item">
+                  <arrow-right-outlined />
+                  <span>上传完成后可在<strong>首页</strong>中查看</span>
+                </p>
+              </div>
+              <div class="next-steps-footer">
+                <a-button type="primary" @click="showForm = true" >
+                  <form-outlined />继续完善信息
+                </a-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </a-card>
+
+    <!-- 表单区域 - 仅当有预览图时显示 - 全新设计 -->
+    <div
+        v-if="pictureData && showForm"
+        class="enhanced-form-container"
         v-motion
         :initial="{ opacity: 0, y: 20 }"
         :enter="{ opacity: 1, y: 0, transition: { delay: 300, duration: 500 } }"
     >
-      <template #title>
-        <div class="form-card-title">
-          <form-outlined />
-          填写图片信息
-        </div>
-      </template>
-
-      <a-form
-          :model="pictureForm"
-          layout="vertical"
-          :rules="formRules"
-          ref="pictureFormRef"
-      >
-        <!-- 基础信息区 -->
-        <div class="form-section">
-          <h3 class="section-title">基础信息</h3>
-
-          <!-- 图片名称 -->
-          <a-form-item label="图片名称" name="title" required>
-            <a-input
-                v-model:value="pictureForm.title"
-                placeholder="为您的图片起个名称"
-                :maxLength="50"
-                show-count
-                allow-clear
-            />
-          </a-form-item>
-
-          <!-- 图片简介 -->
-          <a-form-item label="图片简介" name="description">
-            <a-textarea
-                v-model:value="pictureForm.description"
-                placeholder="描述一下您的图片内容、创作灵感或想法..."
-                :rows="4"
-                :maxLength="500"
-                show-count
-                allow-clear
-            />
-          </a-form-item>
-
-          <!-- 一行两列布局 -->
-          <a-row :gutter="16">
-            <a-col :span="12">
-              <!-- 图片分类 -->
-              <a-form-item label="图片分类" name="category" required>
-                <a-select
-                    v-model:value="pictureForm.category"
-                    placeholder="选择分类"
-                    :options="categoryOptions"
-                    :show-search="true"
-                    allow-clear
-                >
-                  <template #suffixIcon><appstore-outlined /></template>
-                </a-select>
-              </a-form-item>
-            </a-col>
-            <a-col :span="12">
-              <!-- 图片标签 -->
-              <a-form-item label="图片标签" name="tags">
-                <a-select
-                    v-model:value="pictureForm.tags"
-                    mode="multiple"
-                    placeholder="选择或输入标签"
-                    :options="tagOptions"
-                    :max-tag-count="3"
-                    :max-tag-text-length="10"
-                    allow-clear
-                    :tokenSeparators="[',']"
-                >
-                  <template #suffixIcon><tags-outlined /></template>
-                </a-select>
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </div>
-
-        <!-- 高级选项区域 -->
-        <div class="form-section">
-          <div class="section-header">
-            <h3 class="section-title">高级选项</h3>
-            <a-switch v-model:checked="showAdvanced" />
+      <!-- 精美图片展示区 -->
+      <div class="image-showcase">
+        <div class="showcase-header">
+          <div class="showcase-title">
+            <picture-outlined />
+            <span>完善图片信息</span>
           </div>
+          <div class="showcase-meta">
+            <div class="meta-badge" v-if="pictureData.format">
+              <a-tag :color="getFormatColor(pictureData.format)">{{ pictureData.format }}</a-tag>
+            </div>
+            <div class="meta-badge" v-if="pictureData.width && pictureData.height">
+              <a-tag color="blue">{{ pictureData.width }} × {{ pictureData.height }}</a-tag>
+            </div>
+            <div class="meta-badge" v-if="pictureData.size">
+              <a-tag color="cyan">{{ formatSize(pictureData.size) }}</a-tag>
+            </div>
+            <div class="meta-badge">
+              <a-tag color="purple">ID: {{ pictureData.id.substring(0, 8) }}...</a-tag>
+              <copy-outlined class="copy-meta-icon" @click="copyToClipboard(pictureData.id)" />
+            </div>
+          </div>
+        </div>
 
-          <div v-show="showAdvanced" class="advanced-options">
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <!-- 拍摄设备 -->
-                <a-form-item label="拍摄设备" name="device">
-                  <a-input
-                      v-model:value="pictureForm.device"
-                      placeholder="相机型号或手机型号等"
-                      allow-clear
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <!-- 拍摄地点 -->
-                <a-form-item label="拍摄地点" name="location">
-                  <a-input
-                      v-model:value="pictureForm.location"
-                      placeholder="拍摄的位置或地点"
-                      allow-clear
-                  >
-                    <template #prefix>
-                      <environment-outlined />
-                    </template>
-                  </a-input>
-                </a-form-item>
-              </a-col>
-            </a-row>
 
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <!-- 拍摄日期 -->
-                <a-form-item label="拍摄日期" name="shootDate">
-                  <a-date-picker
-                      v-model:value="pictureForm.shootDate"
-                      style="width: 100%"
-                      placeholder="选择拍摄日期"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <!-- 色彩模式 -->
-                <a-form-item label="色彩模式" name="colorMode">
-                  <a-select
-                      v-model:value="pictureForm.colorMode"
-                      placeholder="选择色彩模式"
-                      :options="colorModeOptions"
-                      allow-clear
-                  />
-                </a-form-item>
-              </a-col>
-            </a-row>
+        <!-- 图片尺寸指示器部分 -->
+        <div class="image-frame">
+          <div class="image-wrapper">
+            <img
+                :src="pictureData.url || pictureData.thumbnailUrl"
+                alt="已上传图片"
+                class="showcase-image"
+                @error="handleImageError"
+            />
 
-            <!-- 故事背景 -->
-            <a-form-item label="故事背景" name="story">
-              <a-textarea
-                  v-model:value="pictureForm.story"
-                  placeholder="分享这张图片背后的故事、拍摄过程或创作灵感..."
-                  :rows="4"
-                  :maxLength="1000"
+            <!-- 优化后的尺寸指示器 -->
+            <div class="dimension-indicators">
+              <div class="width-indicator">
+                <div class="dimension-line width-line"></div>
+                <div class="dimension-value">{{ pictureData.picWidth || '未知' }} px</div>
+              </div>
+              <div class="height-indicator">
+                <div class="dimension-line height-line"></div>
+                <div class="dimension-value">{{ pictureData.picHeight || '未知' }} px</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 表单内容卡片 -->
+      <div class="form-content-card">
+        <a-form
+            :model="pictureForm"
+            layout="vertical"
+            :rules="formRules"
+            ref="pictureFormRef"
+        >
+          <!-- 基础信息区 -->
+          <div class="form-section">
+            <h3 class="section-title">基础信息</h3>
+
+            <!-- 图片名称 -->
+            <a-form-item label="图片名称" name="title" required>
+              <a-input
+                  v-model:value="pictureForm.title"
+                  placeholder="为您的图片起个名称"
+                  :maxLength="50"
                   show-count
                   allow-clear
               />
             </a-form-item>
-          </div>
-        </div>
 
-        <!-- 隐私与权限区域 -->
-        <div class="form-section">
-          <h3 class="section-title">隐私与权限</h3>
-
-
-          <!-- 水印设置 -->
-          <a-form-item label="水印设置" name="watermark">
-            <div class="watermark-option">
-              <a-switch v-model:checked="pictureForm.enableWatermark" />
-              <span class="option-label">添加水印</span>
-            </div>
-            <div v-if="pictureForm.enableWatermark" class="watermark-settings">
-              <a-input
-                  v-model:value="pictureForm.watermarkText"
-                  placeholder="水印文字内容（如：您的用户名或网站名）"
+            <!-- 图片简介 -->
+            <a-form-item label="图片简介" name="description">
+              <a-textarea
+                  v-model:value="pictureForm.description"
+                  placeholder="描述一下您的图片内容、创作灵感或想法..."
+                  :rows="4"
+                  :maxLength="500"
+                  show-count
                   allow-clear
               />
-            </div>
-          </a-form-item>
-        </div>
+            </a-form-item>
 
-        <!-- 提交按钮区域 -->
-        <div class="form-actions">
-          <a-button @click="resetForm">取消</a-button>
-          <a-button type="primary" @click="submitForm" :loading="submitting">
-            发布图片
-          </a-button>
-        </div>
-      </a-form>
-    </a-card>
+            <!-- 一行两列布局 -->
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <!-- 图片分类 - 使用树形选择器 -->
+                <a-form-item label="图片分类" name="category" required>
+                  <a-tree-select
+                      v-model:value="pictureForm.category"
+                      class="enhanced-tree-select"
+                      style="width: 100%"
+                      :dropdown-style="{ maxHeight: '400px', overflow: 'auto', padding: '8px' }"
+                      placeholder="选择图片分类"
+                      :tree-data="formattedCategoryTree"
+                      :show-search="true"
+                      :filter-tree-node="(input, treeNode) => treeNode.title.toLowerCase().indexOf(input.toLowerCase()) > -1"
+                      tree-default-expand-all
+                      allow-clear
+                  >
+                    <template #suffixIcon><appstore-outlined /></template>
+
+                    <!-- 自定义树节点的渲染 -->
+                    <template #treeTitle="{ value, title, dataRef }">
+      <span :class="dataRef.isLeaf ? 'child-category' : 'parent-category'">
+        <!-- 根据分类类型显示不同的图标 -->
+        <component
+            :is="getCategoryIcon(dataRef.type)"
+            class="category-icon"
+        />
+        {{ title }}
+
+        <!-- 为一级分类添加计数信息 -->
+        <a-badge
+            v-if="dataRef.contentCount && dataRef.level === 1"
+            :count="dataRef.contentCount"
+            :number-style="{ backgroundColor: '#52c41a', fontSize: '12px', padding: '0 6px', boxShadow: 'none' }"
+        />
+      </span>
+                    </template>
+                  </a-tree-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <!-- 图片标签 - 使用动态数据 -->
+                <a-form-item label="图片标签" name="tags">
+                  <a-select
+                      v-model:value="pictureForm.tags"
+                      mode="multiple"
+                      placeholder="选择或输入标签"
+                      :options="tagOptions"
+                      :max-tag-count="3"
+                      :max-tag-text-length="10"
+                      allow-clear
+                      :tokenSeparators="[',']"
+                  >
+                    <template #suffixIcon><tags-outlined /></template>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+            </a-row>
+          </div>
+
+          <!-- 提交按钮区域 -->
+          <div class="form-actions">
+            <a-button @click="resetForm">取消</a-button>
+            <a-button type="primary" @click="submitForm" :loading="submitting">
+              发布图片
+            </a-button>
+          </div>
+        </a-form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
-import { message } from 'ant-design-vue';
+import { ref, reactive, computed, onMounted } from 'vue';
+import { message, TreeSelect } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
+import LocalUploadComponent from '@/components/picture/LocalUploadComponent.vue';
+import UrlUploadComponent from '@/components/picture/UrlUploadComponent.vue';
+import { editPictureUsingPost } from '@/api/tupianxiangguanjiekou';
 import {
   PictureOutlined,
   UploadOutlined,
   FormOutlined,
+  CheckCircleOutlined,
+  CheckCircleFilled,
   AppstoreOutlined,
   TagsOutlined,
-  LockOutlined,
-  GlobalOutlined,
-  TeamOutlined,
-  CopyrightOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  EyeOutlined,
+  CalendarOutlined,
+  FileOutlined,
+  FileImageOutlined,
+  IdcardOutlined,
+  ColumnWidthOutlined,
+  CopyOutlined,
+  DownloadOutlined,
+  BulbOutlined,
+  ReloadOutlined,
+  ShareAltOutlined,
+  ArrowRightOutlined
 } from '@ant-design/icons-vue';
+
+import { getCategoryTreeForFrontendUsingGet } from '@/api/fenleiguanli';
+import { getTagListUsingGet } from '@/api/biaoqianguanli';
 
 const router = useRouter();
 
 // 激活的标签页
 const activeTabKey = ref('local');
 
-// 图片预览URL
-const localPreviewUrl = ref('');
-const linkPreviewUrl = ref('');
-
-// 链接表单
-const linkForm = reactive({
-  imageUrl: ''
-});
-
+// 已上传的图片数据
+const pictureData = ref(null);
+// 是否显示表单
+const showForm = ref(false);
+// 是否已提交
+const submitted = ref(false);
 
 // 图片表单
 const pictureFormRef = ref(null);
 const pictureForm = reactive({
+  id: '', // 存储上传后返回的图片ID
   title: '',
   description: '',
-  category: undefined,
-  tags: [],
-  device: '',
-  location: '',
-  shootDate: null,
-  colorMode: undefined,
-  story: '',
-  visibility: 'public',
-  copyright: 'cc-by',
-  enableWatermark: false,
-  watermarkText: ''
+  category: undefined, // 这里存储的是分类ID (categoryId)
+  tags: []  // 这里存储的是标签ID数组 (tagIds)
 });
-
-// 显示高级选项
-const showAdvanced = ref(false);
 
 // 提交状态
 const submitting = ref(false);
+
+// 分类数据
+const categoryData = ref([]);
+// 标签数据
+const tagOptions = ref([]);
 
 // 表单验证规则
 const formRules = {
@@ -393,146 +459,219 @@ const formRules = {
   ]
 };
 
-// 分类选项
-const categoryOptions = [
-  { value: 'portrait', label: '人像' },
-  { value: 'landscape', label: '风景' },
-  { value: 'architecture', label: '建筑' },
-  { value: 'animals', label: '动物' },
-  { value: 'food', label: '美食' },
-  { value: 'sports', label: '运动' },
-  { value: 'street', label: '街拍' },
-  { value: 'still_life', label: '静物' },
-  { value: 'abstract', label: '抽象' },
-  { value: 'documentary', label: '纪实' },
-  { value: 'other', label: '其他' }
-];
 
-// 标签选项
-const tagOptions = [
-  { value: 'macro', label: '微距' },
-  { value: 'bw', label: '黑白' },
-  { value: 'nature', label: '自然' },
-  { value: 'city', label: '城市' },
-  { value: 'creative', label: '创意' },
-  { value: 'portrait', label: '人像' },
-  { value: 'wallpaper', label: '壁纸' },
-  { value: 'night', label: '夜景' },
-  { value: 'vintage', label: '复古' },
-  { value: 'water', label: '水景' },
-  { value: 'art', label: '艺术' },
-  { value: 'minimalism', label: '极简' }
-];
 
-// 色彩模式选项
-const colorModeOptions = [
-  { value: 'color', label: '彩色' },
-  { value: 'bw', label: '黑白' },
-  { value: 'sepia', label: '棕褐色' },
-  { value: 'vintage', label: '复古' }
-];
-
-// 版权选项
-const copyrightOptions = [
-  { value: 'cc-by', label: 'CC BY - 署名' },
-  { value: 'cc-by-sa', label: 'CC BY-SA - 署名-相同方式共享' },
-  { value: 'cc-by-nd', label: 'CC BY-ND - 署名-禁止演绎' },
-  { value: 'cc-by-nc', label: 'CC BY-NC - 署名-非商业性使用' },
-  { value: 'cc-by-nc-sa', label: 'CC BY-NC-SA - 署名-非商业性使用-相同方式共享' },
-  { value: 'cc-by-nc-nd', label: 'CC BY-NC-ND - 署名-非商业性使用-禁止演绎' },
-  { value: 'all-rights-reserved', label: '保留所有权利' }
-];
-
-// 本地上传图片前处理
-const beforeLocalUpload = (file) => {
-  // 检查文件类型
-  const isImage = file.type.startsWith('image/');
-  if (!isImage) {
-    message.error('只能上传图片文件!');
-    return false;
-  }
-
-  // 检查文件大小
-  const isLt10M = file.size / 1024 / 1024 < 10;
-  if (!isLt10M) {
-    message.error('图片大小不能超过10MB!');
-    return false;
-  }
-
-  // 预览图片
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => {
-    localPreviewUrl.value = reader.result;
+// 获取图片格式对应的颜色
+const getFormatColor = (format) => {
+  const formatColors = {
+    'JPG': 'blue',
+    'JPEG': 'blue',
+    'PNG': 'green',
+    'GIF': 'purple',
+    'WEBP': 'cyan',
+    'SVG': 'orange'
   };
 
-  // 阻止自动上传
-  return false;
+  return formatColors[format?.toUpperCase()] || 'default';
 };
 
-// 预览链接图片
-const previewLink = () => {
-  if (!linkForm.imageUrl) {
-    message.error('请输入图片链接');
-    return;
-  }
+// 将原始分类数据转换为TreeSelect组件可用的格式
+const formattedCategoryTree = computed(() => {
+  return formatCategoryTree(categoryData.value);
+});
 
-  // 简单验证URL格式
-  const isValidUrl = /^(https?:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z0-9]{2,}(\/[^\s]*)?$/.test(linkForm.imageUrl);
-  if (!isValidUrl) {
-    message.error('请输入有效的图片链接');
-    return;
-  }
+// 获取分类数据（树形结构）
+const fetchCategoryTree = async () => {
+  try {
+    const result = await getCategoryTreeForFrontendUsingGet({
 
-  // 设置预览URL
-  linkPreviewUrl.value = linkForm.imageUrl;
+    });
 
-  // 设置默认标题（如果未设置）
-  if (!pictureForm.title) {
-    const filename = linkForm.imageUrl.split('/').pop().split('?')[0];
-    pictureForm.title = filename;
+    if (result && result.data) {
+      categoryData.value = result.data.data;
+      console.log('分类数据获取成功:', categoryData.value);
+    } else {
+      console.error('分类数据获取失败');
+      message.error('分类数据获取失败');
+    }
+  } catch (error) {
+    console.error('获取分类数据出错:', error);
+    message.error('获取分类数据出错: ' + (error.message || '未知错误'));
   }
 };
 
-// 重新上传本地图片
-const reuploadLocal = () => {
-  localPreviewUrl.value = '';
+// 获取标签数据
+const fetchTags = async () => {
+  try {
+    const result = await getTagListUsingGet();
+
+    if (result && result.data) {
+      // 转换标签数据为select需要的格式
+      tagOptions.value = result.data.data.map(tag => ({
+        value: tag.id,
+        label: tag.name
+      }));
+      console.log('标签数据获取成功:', tagOptions.value);
+    } else {
+      console.error('标签数据获取失败');
+      message.error('标签数据获取失败');
+    }
+  } catch (error) {
+    console.error('获取标签数据出错:', error);
+    message.error('获取标签数据出错: ' + (error.message || '未知错误'));
+  }
 };
 
-// 重新上传链接图片
-const reuploadLink = () => {
-  linkPreviewUrl.value = '';
-  linkForm.imageUrl = '';
+
+// 为不同分类类型返回不同的图标组件
+const getCategoryIcon = (type) => {
+  const iconMap = {
+    'learning': BookOutlined,
+    'figure': UserOutlined,
+    'wallpaper': PictureOutlined,
+    'theme': FolderOutlined,
+    'picture': PictureOutlined
+  };
+
+  // 返回匹配的图标，如果没有匹配则返回默认图标
+  return iconMap[type] || AppstoreOutlined;
+};
+
+// 递归格式化分类树，用于TreeSelect组件
+const formatCategoryTree = (categories) => {
+  if (!categories || !Array.isArray(categories)) return [];
+
+  return categories.map(category => ({
+    value: category.id,
+    title: category.name,
+    key: category.id,
+    isLeaf: !category.children || category.children.length === 0,
+    selectable: true,
+    // 添加原始数据中的其他有用字段
+    type: category.type,
+    level: category.level,
+    contentCount: category.contentCount,
+    icon: category.icon,
+    children: category.children ? formatCategoryTree(category.children) : []
+  }));
+};
+
+// 添加复制到剪贴板功能
+const copyToClipboard = (text) => {
+  navigator.clipboard.writeText(text).then(() => {
+    message.success('已复制到剪贴板');
+  }, () => {
+    message.error('复制失败');
+  });
+};
+
+// 处理图片加载错误
+const handleImageError = (e) => {
+  console.error('图片加载失败:', e);
+  // 如果主图片加载失败，尝试使用缩略图
+  if (pictureData.value && pictureData.value.thumbnailUrl && e.target.src !== pictureData.value.thumbnailUrl) {
+    e.target.src = pictureData.value.thumbnailUrl;
+  } else {
+    // 如果缩略图也失败或不存在，显示默认占位图
+    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYwIiBoZWlnaHQ9IjE2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoMTYwdjE2MEgweiIvPjxwYXRoIGQ9Ik02NCA0OS44MmM3LjM1NCAwIDEzLjMxOCA1Ljk2NCAxMy4zMTggMTMuMzE4cy01Ljk2NCAxMy4zMTgtMTMuMzE4IDEzLjMxOGMtNy4zNTUgMC0xMy4zMTgtNS45NjQtMTMuMzE4LTEzLjMxOFM1Ni42NDUgNDkuODIgNjQgNDkuODJ6bTQ0Ljc4OSA2Mi42M0w5Ni45MiA5OC44MDZsMTIuMDEzLTEyLjAxNCAyMy4zNzUgMjMuMzc1LTIzLjUyIDIuMjgzeiIgZmlsbD0iI0VFRSIvPjxwYXRoIGQ9Ik0xMjggMTEyLjQ1VjExNkg0MHYtMTQuNjg2bDE2LjQwMi0xNi40MDIgMTkuNDUzIDE5LjQ1M0wxMjggNTJ2NjAuNDV6IiBmaWxsPSIjRjVGNUY1Ii8+PC9nPjwvc3ZnPg==';
+  }
+};
+
+// 处理上传成功的回调
+const handleUploadSuccess = (pictureVO) => {
+  if (pictureVO.id && typeof pictureVO.id !== 'string') {
+    pictureVO.id = String(pictureVO.id);
+  }
+
+  pictureData.value = pictureVO;
+
+  // 预填充表单数据
+  pictureForm.id = pictureVO.id;
+
+  // 设置标题 - 优先使用返回的title，其次是name，再次是文件名
+  if (pictureVO.title) {
+    pictureForm.title = pictureVO.title;
+  } else if (pictureVO.name) {
+    pictureForm.title = pictureVO.name;
+  } else {
+    // 尝试从URL中提取文件名作为默认标题
+    try {
+      const urlParts = new URL(pictureVO.url || pictureVO.thumbnailUrl).pathname.split('/');
+      const fileName = urlParts[urlParts.length - 1].split('.')[0];
+      if (fileName) {
+        pictureForm.title = decodeURIComponent(fileName);
+      }
+    } catch (e) {
+      console.log('无法从URL提取文件名');
+    }
+  }
+
+  // 设置描述
+  if (pictureVO.description) {
+    pictureForm.description = pictureVO.description;
+  }
+
+  // 设置分类
+  if (pictureVO.categoryId) {
+    pictureForm.category = pictureVO.categoryId;
+  } else if (pictureVO.category) {
+    pictureForm.category = pictureVO.category;
+  }
+
+  // 设置标签 - 优先使用tagIds
+  if (pictureVO.tagIds) {
+    pictureForm.tags = pictureVO.tagIds;
+  } else if (pictureVO.tags) {
+    pictureForm.tags = Array.isArray(pictureVO.tags) ? pictureVO.tags : [pictureVO.tags];
+  }
+};
+
+// 格式化日期
+const formatDate = (dateString) => {
+  if (!dateString) return '未知';
+
+  try {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  } catch (e) {
+    return dateString; // 如果解析失败则返回原始字符串
+  }
+};
+
+// 格式化文件大小
+const formatSize = (bytes) => {
+  if (!bytes || bytes === 0) return '未知';
+
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+};
+
+// 重置上传
+const resetUpload = () => {
+  pictureData.value = null;
+  showForm.value = false;
+  resetForm();
 };
 
 // 重置表单
 const resetForm = () => {
-  // 重置图片预览
-  localPreviewUrl.value = '';
-  linkPreviewUrl.value = '';
-  linkForm.imageUrl = '';
+  // 如果是已上传的图片，返回到上传成功状态
+  if (pictureData.value) {
+    showForm.value = false;
+    return;
+  }
 
   // 重置表单字段
   pictureFormRef.value?.resetFields();
 
-  // 重置高级选项
-  showAdvanced.value = false;
-
   // 重置其他字段
   Object.assign(pictureForm, {
+    id: pictureData.value?.id || '',
     title: '',
     description: '',
     category: undefined,
-    tags: [],
-    device: '',
-    location: '',
-    shootDate: null,
-    colorMode: undefined,
-    story: '',
-    visibility: 'public',
-    copyright: 'cc-by',
-    enableWatermark: false,
-    watermarkText: ''
+    tags: []
   });
 
   message.info('表单已重置');
@@ -544,42 +683,71 @@ const submitForm = async () => {
   try {
     await pictureFormRef.value.validate();
 
-    // 检查是否有图片
-    if (!localPreviewUrl.value && !linkPreviewUrl.value) {
-      message.error('请上传图片');
+    // 检查是否有图片ID
+    if (!pictureForm.id) {
+      message.error('图片信息丢失，请重新上传');
       return;
     }
 
     // 设置提交中状态
     submitting.value = true;
 
-    // 构建提交数据
-    const formData = {
-      ...pictureForm,
-      imageSource: localPreviewUrl.value ? 'local' : 'link',
-      imageUrl: localPreviewUrl.value || linkPreviewUrl.value
+    // 构建提交数据 - 修改格式以符合后端要求
+    const editRequest = {
+      id: pictureForm.id,
+      name: pictureForm.title,
+      description: pictureForm.description,
+      categoryId: pictureForm.category, // 使用categoryId作为键名
+      tagIds: pictureForm.tags // 使用tagIds作为键名
     };
 
-    // 模拟API提交
-    console.log('提交的表单数据:', formData);
+    console.log('提交的数据:', JSON.stringify(editRequest));
 
-    // 模拟提交延迟
-    setTimeout(() => {
-      // 提交完成
+    // 调用编辑接口
+    try {
+      const result = await editPictureUsingPost(editRequest);
+
+      if (result && result.data) {
+        // 提示成功
+        message.success('图片发布成功');
+
+        // 设置已提交状态
+        submitted.value = true;
+
+        // 延迟后跳转到图片详情页面
+        setTimeout(() => {
+          router.push(`/picture/${pictureForm.id}`);
+        }, 1500);
+      } else {
+        message.error('图片信息更新失败');
+        submitting.value = false;
+      }
+    } catch (error) {
+      console.error('提交错误:', error);
+      message.error('提交出错: ' + (error.message || '未知错误'));
       submitting.value = false;
-
-      // 提示成功
-      message.success('图片发布成功');
-
-      // 跳转到图片详情页面
-      router.push('/picture/detail/123');
-    }, 1500);
+    }
 
   } catch (error) {
     console.error('表单验证失败:', error);
     message.error('请检查表单是否填写正确');
   }
 };
+
+// 页面挂载时检查URL参数，支持预填充一些字段
+onMounted(async () => {
+  // 获取分类和标签数据
+  await fetchCategoryTree();
+  await fetchTags();
+
+  // 检查URL参数，支持预填充一些字段
+  const urlParams = new URLSearchParams(window.location.search);
+  const category = urlParams.get('category');
+
+  if (category) {
+    pictureForm.category = category;
+  }
+});
 </script>
 
 <style scoped>
@@ -811,8 +979,572 @@ const submitForm = async () => {
   transform: rotate(20deg);
 }
 
+/* 卡片样式 */
+.upload-card,
+.success-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: white;
+  overflow: hidden;
+}
+
+/* 全新上传成功页面样式 */
+.modern-success-container {
+  padding: 0;
+  background-color: white;
+}
+
+.success-status-bar {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: linear-gradient(90deg, #f6ffed 0%, #e6f7ff 100%);
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.status-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: #52c41a;
+  border-radius: 50%;
+  margin-right: 16px;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.15);
+}
+
+.status-icon {
+  font-size: 28px;
+  color: white;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: #52c41a;
+}
+
+.status-description {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 4px 0 0 0;
+}
+
+.status-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* 主内容区域 */
+.preview-content {
+  display: flex;
+  padding: 24px;
+  gap: 24px;
+}
+
+/* 左侧图片预览 */
+.image-preview-section {
+  flex: 1;
+  max-width: 65%;
+}
+
+.image-preview-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+}
+
+.image-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.image-preview-header h3 {
+  margin: 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-container {
+  position: relative;
+  min-height: 500px;
+  max-height: 700px;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+.image-action-buttons {
+  display: flex;
+  justify-content: space-around;
+  padding: 12px;
+  background-color: #fafafa;
+  border-top: 1px solid #f0f0f0;
+}
+
+.image-action-btn {
+  display: flex;
+  align-items: center;
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.image-action-btn span {
+  margin-left: 6px;
+}
+
+/* 右侧信息卡片 */
+.info-section {
+  width: 35%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-card, .next-steps-card, .recommendation-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+}
+
+.info-card-header, .next-steps-header, .recommendation-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fafafa;
+  font-weight: 600;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.info-card-content {
+  padding: 16px;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8c8c8c;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.info-value {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #262626;
+}
+
+.truncated-text {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copy-btn {
+  color: #1890ff;
+  padding: 0 4px;
+  font-size: 14px;
+  margin-left: 6px;
+}
+
+/* 下一步卡片 */
+.next-steps-content {
+  padding: 16px;
+}
+
+.next-step-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #595959;
+}
+
+.next-step-item > .anticon {
+  color: #52c41a;
+  margin-right: 8px;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.next-steps-footer {
+  padding: 0 16px 16px;
+}
+
+/* 全新图片展示与表单区域样式 */
+.enhanced-form-container {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 精美图片展示区样式 */
+.image-showcase {
+  position: relative;
+  background-color: #fafafa;
+  padding: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.showcase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: linear-gradient(90deg, #f6f9ff 0%, #f0f7ff 100%);
+  border-bottom: 1px solid #eaeaea;
+}
+
+.showcase-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e1e1e;
+}
+
+.showcase-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-badge {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.copy-meta-icon {
+  margin-left: 4px;
+  color: #1890ff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-meta-icon:hover {
+  color: #40a9ff;
+  transform: scale(1.1);
+}
+
+/* 图片框架与尺寸指示器样式 */
+.image-frame {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background-color: #f5f7fa;
+  background-image:
+      linear-gradient(45deg, #f0f2f5 25%, transparent 25%, transparent 75%, #f0f2f5 75%, #f0f2f5),
+      linear-gradient(45deg, #f0f2f5 25%, transparent 25%, transparent 75%, #f0f2f5 75%, #f0f2f5);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+.image-wrapper {
+  position: relative;
+  max-width: 90%;
+  max-height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  background-color: #fff;
+}
+
+.showcase-image {
+  display: block;
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+}
+
+
+.image-wrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.image-wrapper:hover .image-overlay {
+  opacity: 1;
+}
+
+/* 全新设计的尺寸指示器 */
+.dimension-indicators {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.width-indicator {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.height-indicator {
+  position: absolute;
+  top: 0;
+  right: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.dimension-line {
+  background-color: rgba(24, 144, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.width-line {
+  height: 2px;
+  width: 60%;
+  margin-bottom: 8px;
+}
+
+.height-line {
+  width: 2px;
+  height: 60%;
+  margin-right: 8px;
+}
+
+.dimension-value {
+  font-size: 12px;
+  color: #fff;
+  background-color: rgba(24, 144, 255, 0.85);
+  padding: 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+/* 鼠标悬停时的效果增强 */
+.image-wrapper:hover .dimension-line {
+  background-color: rgba(24, 144, 255, 0.6);
+}
+
+.image-wrapper:hover .dimension-value {
+  background-color: rgba(24, 144, 255, 1);
+  transform: scale(1.05);
+}
+
+/* 暗黑模式适配 */
+@media (prefers-color-scheme: dark) {
+  .image-frame {
+    background-color: #121212;
+    background-image:
+        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+  }
+
+  .image-wrapper {
+    background-color: #262626;
+  }
+
+  .dimension-line {
+    background-color: rgba(64, 169, 255, 0.4);
+  }
+
+  .dimension-value {
+    color: #fff;
+    background-color: rgba(64, 169, 255, 0.85);
+  }
+
+  .image-wrapper:hover .dimension-line {
+    background-color: rgba(64, 169, 255, 0.7);
+  }
+
+  .image-wrapper:hover .dimension-value {
+    background-color: rgba(64, 169, 255, 1);
+  }
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .image-frame {
+    padding: 20px;
+  }
+
+  .width-line {
+    width: 80%;
+  }
+
+  .height-line {
+    height: 80%;
+  }
+
+  .dimension-value {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+}
+
+/* 极小屏幕适配 */
+@media (max-width: 480px) {
+  .dimension-indicators {
+    opacity: 0.8;
+  }
+
+  .width-indicator {
+    bottom: 8px;
+  }
+
+  .height-indicator {
+    right: 8px;
+  }
+
+  .width-line, .height-line {
+    display: none; /* 在极小屏幕上隐藏线条，只保留数值标签 */
+  }
+}
+
+.width-indicator {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.height-indicator {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.indicator-line {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.width-indicator .indicator-line {
+  height: 2px;
+  width: 120px;
+}
+
+.height-indicator .indicator-line {
+  width: 2px;
+  height: 120px;
+  margin-right: 8px;
+}
+
+.indicator-value {
+  font-size: 12px;
+  color: #8c8c8c;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.height-indicator .indicator-value {
+  margin-top: 0;
+  margin-left: 4px;
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+/* 表单内容卡片样式 */
+.form-content-card {
+  background-color: white;
+  padding: 24px;
+}
+
+/* 表单区域样式 */
+.form-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 16px;
+  position: relative;
+  padding-left: 12px;
+  margin: 0 0 16px 0;
+  font-weight: 500;
+  color: #262626;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background-color: #1890ff;
+  border-radius: 2px;
+}
+
+/* 按钮区域 */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
+  .create-picture-page {
+    padding: 16px 12px;
+  }
+
   .enhanced-page-header {
     padding: 24px 16px 20px;
   }
@@ -858,191 +1590,67 @@ const submitForm = async () => {
   .step-divider {
     width: 30px;
   }
-}
 
-/* 暗黑模式适配 */
-@media (prefers-color-scheme: dark) {
-  .enhanced-page-header {
-    background: linear-gradient(135deg, #3a59c7 0%, #5d3eae 100%);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  }
-}
-
-/* 卡片样式 */
-.upload-card,
-.form-card {
-  margin-bottom: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  background-color: white;
-  overflow: hidden;
-}
-
-.form-card {
-  padding: 0;
-}
-
-.form-card-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* 上传区域样式 */
-.upload-area {
-  padding: 20px 0;
-}
-
-.upload-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 0;
-}
-
-.upload-icon {
-  font-size: 48px;
-  color: #6366f1;
-  margin-bottom: 16px;
-}
-
-.upload-text {
-  font-size: 16px;
-  color: #262626;
-  margin-bottom: 8px;
-}
-
-.upload-hint {
-  font-size: 12px;
-  color: #8c8c8c;
-}
-
-/* 预览区域样式 */
-.preview-area {
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.preview-image-wrapper {
-  position: relative;
-  max-width: 500px;
-  overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.preview-image {
-  width: 100%;
-  display: block;
-}
-
-.preview-actions {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  display: flex;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.preview-image-wrapper:hover .preview-actions {
-  opacity: 1;
-}
-
-/* 链接上传区域 */
-.link-upload-area {
-  padding: 40px 20px;
-}
-
-.link-input {
-  font-size: 14px;
-}
-
-/* 表单区域样式 */
-.form-section {
-  margin-bottom: 24px;
-  padding: 0 24px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.section-title {
-  font-size: 16px;
-  color: #262626;
-  margin: 0 0 16px 0;
-  font-weight: 500;
-}
-
-.advanced-options {
-  background-color: #f9f9fa;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  border: 1px solid #f0f0f0;
-}
-
-/* 水印选项 */
-.watermark-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.option-label {
-  color: #262626;
-}
-
-.watermark-settings {
-  margin-top: 12px;
-}
-
-/* 按钮区域 */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px 24px;
-  border-top: 1px solid #f0f0f0;
-  margin-top: 16px;
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .create-picture-page {
-    padding: 16px 12px;
+  /* 响应式调整 - 上传成功页面 */
+  .success-status-bar {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
   }
 
-  .page-title h1 {
-    font-size: 20px;
+  .status-icon-wrapper {
+    margin-right: 0;
+    margin-bottom: 12px;
   }
 
-  .upload-content {
-    padding: 30px 0;
+  .status-actions {
+    margin-top: 16px;
+    width: 100%;
+    flex-direction: column;
   }
 
-  .upload-icon {
-    font-size: 40px;
+  .preview-content {
+    flex-direction: column;
+    padding: 16px;
   }
 
-  .preview-image-wrapper {
+  .image-preview-section {
     max-width: 100%;
   }
 
-  .preview-actions {
-    opacity: 1;
+  .info-section {
+    width: 100%;
+  }
+
+  .image-container {
+    min-height: 300px;
+  }
+
+  /* 响应式调整 - 新表单页面 */
+  .showcase-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .showcase-meta {
+    width: 100%;
+  }
+
+  .image-frame {
+    padding: 20px;
+  }
+
+  .image-wrapper {
+    max-width: 100%;
+  }
+
+  .width-indicator, .height-indicator {
+    display: none;
+  }
+
+  .form-content-card {
+    padding: 16px;
   }
 }
 
@@ -1052,44 +1660,303 @@ const submitForm = async () => {
     background-color: #121212;
   }
 
-  .page-title h1 {
-    color: #e0e0e0;
-  }
-
-  .page-desc {
-    color: #a6a6a6;
+  .enhanced-page-header {
+    background: linear-gradient(135deg, #3a59c7 0%, #5d3eae 100%);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   }
 
   .upload-card,
-  .form-card {
+  .success-card,
+  .enhanced-form-container {
     background-color: #1f1f1f;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
-  .upload-text {
+  .modern-success-container {
+    background-color: #1f1f1f;
+  }
+
+  .success-status-bar {
+    background: linear-gradient(90deg, #162312 0%, #111d2c 100%);
+    border-bottom-color: #303030;
+  }
+
+  .image-preview-card,
+  .info-card,
+  .next-steps-card,
+  .recommendation-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .image-preview-header,
+  .info-card-header,
+  .next-steps-header,
+  .recommendation-header {
+    background-color: #262626;
+    border-bottom-color: #303030;
+  }
+
+  .image-container {
+    background-color: #262626;
+  }
+
+  .image-action-buttons {
+    background-color: #262626;
+    border-top-color: #303030;
+  }
+
+  .info-label {
+    color: #a6a6a6;
+  }
+
+  .info-value {
     color: #e0e0e0;
   }
 
-  .upload-hint {
+  .next-step-item {
     color: #a6a6a6;
+  }
+
+
+  /* 改进的分类树样式 - 可以添加到CreatePicture.vue的style部分 */
+  .enhanced-tree-select {
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  /* 自定义树节点样式 */
+  :deep(.ant-tree) {
+    background: transparent;
+    padding: 8px 0;
+  }
+
+  :deep(.ant-tree-treenode) {
+    padding: 4px 0;
+    transition: all 0.2s;
+    border-radius: 6px;
+    margin: 2px 0;
+  }
+
+  :deep(.ant-tree-treenode:hover) {
+    background-color: rgba(24, 144, 255, 0.05);
+  }
+
+  :deep(.ant-tree-node-content-wrapper) {
+    transition: all 0.3s;
+    padding: 6px 8px;
+    border-radius: 4px;
+  }
+
+  :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
+    background-color: rgba(24, 144, 255, 0.1);
+  }
+
+  :deep(.ant-tree-node-content-wrapper:hover) {
+    background-color: rgba(24, 144, 255, 0.1);
+  }
+
+  :deep(.ant-tree-indent-unit) {
+    width: 20px;
+  }
+
+  /* 自定义展开/折叠图标 */
+  :deep(.ant-tree-switcher) {
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    border-radius: 50%;
+    transition: all 0.3s;
+    background: transparent;
+    margin-right: 4px;
+  }
+
+  :deep(.ant-tree-switcher:hover) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  /* 自定义下拉样式 */
+  :deep(.ant-select-tree-dropdown) {
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 分类图标样式 */
+  .category-icon {
+    margin-right: 6px;
+    font-size: 14px;
+    color: #1890ff;
+    opacity: 0.8;
+  }
+
+  /* 父级分类样式 */
+  .parent-category {
+    font-weight: 500;
+  }
+
+  /* 子级分类样式 */
+  .child-category {
+    font-size: 14px;
+    color: #666;
+  }
+
+  /* 自定义搜索框样式 */
+  :deep(.ant-select-selector) {
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    height: 38px !important;
+    box-shadow: none !important;
+    border: 1px solid #e8e8e8 !important;
+    transition: all 0.3s !important;
+  }
+
+  :deep(.ant-select-selector:hover) {
+    border-color: #40a9ff !important;
+  }
+
+  :deep(.ant-select:focus .ant-select-selector),
+  :deep(.ant-select-focused .ant-select-selector) {
+    border-color: #1890ff !important;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
+  }
+
+  :deep(.ant-select-arrow) {
+    color: #1890ff;
+  }
+
+  /* 增强悬停效果 */
+  :deep(.ant-tree-treenode) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  :deep(.ant-tree-treenode)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle, rgba(24, 144, 255, 0.1) 0%, rgba(24, 144, 255, 0) 70%);
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.3s;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  :deep(.ant-tree-treenode:hover)::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* 美化图标 */
+  :deep(.ant-tree-switcher-icon) {
+    transition: transform 0.3s;
+  }
+
+  :deep(.ant-tree-switcher_open .ant-tree-switcher-icon) {
+    transform: rotate(90deg);
+  }
+
+  /* 美化滚动条 */
+  :deep(.ant-select-tree-list-holder::-webkit-scrollbar) {
+    width: 6px;
+  }
+
+  :deep(.ant-select-tree-list-holder::-webkit-scrollbar-track) {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 3px;
+  }
+
+  :deep(.ant-select-tree-list-holder::-webkit-scrollbar-thumb) {
+    background: rgba(0, 0, 0, 0.10);
+    border-radius: 3px;
+    transition: all 0.3s;
+  }
+
+  :deep(.ant-select-tree-list-holder::-webkit-scrollbar-thumb:hover) {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  /* 暗黑模式适配 */
+  @media (prefers-color-scheme: dark) {
+    .enhanced-tree-select {
+      background: #1f1f1f;
+    }
+
+    :deep(.ant-tree-treenode:hover) {
+      background-color: rgba(64, 169, 255, 0.1);
+    }
+
+    :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
+      background-color: rgba(64, 169, 255, 0.2);
+    }
+
+    :deep(.ant-tree-node-content-wrapper:hover) {
+      background-color: rgba(64, 169, 255, 0.15);
+    }
+
+    :deep(.ant-tree-switcher:hover) {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .child-category {
+      color: #a6a6a6;
+    }
+
+    :deep(.ant-select-selector) {
+      background-color: #1f1f1f !important;
+      border-color: #303030 !important;
+    }
+
+    :deep(.ant-select-selector:hover) {
+      border-color: #177ddc !important;
+    }
+
+    :deep(.ant-tree-treenode)::before {
+      background: radial-gradient(circle, rgba(64, 169, 255, 0.1) 0%, rgba(64, 169, 255, 0) 70%);
+    }
+  }
+
+  /* 暗黑模式 - 新表单页面 */
+  .showcase-header {
+    background: linear-gradient(90deg, #20242c 0%, #1c2530 100%);
+    border-bottom-color: #303030;
+  }
+
+  .showcase-title {
+    color: #e0e0e0;
+  }
+
+  .image-frame {
+    background-color: #121212;
+    background-image:
+        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+  }
+
+  .indicator-value {
+    color: #a6a6a6;
+    background-color: rgba(38, 38, 38, 0.8);
+  }
+
+  .form-content-card {
+    background-color: #1f1f1f;
   }
 
   .section-title {
     color: #e0e0e0;
   }
 
-  .advanced-options {
-    background-color: #2a2a2a;
-    border-color: #333;
-  }
-
-  .option-label {
-    color: #e0e0e0;
-  }
-
   .form-actions {
-    border-top-color: #333;
+    border-top-color: #303030;
   }
 }
-
 </style>
