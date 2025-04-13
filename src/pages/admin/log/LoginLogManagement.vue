@@ -376,9 +376,6 @@
             />
             <div class="user-info">
               <div class="user-name">{{ selectedLog.username }}</div>
-              <div class="user-meta">
-                <span>用户ID: {{ selectedLog.userId }}</span>
-              </div>
             </div>
           </div>
           <div class="log-status">

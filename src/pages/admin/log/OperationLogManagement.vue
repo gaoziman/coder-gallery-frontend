@@ -119,8 +119,8 @@
                   style="width: 150px"
                   allowClear
               >
-                <a-select-option value="success">成功</a-select-option>
-                <a-select-option value="fail">失败</a-select-option>
+                <a-select-option value="0">成功</a-select-option>
+                <a-select-option value="1">失败</a-select-option>
               </a-select>
             </a-form-item>
 
@@ -239,8 +239,8 @@
           <!-- 操作状态列 -->
           <template v-if="column.dataIndex === 'status'">
             <a-badge
-                :status="record.status === 1 ? 'success' : 'error'"
-                :text="record.status === 1 ? '成功' : '失败'"
+                :status="record.status === 0 ? 'success' : 'error'"
+                :text="record.status === 0 ? '成功' : '失败'"
             />
           </template>
 
@@ -352,15 +352,12 @@
             />
             <div class="user-info">
               <div class="user-name">{{ selectedLog.username }}</div>
-              <div class="user-meta">
-                <span>用户ID: {{ selectedLog.userId }}</span>
-              </div>
             </div>
           </div>
           <div class="log-status">
             <a-badge
-                :status="selectedLog.status === 1 ? 'success' : 'error'"
-                :text="selectedLog.status === 1 ? '登录成功' : '登录失败'"
+                :status="selectedLog.status === 0? 'success' : 'error'"
+                :text="selectedLog.status === 0 ? '登录成功' : '登录失败'"
             />
           </div>
         </div>
