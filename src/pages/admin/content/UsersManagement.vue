@@ -1313,13 +1313,13 @@ const fetchUserData = async () => {
   try {
     // 构建查询参数 - 修改为后端期望的参数名
     const params = {
-      pageNum: pagination.current,  // 改为 pageNum
-      pageSize: pagination.pageSize, // 保持 pageSize
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
       username: searchForm.username || undefined,
       role: searchForm.role || undefined,
       status: searchForm.status || undefined,
-      startTime: searchForm.registerTime?.[0]?.valueOf(),
-      endTime: searchForm.registerTime?.[1]?.valueOf(),
+      registerTimeStart: searchForm.registerTime?.[0] ? dayjs(searchForm.registerTime[0]).format('YYYY-MM-DD') : undefined,
+      registerTimeEnd: searchForm.registerTime?.[1] ? dayjs(searchForm.registerTime[1]).format('YYYY-MM-DD') : undefined,
     };
 
     // 调用API
