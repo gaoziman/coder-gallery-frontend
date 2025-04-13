@@ -386,7 +386,7 @@ declare namespace API {
     /** 搜索内容 */
     searchContent?: string;
     /** 操作状态 */
-    status?: boolean;
+    status?: number;
   };
 
   type getCategoryByIdUsingGETParams = {
@@ -427,7 +427,22 @@ declare namespace API {
     id: number;
   };
 
+  type getNextPictureUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
   type getOperationLogDetailUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
+  type getPictureByIdUsingGETParams = {
+    /** id */
+    id: number;
+  };
+
+  type getPreviousPictureUsingGETParams = {
     /** id */
     id: number;
   };
@@ -539,7 +554,7 @@ declare namespace API {
     /** 搜索内容 */
     searchContent?: string;
     /** 操作状态 */
-    status?: boolean;
+    status?: number;
   };
 
   type listTagByPageUsingGETParams = {
@@ -562,9 +577,9 @@ declare namespace API {
     account?: string;
     /** 用户ID */
     id?: number;
-    /** 当前页码 */
+    /** 页码 */
     pageNum?: number;
-    /** 每页记录数 */
+    /** 每页大小 */
     pageSize?: number;
     /** 用户手机号 */
     phone?: string;
@@ -578,6 +593,13 @@ declare namespace API {
     status?: string;
     /** 用户名 */
     username?: string;
+  };
+
+  type loadMoreWaterfallPicturesUsingPOSTParams = {
+    /** lastId */
+    lastId: number;
+    /** lastValue */
+    lastValue?: string;
   };
 
   type LoginLogVO = {
@@ -637,19 +659,33 @@ declare namespace API {
   };
 
   type LoginUserVO = {
+    /** 账号 */
     account?: string;
+    /** 用户头像 */
     avatar?: string;
+    /** 创建时间 */
     createTime?: string;
+    /** 用户 id */
     id?: number;
+    /** 最后登录IP */
     lastLoginIp?: string;
+    /** 最后登录时间 */
     lastLoginTime?: string;
+    /** 用户角色 */
     role?: string;
+    /** Sa-Token令牌名称 */
     tokenName?: string;
+    /** 令牌过期时间（秒） */
     tokenTimeout?: number;
+    /** Sa-Token令牌 */
     tokenValue?: string;
+    /** 更新时间 */
     updateTime?: string;
+    /** 用户手机号 */
     userPhone?: string;
+    /** 用户简介 */
     userProfile?: string;
+    /** 用户昵称 */
     username?: string;
   };
 
@@ -861,6 +897,129 @@ declare namespace API {
     total?: number;
   };
 
+  type PictureEditRequest = {
+    /** 分类Id */
+    categoryId: number;
+    /** 简介 */
+    description: string;
+    /** id */
+    id: number;
+    /** 图片名称 */
+    name: string;
+    /** 标签IDs */
+    tagIds: number[];
+  };
+
+  type PictureUploadByBatchRequest = {
+    /** 分类ID */
+    categoryId?: number;
+    /** 抓取数量 */
+    count?: number;
+    /** 名称前缀 */
+    namePrefix?: string;
+    /** 搜索词 */
+    searchText?: string;
+    /** 搜索源 */
+    source?: string;
+  };
+
+  type PictureUploadRequest = {
+    /** 图片 url */
+    fileUrl: string;
+    /** 图片 id（用于修改） */
+    id?: number;
+    /** 图片名称 */
+    picName: string;
+    /** 空间 id */
+    spaceId: number;
+  };
+
+  type PictureVO = {
+    /** 分类名称 */
+    category?: string;
+    /** 分类Id */
+    categoryId?: string;
+    /** 收藏数量 */
+    collectionCount?: number;
+    /** 创建时间 */
+    createTime?: string;
+    /** 描述 */
+    description?: string;
+    /** 图片格式 */
+    format?: string;
+    /** id */
+    id?: number;
+    /** 图片点赞数 */
+    likeCount?: number;
+    /** 图片主色调 */
+    mainColor?: string;
+    /** 图片名称 */
+    name?: string;
+    /** 原始文件名 */
+    originalName?: string;
+    /** 图片高度 */
+    picHeight?: number;
+    /** 图片比例 */
+    picScale?: number;
+    /** 图片宽度 */
+    picWidth?: number;
+    /** 审核内容 */
+    reviewMessage?: string;
+    /** 审核状态 */
+    reviewStatus?: number;
+    /** 审核时间 */
+    reviewTime?: string;
+    /** 审核人 id */
+    reviewerId?: number;
+    /** 图片大小 */
+    size?: number;
+    /** 标签Ids */
+    tagIds?: string[];
+    /** 标签名称 */
+    tags?: string[];
+    /** 缩略图 url */
+    thumbnailUrl?: string;
+    /** 图片 url */
+    url?: string;
+    user?: UserVO;
+    /** 浏览量 */
+    viewCount?: number;
+  };
+
+  type PictureWaterfallRequest = {
+    /** 分类ID */
+    categoryId?: number;
+    /** 图片格式，如jpg,png */
+    format?: string;
+    /** 搜索关键词 */
+    keyword?: string;
+    /** 高度下限 */
+    minHeight?: number;
+    /** 宽度下限 */
+    minWidth?: number;
+    /** 每页数量，默认30 */
+    pageSize?: number;
+    /** 排序方式: newest(最新发布)/popular(最受欢迎)/mostViewed(最多浏览)/mostLiked(最多点赞)/mostCollected(最多收藏) */
+    sortBy?: string;
+    /** 标签ID列表 */
+    tagIds?: number[];
+    /** 上传者ID */
+    userId?: number;
+  };
+
+  type PictureWaterfallVO = {
+    /** 是否有更多图片 */
+    hasMore?: boolean;
+    /** 最后一张图片ID，用于加载更多 */
+    lastId?: number;
+    /** 最后一张图片的排序值 */
+    lastValue?: Record<string, any>;
+    /** 图片列表 */
+    records?: PictureVO[];
+    /** 总记录数 */
+    total?: number;
+  };
+
   type RelatedItemVO = {
     /** 内容ID */
     contentId?: number;
@@ -929,6 +1088,12 @@ declare namespace API {
   type ResultListTagUsageTrendVO_ = {
     code?: number;
     data?: TagUsageTrendVO[];
+    message?: string;
+  };
+
+  type ResultListTagVO_ = {
+    code?: number;
+    data?: TagVO[];
     message?: string;
   };
 
@@ -1007,6 +1172,18 @@ declare namespace API {
   type ResultPageResultUserVO_ = {
     code?: number;
     data?: PageResultUserVO_;
+    message?: string;
+  };
+
+  type ResultPictureVO_ = {
+    code?: number;
+    data?: PictureVO;
+    message?: string;
+  };
+
+  type ResultPictureWaterfallVO_ = {
+    code?: number;
+    data?: PictureWaterfallVO;
     message?: string;
   };
 
@@ -1154,7 +1331,7 @@ declare namespace API {
     /** 创建时间 */
     createTime?: string;
     /** 创建人 */
-    creator?: string;
+    createUser?: number;
     /** 标签描述 */
     description?: string;
     /** 标签ID */
@@ -1183,6 +1360,17 @@ declare namespace API {
     contentType?: string;
   };
 
+  type uploadPictureUsingPOSTParams = {
+    /** 图片 url */
+    fileUrl: string;
+    /** 图片 id（用于修改） */
+    id?: number;
+    /** 图片名称 */
+    picName: string;
+    /** 空间 id */
+    spaceId: number;
+  };
+
   type UserLoginRequest = {
     /** 用户名 */
     account: string;
@@ -1200,16 +1388,26 @@ declare namespace API {
   };
 
   type UserStatisticsVO = {
+    /** 活跃用户比例变化(百分点)，与上月相比 */
     activeGrowth?: number;
+    /** 活跃用户比例(%) */
     activeUserRatio?: number;
+    /** 冻结账户数量 */
     bannedUsers?: number;
+    /** 新增用户增长率(%)，与上月相比 */
     newUserGrowth?: number;
+    /** 本月新增用户数 */
     newUsersThisMonth?: number;
+    /** 本周新增用户数量 */
     newUsersThisWeek?: number;
+    /** 今日登录用户数量 */
     todayLoginUsers?: number;
+    /** 总用户增长率(%)，与上月相比 */
     totalUserGrowth?: number;
     totalUsers?: number;
+    /** VIP用户增长率(%)，与上月相比 */
     vipUserGrowth?: number;
+    /** VIP用户数 */
     vipUsers?: number;
   };
 
@@ -1234,19 +1432,33 @@ declare namespace API {
   };
 
   type UserVO = {
+    /** 账户名 */
     account?: string;
+    /** 头像URL */
     avatar?: string;
+    /** 创建时间 */
     createTime?: string;
+    /** 用户ID */
     id?: number;
+    /** 最后登录IP */
     lastLoginIp?: string;
+    /** 最后登录时间 */
     lastLoginTime?: string;
+    /** 手机号 */
     phone?: string;
+    /** 注册时间 */
     registerTime?: string;
+    /** 备注 */
     remark?: string;
+    /** 角色(admin-管理员,user-普通用户,superAdmin-超级管理员) */
     role?: string;
+    /** 状态(active-已激活,inactive-未激活,disabled-已禁用) */
     status?: string;
+    /** 更新时间 */
     updateTime?: string;
+    /** 个人简介 */
     userProfile?: string;
+    /** 用户名 */
     username?: string;
   };
 
