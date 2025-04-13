@@ -10,6 +10,8 @@ import * as yonghuguanli from "./yonghuguanli";
 import * as biaoqianguanxiguanli from "./biaoqianguanxiguanli";
 import * as fenleiguanxiguanli from "./fenleiguanxiguanli";
 import * as basicErrorController from "./basicErrorController";
+import * as wenjianshangchuan from "./wenjianshangchuan";
+import * as tupianxiangguanjiekou from "./tupianxiangguanjiekou";
 import * as dengluguanli from "./dengluguanli";
 export default {
   fenleiguanli,
@@ -20,5 +22,7 @@ export default {
   biaoqianguanxiguanli,
   fenleiguanxiguanli,
   basicErrorController,
+  wenjianshangchuan,
+  tupianxiangguanjiekou,
   dengluguanli,
 };

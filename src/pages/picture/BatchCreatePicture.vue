@@ -47,13 +47,6 @@
             </div>
             <div class="step-text">抓取图片</div>
           </div>
-          <div class="step-divider"></div>
-          <div class="step" :class="{ 'active': hasResults }">
-            <div class="step-icon">
-              <check-circle-outlined />
-            </div>
-            <div class="step-text">批量上传</div>
-          </div>
         </div>
       </div>
 
@@ -130,15 +123,18 @@
           <a-col :span="8">
             <!-- 图片分类 -->
             <a-form-item label="图片分类" name="category">
-              <a-select
-                  v-model:value="searchForm.category"
+              <a-tree-select
+                  v-model:value="searchForm.categoryId"
                   placeholder="选择图片分类"
-                  :options="categoryOptions"
+                  :tree-data="categoryTree"
+                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
+                  tree-default-expand-all
                   :show-search="true"
                   allow-clear
+                  :loading="loadingCategories"
               >
                 <template #suffixIcon><appstore-outlined /></template>
-              </a-select>
+              </a-tree-select>
             </a-form-item>
           </a-col>
           <a-col :span="8">
@@ -230,19 +226,36 @@
           加载更多
         </a-button>
       </div>
-
-      <div class="upload-actions">
-        <a-button @click="closeResults">取消</a-button>
-        <a-button type="primary" :disabled="!selectedImages.length" @click="uploadSelected" :loading="uploading">
-          批量上传所选图片
-        </a-button>
-      </div>
     </a-card>
+
+    <!-- 添加成功提示与倒计时跳转 -->
+    <a-modal
+        v-model:visible="showSuccessModal"
+        :closable="false"
+        :footer="null"
+        :maskClosable="false"
+        class="success-modal"
+    >
+      <div class="success-content">
+        <div class="success-icon">
+          <check-circle-outlined />
+        </div>
+        <h3 class="success-title">抓取成功</h3>
+        <p class="success-message">已成功抓取 {{ fetchedImagesCount }} 张图片</p>
+        <div class="countdown-message">
+          <span>{{ countdownSeconds }} 秒后自动跳转到主页</span>
+        </div>
+        <div class="success-actions">
+          <a-button @click="cancelRedirect">取消跳转</a-button>
+          <a-button type="primary" @click="goToHomePage">立即跳转</a-button>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import {ref, reactive, onMounted, onBeforeUnmount} from 'vue';
 import { message } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
 import {
@@ -252,14 +265,12 @@ import {
   SettingOutlined,
   GlobalOutlined,
   AppstoreOutlined,
-  TagsOutlined,
-  StopOutlined,
   FontSizeOutlined,
   CloudDownloadOutlined,
-  FileSearchOutlined,
-  CheckCircleOutlined,
-  EnvironmentOutlined
+  FileSearchOutlined
 } from '@ant-design/icons-vue';
+import {getCategoryTreeForFrontendUsingGet} from "@/api/fenleiguanli.js";
+import {uploadPictureByBatchUsingPost} from "@/api/tupianxiangguanjiekou.js";
 
 const router = useRouter();
 
@@ -272,20 +283,27 @@ const hasMoreResults = ref(false);
 const loadingMore = ref(false);
 const uploading = ref(false);
 
+// 成功提示相关
+const showSuccessModal = ref(false);
+const countdownSeconds = ref(5);
+const fetchedImagesCount = ref(0);
+let countdownTimer = null;
+
+// 分类树数据
+const categoryTree = ref([]);
+const loadingCategories = ref(false);
+
+// 搜索结果
+const searchResults = ref([]);
+const selectedImages = ref([]);
+
 // 搜索表单
 const searchForm = reactive({
-  keyword: '',
+  searchText: '',
   source: 'all',
-  count: 20,
-  category: undefined,
+  count: 10,
+  categoryId: undefined,
   namePrefix: '',
-  imageSize: undefined,
-  imageType: undefined,
-  colorStyle: undefined,
-  autoTags: true,
-  safeSearch: true,
-  tags: [],
-  excludeKeywords: ''
 });
 
 // 表单验证规则
@@ -307,84 +325,12 @@ const formRules = {
 const sourceOptions = [
   { value: 'all', label: '全部来源' },
   { value: 'baidu', label: '百度图片' },
-  { value: 'bing', label: '必应图片' },
   { value: 'google', label: '谷歌图片' },
   { value: 'unsplash', label: 'Unsplash' },
   { value: 'pexels', label: 'Pexels' },
-  { value: 'pixabay', label: 'Pixabay' }
+  { value: 'wallhaven', label: 'Wallhaven' }
 ];
 
-// 分类选项
-const categoryOptions = [
-  { value: 'portrait', label: '人像' },
-  { value: 'landscape', label: '风景' },
-  { value: 'architecture', label: '建筑' },
-  { value: 'animals', label: '动物' },
-  { value: 'food', label: '美食' },
-  { value: 'sports', label: '运动' },
-  { value: 'street', label: '街拍' },
-  { value: 'still_life', label: '静物' },
-  { value: 'abstract', label: '抽象' },
-  { value: 'documentary', label: '纪实' },
-  { value: 'other', label: '其他' }
-];
-
-// 标签选项
-const tagOptions = [
-  { value: 'macro', label: '微距' },
-  { value: 'bw', label: '黑白' },
-  { value: 'nature', label: '自然' },
-  { value: 'city', label: '城市' },
-  { value: 'creative', label: '创意' },
-  { value: 'portrait', label: '人像' },
-  { value: 'wallpaper', label: '壁纸' },
-  { value: 'night', label: '夜景' },
-  { value: 'vintage', label: '复古' },
-  { value: 'water', label: '水景' },
-  { value: 'art', label: '艺术' },
-  { value: 'minimalism', label: '极简' }
-];
-
-// 图片尺寸选项
-const imageSizeOptions = [
-  { value: 'any', label: '任意尺寸' },
-  { value: 'large', label: '大尺寸' },
-  { value: 'medium', label: '中等尺寸' },
-  { value: 'small', label: '小尺寸' },
-  { value: 'wallpaper', label: '壁纸尺寸' },
-  { value: 'square', label: '正方形' }
-];
-
-// 图片类型选项
-const imageTypeOptions = [
-  { value: 'all', label: '所有类型' },
-  { value: 'photo', label: '照片' },
-  { value: 'clipart', label: '剪贴画' },
-  { value: 'lineart', label: '线稿' },
-  { value: 'face', label: '人脸' },
-  { value: 'transparent', label: '透明背景' }
-];
-
-// 颜色风格选项
-const colorStyleOptions = [
-  { value: 'all', label: '所有颜色' },
-  { value: 'color', label: '彩色' },
-  { value: 'bw', label: '黑白' },
-  { value: 'red', label: '红色系' },
-  { value: 'orange', label: '橙色系' },
-  { value: 'yellow', label: '黄色系' },
-  { value: 'green', label: '绿色系' },
-  { value: 'blue', label: '蓝色系' },
-  { value: 'purple', label: '紫色系' },
-  { value: 'pink', label: '粉色系' },
-  { value: 'white', label: '白色系' },
-  { value: 'gray', label: '灰色系' },
-  { value: 'black', label: '黑色系' }
-];
-
-// 搜索结果
-const searchResults = ref([]);
-const selectedImages = ref([]);
 
 // 重置表单
 const resetForm = () => {
@@ -401,12 +347,43 @@ const resetForm = () => {
     imageType: undefined,
     colorStyle: undefined,
     autoTags: true,
-    safeSearch: true,
     tags: [],
     excludeKeywords: ''
   });
 
   message.info('搜索参数已重置');
+};
+
+
+// 格式化分类树数据，适配Tree组件
+const formatCategoryTreeData = (data) => {
+  if (!data) return [];
+
+  return data.map(item => ({
+    title: item.name,
+    key: item.id,
+    value: item.id,
+    isLeaf: !item.children || item.children.length === 0,
+    children: item.children ? formatCategoryTreeData(item.children) : []
+  }));
+};
+
+// 加载分类树数据
+const loadCategoryTree = async () => {
+  loadingCategories.value = true;
+  try {
+    const response = await getCategoryTreeForFrontendUsingGet();
+    if (response.data.code === 200 && response.data.data) {
+      categoryTree.value = formatCategoryTreeData(response.data.data);
+    } else {
+      message.error('获取分类失败：' + (response.message || '未知错误'));
+    }
+  } catch (error) {
+    console.error('加载分类树出错:', error);
+    message.error('获取分类失败，请稍后重试');
+  } finally {
+    loadingCategories.value = false;
+  }
 };
 
 // 开始搜索
@@ -421,23 +398,97 @@ const startSearch = async () => {
     searchResults.value = [];
     selectedImages.value = [];
 
-    // 模拟API请求延迟
-    setTimeout(() => {
-      // 生成模拟搜索结果
-      searchResults.value = generateMockResults(searchForm.count);
+    // 构建请求参数
+    const params = {
+      searchText: searchForm.keyword,
+      source: searchForm.source,
+      count: searchForm.count,
+      categoryId: searchForm.categoryId,
+      namePrefix: searchForm.namePrefix || '',
+    };
 
-      // 更新状态
+    try {
+      const response = await uploadPictureByBatchUsingPost(params);
+
+      // 无论成功与否，都结束加载状态
       isSearching.value = false;
-      hasResults.value = true;
-      hasMoreResults.value = true;
 
-      message.success(`已找到${searchResults.value.length}张相关图片`);
-    }, 1500);
+      if (response.data.code === 200 && response.data.data) {
+        // 服务端返回的是抓取到的图片数量
+        const fetchedCount = response.data.data;
 
+        if (fetchedCount > 0) {
+          // 记录抓取的图片数量
+          fetchedImagesCount.value = fetchedCount;
+
+          // 显示成功弹窗并开始倒计时
+          showSuccessModal.value = true;
+          startCountdown();
+        } else {
+          message.warning('未找到匹配的图片，请调整搜索条件');
+        }
+      } else {
+        message.error('抓取图片失败：' + (response.data.message || '未知错误'));
+      }
+    } catch (error) {
+      console.error('抓取图片出错:', error);
+      message.error('图片抓取失败，请稍后重试');
+      isSearching.value = false;
+    }
   } catch (error) {
     console.error('表单验证失败:', error);
     message.error('请检查抓取参数是否填写正确');
   }
+};
+
+
+// 开始倒计时
+const startCountdown = () => {
+  // 清除可能存在的定时器
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+  }
+
+  // 设置初始倒计时时间
+  countdownSeconds.value = 5;
+
+  // 创建新的倒计时
+  countdownTimer = setInterval(() => {
+    if (countdownSeconds.value > 1) {
+      countdownSeconds.value--;
+    } else {
+      // 倒计时结束，跳转到主页
+      clearInterval(countdownTimer);
+      goToHomePage();
+    }
+  }, 1000);
+};
+
+// 取消自动跳转
+const cancelRedirect = () => {
+  // 清除倒计时
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  // 关闭弹窗
+  showSuccessModal.value = false;
+};
+
+// 跳转到主页
+const goToHomePage = () => {
+  // 清除倒计时
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  // 关闭弹窗
+  showSuccessModal.value = false;
+
+  // 跳转到主页
+  router.push('/');
 };
 
 // 生成模拟搜索结果
@@ -513,12 +564,19 @@ const uploadSelected = () => {
   }, 2000);
 };
 
-// 关闭结果
-const closeResults = () => {
-  hasResults.value = false;
-  searchResults.value = [];
-  selectedImages.value = [];
-};
+// 组件卸载前清除计时器
+onBeforeUnmount(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+});
+
+
+// 在组件挂载后加载分类树
+onMounted(() => {
+  loadCategoryTree();
+});
 </script>
 
 <style scoped>
@@ -904,6 +962,63 @@ const closeResults = () => {
   gap: 12px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
+}
+
+
+/* 添加成功弹窗样式 */
+.success-modal :deep(.ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.success-content {
+  text-align: center;
+  padding: 24px 0 16px;
+}
+
+.success-icon {
+  font-size: 64px;
+  color: #52c41a;
+  margin-bottom: 16px;
+}
+
+.success-title {
+  font-size: 24px;
+  color: #262626;
+  margin-bottom: 12px;
+}
+
+.success-message {
+  font-size: 16px;
+  color: #595959;
+  margin-bottom: 24px;
+}
+
+.countdown-message {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin-bottom: 24px;
+}
+
+.success-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* 暗黑模式适配 */
+@media (prefers-color-scheme: dark) {
+  .success-title {
+    color: #e0e0e0;
+  }
+
+  .success-message {
+    color: #b0b0b0;
+  }
+
+  .countdown-message {
+    color: #a0a0a0;
+  }
 }
 
 /* 响应式调整 */

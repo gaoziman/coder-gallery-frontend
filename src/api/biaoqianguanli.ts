@@ -168,3 +168,11 @@ export async function getTagUsageTrendUsingGet(
     ...(options || {}),
   });
 }
+
+/** 获取标签列表（不分页） GET /api/tag/list */
+export async function getTagListUsingGet(options?: { [key: string]: any }) {
+  return request<API.ResultListTagVO_>("/api/tag/list", {
+    method: "GET",
+    ...(options || {}),
+  });
+}
