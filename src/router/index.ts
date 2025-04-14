@@ -177,6 +177,16 @@ const routes: Array<RouteRecordRaw> = [
                         },
                     },
                     {
+                        path: 'icons',
+                        name: 'IconManagement',
+                        component: () => import('@/pages/admin/content/IconManagement.vue'),
+                        meta: {
+                            title: '图标管理 - 智能云图库',
+                            requiresAuth: true,
+                            requiresAdmin: true
+                        }
+                    },
+                    {
                         path: 'storage',
                         name: 'StorageManagement',
                         component: () => import('@/pages/admin/storage/StorageManagement.vue'),
