@@ -1,76 +1,14 @@
 <template>
   <div class="image-management-container">
-    <div class="im-page-container">
-      <!-- 图片管理页面标题区域 -->
-      <div class="im-header">
-        <div class="im-header-left">
-          <div class="im-icon-container">
-            <picture-outlined class="im-icon"/>
-          </div>
-          <div class="im-header-info">
-            <div class="im-title-row">
-              <h1 class="im-title">图片管理</h1>
-              <a-tag color="#6554C0">内容管理</a-tag>
-            </div>
-            <p class="im-description">
-              管理系统图片资源，支持上传、分类、优化以及使用情况追踪
-            </p>
-          </div>
-        </div>
+    <DashboardHeader
+        title="图片管理"
+        description="管理系统图片资源，支持上传、分类、优化以及使用情况追踪"
+        parent-module="内容管理"
+        :module-icon="PictureOutlined"
+        :metrics="headerMetrics"
+    />
 
-        <div class="im-header-right">
-          <div class="im-metrics">
-            <div class="im-metric-item">
-              <div class="im-metric-label">
-                <calendar-outlined/>
-                今日上传
-              </div>
-              <div class="im-metric-value">32</div>
-            </div>
-            <div class="im-divider"></div>
-            <div class="im-metric-item">
-              <div class="im-metric-label">
-                <cloud-upload-outlined/>
-                本周新增
-              </div>
-              <div class="im-metric-value">147</div>
-            </div>
-            <div class="im-divider"></div>
-            <div class="im-metric-item">
-              <div class="im-metric-label">
-                <warning-outlined/>
-                待优化
-              </div>
-              <div class="im-metric-value">18</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 顶部卡片统计信息 -->
-    <div class="stat-cards">
-      <a-row :gutter="16">
-        <a-col :span="6" v-for="(card, index) in statCards" :key="index">
-          <a-card class="stat-card" :body-style="{ padding: '20px' }">
-            <div class="card-content">
-              <div class="icon-container" :class="`bg-${card.color}`">
-                <component :is="card.icon"/>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">{{ card.title }}</div>
-                <div class="stat-value">{{ card.value }}</div>
-                <div class="stat-change" :class="{ 'increase': card.change > 0, 'decrease': card.change < 0 }">
-                  <arrow-up-outlined v-if="card.change > 0"/>
-                  <arrow-down-outlined v-if="card.change < 0"/>
-                  {{ Math.abs(card.change) }}% 较上月
-                </div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-    </div>
+    <StatCards :cards="statCards"/>
 
     <!-- 搜索条件区域 -->
     <a-card class="search-form-card" :body-style="{ padding: '24px' }">
@@ -805,6 +743,10 @@ import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
 import {useRouter} from "vue-router";
 
+import DashboardHeader from "@/components/common/DashboardHeader.vue";
+import StatCards from "@/components/common/StatCards.vue";
+
+
 const router = useRouter();
 
 // 表格列定义
@@ -873,6 +815,24 @@ const columns = [
     className: 'action-column'
   }
 ];
+
+const headerMetrics = computed(() => [
+  {
+    icon: CalendarOutlined,
+    label: '今日上传',
+    value: 32
+  },
+  {
+    icon: CloudUploadOutlined,
+    label: '本周新增',
+    value: 147
+  },
+  {
+    icon: WarningOutlined,
+    label: '待优化',
+    value: 18
+  }
+]);
 
 // 顶部卡片数据
 const statCards = reactive([

@@ -1,87 +1,14 @@
 <template>
   <div class="tag-management-container">
-    <div class="tm-page-container">
-      <!-- 标签管理页面标题区域 -->
-      <div class="tm-header">
-        <div class="tm-header-left">
-          <div class="tm-icon-container">
-            <tag-outlined class="tm-icon"/>
-          </div>
-          <div class="tm-header-info">
-            <div class="tm-title-row">
-              <h1 class="tm-title">标签管理</h1>
-              <a-tag color="#6554C0">内容管理</a-tag>
-            </div>
-            <p class="tm-description">
-              管理系统标签资源，支持创建、分类、批量操作以及使用情况追踪
-            </p>
-          </div>
-        </div>
+    <DashboardHeader
+        title="标签管理"
+        description="智能系统标签，支持创建、分类、状态控制及使用情况追踪"
+        parent-module="内容管理"
+        :module-icon="TagOutlined"
+        :metrics="headerMetrics"
+    />
 
-        <div class="tm-header-right">
-          <div class="tm-metrics">
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <calendar-outlined/>
-                今日创建
-              </div>
-              <div class="tm-metric-value">{{ tagStatistics.todayCount || 0 }}</div>
-            </div>
-            <div class="tm-divider"></div>
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <team-outlined/>
-                本周新增
-              </div>
-              <div class="tm-metric-value">{{ tagStatistics.weekCount || 0 }}</div>
-            </div>
-            <div class="tm-divider"></div>
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <link-outlined/>
-                引用总数
-              </div>
-              <div class="tm-metric-value">{{ formatNumber(tagStatistics.totalReferenceCount || 0) }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 顶部卡片统计信息 -->
-    <div class="stat-cards">
-      <a-row :gutter="16">
-        <a-col :span="6" v-for="(card, index) in statCards" :key="index">
-          <a-card class="stat-card" :body-style="{ padding: '24px' }">
-            <div class="card-content">
-              <div class="icon-container" :class="`bg-${card.color}`">
-                <component :is="card.icon"/>
-                <div class="icon-ring"></div>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">{{ card.title }}</div>
-                <div class="stat-value">{{ card.value }}
-                  <span class="stat-trend">
-                  <trend-badge :value="card.change"/>
-                  </span>
-                </div>
-                <div class="stat-change" :class="{ 'increase': card.change > 0, 'decrease': card.change < 0 }">
-                  <arrow-up-outlined v-if="card.change > 0"/>
-                  <arrow-down-outlined v-if="card.change < 0"/>
-                  {{ Math.abs(card.change) }}% 较上月
-                </div>
-              </div>
-              <div class="card-decoration">
-                <div class="decoration-circle circle-1"></div>
-                <div class="decoration-circle circle-2"></div>
-                <div class="decoration-line line-1"></div>
-                <div class="decoration-line line-2"></div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-    </div>
+    <StatCards :cards="statCards"/>
 
     <!-- 搜索条件区域 -->
     <a-card class="search-form-card" :body-style="{ padding: '24px' }">
@@ -122,7 +49,7 @@
                 <search-outlined/>
                 查询
               </a-button>
-              <a-button @click="resetSearchForm" class="reset-button">
+              <a-button @click="resetSearchForm">
                 <reload-outlined/>
                 重置
               </a-button>
@@ -667,8 +594,6 @@ import {
 import {
   SearchOutlined,
   ReloadOutlined,
-  ArrowDownOutlined,
-  ArrowUpOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
@@ -683,12 +608,10 @@ import {
   SaveOutlined,
   CopyOutlined,
   TeamOutlined,
-  TagOutlined,
-  BgColorsOutlined,
   StopOutlined,
   FileTextOutlined,
   DownOutlined,
-  UpOutlined
+  UpOutlined, TagOutlined, WarningOutlined
 } from '@ant-design/icons-vue';
 import {message, Modal} from 'ant-design-vue';
 import dayjs from 'dayjs';
@@ -703,7 +626,8 @@ import {
   getTagStatisticsUsingGet,
   getTagRelatedItemsUsingGet,
 } from '@/api/biaoqianguanli';
-import TrendBadge from "@/components/common/TrendBadge.vue";
+import StatCards from "@/components/common/StatCards.vue";
+import DashboardHeader from "@/components/common/DashboardHeader.vue";
 
 
 // 视图模式
@@ -789,6 +713,24 @@ const tagForm = reactive({
   status: 'active',
   description: '',
 });
+
+const headerMetrics = computed(() => [
+  {
+    icon: CalendarOutlined,
+    label: '今日创建',
+    value: tagStatistics.value.todayCount || 0
+  },
+  {
+    icon: PlusOutlined, // 或者可以使用 UserAddOutlined，取决于图标需求
+    label: '本周新增',
+    value: tagStatistics.value.weekCount || 0
+  },
+  {
+    icon: WarningOutlined,
+    label: '未使用标签',
+    value: tagStatistics.value.unusedTag || 0
+  }
+]);
 
 
 // 扩展预设颜色数组，添加更多颜色选择
@@ -1098,13 +1040,6 @@ const calculateChange = (current, previous) => {
   return Math.round((current - previous) / previous * 100);
 };
 
-// 格式化数字 - 箭头函数
-const formatNumber = (num) => {
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'k';
-  }
-  return num.toString();
-};
 
 // 获取标签数据 - 箭头函数
 const fetchTagData = async () => {
@@ -1117,18 +1052,9 @@ const fetchTagData = async () => {
       pageSize: pagination.pageSize,
       name: searchForm.name || undefined,
       status: searchForm.status || undefined,
+      createTimeStart: searchForm.createTime?.[0] ? dayjs(searchForm.createTime[0]).format('YYYY-MM-DD 00:00:00') : undefined,
+      createTimeEnd: searchForm.createTime?.[1] ? dayjs(searchForm.createTime[1]).format('YYYY-MM-DD 23:59:59') : undefined,
     };
-
-    // 处理时间范围
-    if (searchForm.createTime && searchForm.createTime.length === 2) {
-      // 确保两个日期都存在并且是有效的dayjs对象
-      if (searchForm.createTime[0] && searchForm.createTime[1]) {
-        // 开始日期使用当天开始时间 00:00:00
-        params.createTimeStart = searchForm.createTime[0].format('YYYY-MM-DD 00:00:00');
-        // 结束日期使用当天结束时间 23:59:59
-        params.createTimeEnd = searchForm.createTime[1].format('YYYY-MM-DD 23:59:59');
-      }
-    }
 
     // 处理排序
     if (sortField.value && sortOrder.value) {

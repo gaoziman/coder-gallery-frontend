@@ -1,87 +1,14 @@
 <template>
   <div class="space-management-container">
-    <!-- 页面头部 -->
-    <div class="tm-page-container">
-      <div class="tm-header">
-        <div class="tm-header-left">
-          <div class="tm-icon-container">
-            <folder-outlined class="tm-icon"/>
-          </div>
-          <div class="tm-header-info">
-            <div class="tm-title-row">
-              <h1 class="tm-title">空间管理</h1>
-              <a-tag color="#6554C0">内容管理</a-tag>
-            </div>
-            <p class="tm-description">
-              管理系统空间资源，支持创建、分类、权限控制以及使用情况追踪
-            </p>
-          </div>
-        </div>
+    <DashboardHeader
+        title="空间管理"
+        description="管理系统空间资源，支持创建、分类、权限控制以及使用情况追踪"
+        parent-module="内容管理"
+        :module-icon="FolderOutlined"
+        :metrics="headerMetrics"
+    />
 
-        <div class="tm-header-right">
-          <div class="tm-metrics">
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <calendar-outlined/>
-                今日创建
-              </div>
-              <div class="tm-metric-value">8</div>
-            </div>
-            <div class="tm-divider"></div>
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <team-outlined/>
-                总空间数
-              </div>
-              <div class="tm-metric-value">62</div>
-            </div>
-            <div class="tm-divider"></div>
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <hdd-outlined/>
-                总存储量
-              </div>
-              <div class="tm-metric-value">1.8T</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 统计卡片 -->
-    <div class="stat-cards">
-      <a-row :gutter="16">
-        <a-col :span="6" v-for="(card, index) in statCards" :key="index">
-          <a-card class="stat-card" :body-style="{ padding: '24px' }">
-            <div class="card-content">
-              <div class="icon-container" :class="`bg-${card.color}`">
-                <component :is="card.icon"/>
-                <div class="icon-ring"></div>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">{{ card.title }}</div>
-                <div class="stat-value">{{ card.value }}
-                  <span class="stat-trend">
-                    <trend-badge :value="card.change"/>
-                  </span>
-                </div>
-                <div class="stat-change" :class="{ 'increase': card.change > 0, 'decrease': card.change < 0 }">
-                  <arrow-up-outlined v-if="card.change > 0"/>
-                  <arrow-down-outlined v-if="card.change < 0"/>
-                  {{ Math.abs(card.change) }}% 较上月
-                </div>
-              </div>
-              <div class="card-decoration">
-                <div class="decoration-circle circle-1"></div>
-                <div class="decoration-circle circle-2"></div>
-                <div class="decoration-line line-1"></div>
-                <div class="decoration-line line-2"></div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-    </div>
+    <StatCards :cards="statCards"/>
 
     <!-- 搜索表单 -->
     <a-card class="search-form-card" :body-style="{ padding: '24px' }">
@@ -661,13 +588,10 @@ import {
 import {
   SearchOutlined,
   ReloadOutlined,
-  ArrowDownOutlined,
-  ArrowUpOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
-  CalendarOutlined,
   SettingOutlined,
   PlusOutlined,
   AppstoreOutlined,
@@ -681,12 +605,12 @@ import {
   DownOutlined,
   UserOutlined,
   ExportOutlined,
-  TeamOutlined,
-  BarChartOutlined,
+  BarChartOutlined, CalendarOutlined, TeamOutlined,
 } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import TrendBadge from "@/components/common/TrendBadge.vue";
+import DashboardHeader from "@/components/common/DashboardHeader.vue";
+import StatCards from "@/components/common/StatCards.vue";
 
 // 表格列定义
 const columns = [
@@ -750,6 +674,25 @@ const columns = [
     fixed: 'right'
   }
 ];
+
+
+const headerMetrics = computed(() => [
+  {
+    icon: CalendarOutlined,
+    label: '今日创建',
+    value: 8
+  },
+  {
+    icon: TeamOutlined,
+    label: '总空间数',
+    value: 62
+  },
+  {
+    icon: HddOutlined,
+    label: '总存储量',
+    value: '1.8T'
+  }
+]);
 
 // 顶部卡片数据
 const statCards = reactive([

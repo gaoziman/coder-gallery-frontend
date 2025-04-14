@@ -141,14 +141,6 @@
         </a-spin>
       </a-tab-pane>
     </a-tabs>
-
-    <!-- 底部操作按钮 -->
-    <div class="modal-footer">
-      <a-space>
-        <a-button @click="handleCancel">取消</a-button>
-        <a-button type="primary" @click="handleConfirm" :disabled="!selectedIconValue">确定</a-button>
-      </a-space>
-    </div>
   </div>
 </template>
 

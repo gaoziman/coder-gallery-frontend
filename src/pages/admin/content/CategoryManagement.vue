@@ -1,87 +1,16 @@
 <template>
   <div class="category-management-container">
-    <div class="tm-page-container">
-      <!-- 分类管理页面标题区域 -->
-      <div class="tm-header">
-        <div class="tm-header-left">
-          <div class="tm-icon-container">
-            <appstore-outlined class="tm-icon"/>
-          </div>
-          <div class="tm-header-info">
-            <div class="tm-title-row">
-              <h1 class="tm-title">分类管理</h1>
-              <a-tag color="#6554C0">内容管理</a-tag>
-            </div>
-            <p class="tm-description">
-              管理系统分类资源，支持创建、组织、批量操作以及层级结构管理
-            </p>
-          </div>
-        </div>
 
-        <div class="tm-header-right">
-          <div class="tm-metrics">
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <calendar-outlined/>
-                今日创建
-              </div>
-              <div class="tm-metric-value">{{ statistics.todayCreated || 0 }}</div>
-            </div>
-            <div class="tm-divider"></div>
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <partition-outlined/>
-                总分类数
-              </div>
-              <div class="tm-metric-value">{{ statistics.totalCategories || 0 }}</div>
-            </div>
-            <div class="tm-divider"></div>
-            <div class="tm-metric-item">
-              <div class="tm-metric-label">
-                <link-outlined/>
-                内容总数
-              </div>
-              <div class="tm-metric-value">{{ statistics.totalItems || 0 }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DashboardHeader
+        title="分类管理"
+        description="管理系统分类资源，支持创建、组织、批量操作以及层级结构管理"
+        parent-module="内容管理"
+        :module-icon="AppstoreOutlined"
+        :metrics="headerMetrics"
+    />
 
-    <!-- 顶部卡片统计信息 -->
-    <div class="stat-cards">
-      <a-row :gutter="16">
-        <a-col :span="6" v-for="(card, index) in statCards" :key="index">
-          <a-card class="stat-card" :body-style="{ padding: '24px' }">
-            <div class="card-content">
-              <div class="icon-container" :class="`bg-${card.color}`">
-                <component :is="card.icon"/>
-                <div class="icon-ring"></div>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">{{ card.title }}</div>
-                <div class="stat-value">{{ card.value }}
-                  <span class="stat-trend">
-                  <trend-badge :value="card.change"/>
-                  </span>
-                </div>
-                <div class="stat-change" :class="{ 'increase': card.change > 0, 'decrease': card.change < 0 }">
-                  <arrow-up-outlined v-if="card.change > 0"/>
-                  <arrow-down-outlined v-if="card.change < 0"/>
-                  {{ Math.abs(card.change) }}% 较上月
-                </div>
-              </div>
-              <div class="card-decoration">
-                <div class="decoration-circle circle-1"></div>
-                <div class="decoration-circle circle-2"></div>
-                <div class="decoration-line line-1"></div>
-                <div class="decoration-line line-2"></div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-    </div>
+    <!-- 使用统计卡片组件 -->
+    <StatCards :cards="statCards"/>
 
     <!-- 搜索条件区域 -->
     <a-card v-if="viewMode === 'list'" class="search-form-card" :body-style="{ padding: '24px' }">
@@ -138,7 +67,7 @@
       <div class="operation-left">
         <a-space>
           <a-button type="primary" @click="openCreateModal">
-            <plus-outlined/>
+            <IconFont type="icon-chuangjian2"/>
             新建分类
           </a-button>
           <a-button @click="handleRefresh">
@@ -152,10 +81,6 @@
           <a-button :disabled="!hasSelected" @click="handleBatchExport">
             <export-outlined/>
             批量导出
-          </a-button>
-          <a-button type="primary" :disabled="!hasSelected" @click="handleBatchMove">
-            <swap-outlined/>
-            批量移动
           </a-button>
         </a-space>
       </div>
@@ -246,11 +171,14 @@
                   <template #title="{ title, key, dataRef }">
                     <div class="tree-node-wrapper">
                       <div class="tree-node-content">
+                        <!-- 树节点中的图标 -->
                         <div class="tree-node-icon" :style="{ background: getCategoryTypeColor(dataRef.type) + '15' }">
-                          <component
-                              :is="getIconComponent(dataRef.icon || 'AppstoreOutlined')"
-                              :style="{ color: getCategoryTypeColor(dataRef.type) }"
-                          />
+                          <IconFont v-if="dataRef.icon && dataRef.icon.startsWith('icon-')"
+                                    :type="dataRef.icon"
+                                    :style="{ color: getCategoryTypeColor(dataRef.type) }"/>
+                          <component v-else
+                                     :is="getIconComponent(dataRef.icon || 'AppstoreOutlined')"
+                                     :style="{ color: getCategoryTypeColor(dataRef.type) }"/>
                         </div>
                         <span class="tree-node-title">{{ title }}</span>
                         <a-tag class="tree-node-counter" :color="getCategoryTypeColor(dataRef.type)">
@@ -335,7 +263,7 @@
                       <calendar-outlined style="color: #6554C0"/>
                     </div>
                     <div class="detail-metric-info">
-                      <div class="detail-metric-value">{{ formatDateTime(selectedCategory.createTime,true) }}</div>
+                      <div class="detail-metric-value">{{ formatDateTime(selectedCategory.createTime, true) }}</div>
                       <div class="detail-metric-label">创建时间</div>
                     </div>
                   </div>
@@ -355,7 +283,10 @@
                       <branches-outlined style="color: #52C41A"/>
                     </div>
                     <div class="detail-metric-info">
-                      <div class="detail-metric-value"> {{ selectedCategory && selectedCategory.childCount !== undefined ? selectedCategory.childCount : childCategories.length || 0 }}</div>
+                      <div class="detail-metric-value"> {{
+                          selectedCategory && selectedCategory.childCount !== undefined ? selectedCategory.childCount : childCategories.length || 0
+                        }}
+                      </div>
                       <div class="detail-metric-label">子分类数量</div>
                     </div>
                   </div>
@@ -480,7 +411,7 @@
                       <plus-outlined/>
                       添加子分类
                     </a-button>
-                    <a-button type="primary"  @click="moveCategory(selectedCategory)">
+                    <a-button type="primary" @click="moveCategory(selectedCategory)">
                       <swap-outlined/>
                       移动分类
                     </a-button>
@@ -566,7 +497,8 @@
               <a-dropdown>
                 <template #overlay>
                   <a-menu>
-                    <a-menu-item key="1" @click="addChildCategory(record.id)" style="white-space: nowrap; min-width: 110px;">
+                    <a-menu-item key="1" @click="addChildCategory(record.id)"
+                                 style="white-space: nowrap; min-width: 110px;">
                       <plus-outlined/>
                       添加子分类
                     </a-menu-item>
@@ -593,7 +525,7 @@
     </div>
 
 
-    <!-- 分类管理弹窗 - 优化后与用户管理风格一致 -->
+    <!-- 分类管理弹窗 -->
     <a-modal
         v-model:visible="categoryModalVisible"
         :title="null"
@@ -618,6 +550,7 @@
           ref="categoryFormRef"
           layout="vertical"
       >
+        <!-- 分类表单布局 -->
         <div class="form-row-container">
           <!-- 左侧表单列 -->
           <div class="form-column">
@@ -656,6 +589,7 @@
               <div class="form-hint">不选择时将创建为顶级分类</div>
             </a-form-item>
 
+            <!-- 将URL别名和分类图标分离为各自独立的表单项 -->
             <a-form-item label="URL别名" name="urlName">
               <a-input
                   v-model:value="categoryForm.urlName"
@@ -697,7 +631,7 @@
             </a-form-item>
 
             <a-form-item label="排序优先级" name="sortOrder">
-              <a-input-number
+              <a-input
                   v-model:value="categoryForm.sortOrder"
                   :min="0"
                   :max="999"
@@ -706,11 +640,45 @@
                 <template #prefix>
                   <sort-ascending-outlined style="color: rgba(0, 0, 0, 0.25)"/>
                 </template>
-              </a-input-number>
+              </a-input>
               <div class="form-hint">数值越小，排序越靠前</div>
             </a-form-item>
+
+            <a-form-item label="分类图标" name="icon" required>
+              <a-input
+                  v-model:value="categoryForm.icon"
+                  placeholder="请选择图标"
+                  readonly
+                  @click="openIconSelector"
+              >
+                <template #prefix>
+                  <IconFont v-if="categoryForm.icon" :type="categoryForm.icon" size="18"/>
+                  <tag-outlined v-else style="color: rgba(0, 0, 0, 0.25)"/>
+                </template>
+              </a-input>
+            </a-form-item>
+
+            <!-- 图标选择器弹窗 -->
+            <a-modal
+                v-model:visible="iconSelectorVisible"
+                title="选择图标"
+                width="720px"
+                :footer="null"
+                :mask-closable="true"
+            >
+              <IconSelector
+                  v-model:value="tempSelectedIcon"
+                  @select="selectIconItem"
+              />
+
+              <div class="modal-footer">
+                <a-button @click="closeIconSelector">取消</a-button>
+                <a-button type="primary" @click="confirmIconSelection">确定</a-button>
+              </div>
+            </a-modal>
           </div>
         </div>
+
 
         <a-form-item label="分类描述" name="description">
           <a-textarea
@@ -731,7 +699,15 @@
           <div class="preview-content">
             <div class="preview-card">
               <div class="preview-icon" :style="{backgroundColor: getCategoryTypeColor(categoryForm.type) + '15'}">
-                <component :is="getIconComponent(categoryForm.icon || 'AppstoreOutlined')"
+                <IconFont v-if="categoryForm.icon && categoryForm.icon.startsWith('icon-')"
+                          :type="categoryForm.icon"
+                          size="26"
+                          :style="{ color: getCategoryTypeColor(categoryForm.type) }"/>
+                <component v-else-if="categoryForm.icon && AntIcons[categoryForm.icon]"
+                           :is="AntIcons[categoryForm.icon]"
+                           :style="{ color: getCategoryTypeColor(categoryForm.type) }"/>
+                <component v-else
+                           :is="getIconComponent(categoryForm.icon || 'AppstoreOutlined')"
                            :style="{ color: getCategoryTypeColor(categoryForm.type) }"/>
               </div>
               <div class="preview-info">
@@ -945,6 +921,7 @@ import {
   onMounted,
   computed,
   watch,
+  h,
   nextTick
 } from 'vue';
 import {
@@ -952,7 +929,6 @@ import {
   ReloadOutlined,
   ArrowDownOutlined,
   ArrowUpOutlined,
-  MinusOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
@@ -979,6 +955,8 @@ import {
   SortAscendingOutlined,
   RollbackOutlined,
 } from '@ant-design/icons-vue';
+// 引入 IconFont 组件
+import IconFont from '@/components/common/IconFont.vue';
 import {Empty, message, Modal} from 'ant-design-vue';
 import dayjs from 'dayjs';
 
@@ -995,7 +973,22 @@ import {
   getCategoryByIdUsingGet,
   getCategoryRelatedItemsUsingGet,
 } from "@/api/fenleiguanli";
-import TrendBadge from "@/components/common/TrendBadge.vue";
+import IconSelector from "@/components/common/IconSelector.vue";
+import * as AntIcons from "@ant-design/icons-vue";
+import DashboardHeader from "@/components/common/DashboardHeader.vue";
+import StatCards from "@/components/common/StatCards.vue";
+
+// 从父组件接收的属性
+const props = defineProps({
+  modelValue: String,
+});
+
+const emit = defineEmits(['update:modelValue']);
+
+
+// 临时存储选中的图标，确认后才会更新到表单
+const tempSelectedIcon = ref('');
+const iconSelectorVisible = ref(false);
 
 
 // 用于控制树的展开/折叠状态
@@ -1064,15 +1057,25 @@ const pagination = reactive({
   }
 });
 
-// 主分类类型定义
-const categoryTypes = [
-  {value: 'animation', text: '动漫类型'},
-  {value: 'theme', text: '多样素材'},
-  {value: 'learning', text: '技术学习'},
-  {value: 'figure', text: '人物样式'},
-  {value: 'style', text: '样式风格'},
-  {value: 'wallpaper', text: '花样壁纸'}
-];
+
+// 搜索表单数据
+const searchForm = reactive({
+  categoryName: '',
+  categoryType: undefined,
+  createTime: [],
+});
+
+// 分类表单
+const categoryForm = reactive({
+  id: '',
+  name: '',
+  parentId: null,
+  type: '',
+  description: '',
+  icon: 'AppstoreOutlined',
+  sortOrder: 1,
+  urlName: '',
+});
 
 
 // 表格列定义
@@ -1166,6 +1169,26 @@ const relatedItems = ref([
   }
 ]);
 
+
+// 头部统计指标
+const headerMetrics = computed(() => [
+  {
+    icon: CalendarOutlined,
+    label: '今日创建',
+    value: statistics.todayCreated || 0
+  },
+  {
+    icon: PartitionOutlined,
+    label: '总分类数',
+    value: statistics.totalCategories || 0
+  },
+  {
+    icon: LinkOutlined,
+    label: '内容总数',
+    value: statistics.totalItems || 0
+  }
+]);
+
 // 顶部卡片数据
 const statCards = reactive([
   {
@@ -1198,24 +1221,17 @@ const statCards = reactive([
   },
 ]);
 
-// 搜索表单数据
-const searchForm = reactive({
-  categoryName: '',
-  categoryType: undefined,
-  createTime: [],
-});
 
-// 分类表单
-const categoryForm = reactive({
-  id: '',
-  name: '',
-  parentId: null,
-  type: '',
-  description: '',
-  icon: 'AppstoreOutlined',
-  sortOrder: 1,
-  urlName: '',
-});
+// 主分类类型定义
+const categoryTypes = [
+  {value: 'animation', text: '动漫类型'},
+  {value: 'theme', text: '多样素材'},
+  {value: 'learning', text: '技术学习'},
+  {value: 'figure', text: '人物样式'},
+  {value: 'style', text: '样式风格'},
+  {value: 'wallpaper', text: '花样壁纸'}
+];
+
 
 // 分类表单验证规则
 const categoryRules = {
@@ -1225,6 +1241,9 @@ const categoryRules = {
   ],
   type: [
     {required: true, message: '请选择分类类型', trigger: 'change'}
+  ],
+  icon: [
+    {required: true, message: '请选择图标', trigger: 'change'}
   ],
   sortOrder: [
     {required: true, message: '请设置排序优先级', trigger: 'blur'},
@@ -1250,17 +1269,29 @@ const categoryRules = {
   ]
 };
 
+
 // 获取图标组件
 const getIconComponent = (iconName) => {
-  const iconMap = {
-    'AppstoreOutlined': AppstoreOutlined,
-    'FolderOutlined': FolderOutlined,
-    'FileOutlined': FileOutlined,
-    'PartitionOutlined': PartitionOutlined,
-    'BookOutlined': BookOutlined,
-    'PictureOutlined': PictureOutlined
-  };
-  return iconMap[iconName] || AppstoreOutlined;
+  // 判断是否为 iconfont 图标
+  if (iconName && iconName.startsWith('icon-')) {
+    return {
+      render() {
+        return h(IconFont, {type: iconName, size: 16});
+      }
+    };
+  }
+
+  // 处理 Ant Design 图标
+  // 这里需要确保 iconName 是 Ant Design 图标组件的正确名称
+  if (iconName && (iconName.endsWith('Outlined') || iconName.endsWith('Filled') || iconName.endsWith('TwoTone'))) {
+    const iconComponent = AntIcons[iconName];
+    if (iconComponent) {
+      return iconComponent;
+    }
+  }
+
+  // 后备默认图标
+  return AntIcons.AppstoreOutlined || AppstoreOutlined;
 };
 
 // 获取分类类型名称
@@ -1279,6 +1310,44 @@ const getCategoryTypeName = (type) => {
   return typeMap[type] || '未知类型';
 };
 
+
+// 打开图标选择器
+const openIconSelector = () => {
+  tempSelectedIcon.value = categoryForm.icon; // 初始化为当前选中的图标
+  iconSelectorVisible.value = true;
+};
+
+// 关闭图标选择器
+const closeIconSelector = () => {
+  iconSelectorVisible.value = false;
+  tempSelectedIcon.value = ''; // 重置临时选择
+};
+
+
+// 选择图标项
+const selectIconItem = (iconValue) => {
+  tempSelectedIcon.value = iconValue;
+  console.log('选中图标:', iconValue); // 调试用
+};
+
+
+// 确认图标选择
+const confirmIconSelection = () => {
+  if (tempSelectedIcon.value) {
+    categoryForm.icon = tempSelectedIcon.value;
+    console.log('确认选择图标:', categoryForm.icon); // 调试用
+  }
+  iconSelectorVisible.value = false;
+};
+
+// 监听图标变化以更新预览
+watch(() => categoryForm.icon, (newIcon) => {
+  if (newIcon) {
+    // 可以添加额外的逻辑来更新预览
+    console.log('图标已更新:', newIcon);
+  }
+});
+
 // 获取内容类型对应的颜色
 const getContentTypeColor = (type) => {
   const colorMap = {
@@ -1293,26 +1362,6 @@ const getContentTypeColor = (type) => {
   return colorMap[type] || '#8C8C8C';
 };
 
-// 获取次要颜色（用于渐变）
-const getSecondaryColor = (type) => {
-  const colorMap = {
-    'animation': '#FF8E53',  // 动漫类型的次要颜色
-    'theme': '#2AB7CA',      // 多样素材的次要颜色
-    'learning': '#36CEFF',   // 技术学习的次要颜色
-    'figure': '#FFD166',     // 人物样式的次要颜色
-    'style': '#B15EFF',      // 样式风格的次要颜色
-    'wallpaper': '#95DE64'   // 花样壁纸的次要颜色
-  };
-  return colorMap[type] || '#BFBFBF';  // 默认为灰色
-};
-
-// 处理分页变化
-const handlePaginationChange = (page, pageSize) => {
-  pagination.current = page;
-  pagination.pageSize = pageSize;
-  fetchCategoryData();
-};
-
 // 获取分类类型颜色
 const getCategoryTypeColor = (type) => {
   const colorMap = {
@@ -1320,7 +1369,7 @@ const getCategoryTypeColor = (type) => {
     'theme': '#4ECDC4',       // 清新的青绿色，适合视觉主题
     'learning': '#4F86F7',    // 明亮的蓝色，代表学习和技术
     'figure': '#FFB347',      // 温暖的橙色，适合人物样式
-    'style': '#8A2BE2',       // 鲜明的紫色，代表设计风格
+    'style': '#bf99e3',       // 鲜明的紫色，代表设计风格
     'wallpaper': '#50C878'    // 翠绿色，适合花样壁纸
   };
   return colorMap[type] || '#BFBFBF';  // 默认为灰色
@@ -1494,18 +1543,9 @@ const fetchCategoryData = async () => {
       pageSize: pagination.pageSize,
       name: searchForm.categoryName,
       type: searchForm.categoryType,
+      createTimeStart: searchForm.createTime?.[0] ? dayjs(searchForm.createTime[0]).format('YYYY-MM-DD 00:00:00') : undefined,
+      createTimeEnd: searchForm.createTime?.[1] ? dayjs(searchForm.createTime[1]).format('YYYY-MM-DD 23:59:59') : undefined,
     };
-
-    // 改进日期处理逻辑，确保只有在日期有效时才添加到查询参数中
-    if (searchForm.createTime && searchForm.createTime.length === 2) {
-      // 确保两个日期都存在并且是有效的dayjs对象
-      if (searchForm.createTime[0] && searchForm.createTime[1]) {
-        // 开始日期使用当天开始时间 00:00:00
-        params.createTimeStart = searchForm.createTime[0].format('YYYY-MM-DD 00:00:00');
-        // 结束日期使用当天结束时间 23:59:59
-        params.createTimeEnd = searchForm.createTime[1].format('YYYY-MM-DD 23:59:59');
-      }
-    }
 
     // 调用API获取分页数据
     const response = await listCategoryByPageUsingGet(params);
@@ -1542,9 +1582,6 @@ const fetchCategoryTree = async () => {
       const enhancedTreeData = ensureContentCounts(treeData);
       categoryTreeData.value = transformTreeData(enhancedTreeData);
 
-      // 同时更新本地缓存
-      updateCategoryCacheFromTree(enhancedTreeData);
-
       // 更新所有可能的键，但不自动展开
       allTreeKeys.value = getAllTreeNodeKeys(categoryTreeData.value);
 
@@ -1565,7 +1602,7 @@ const fetchCategoryTree = async () => {
   }
 };
 
-// 3. 添加辅助函数确保所有节点都有 contentCount 值
+// 确保所有节点都有 contentCount 值
 const ensureContentCounts = (treeData) => {
   return treeData.map(item => {
     // 确保当前节点有 contentCount
@@ -1573,45 +1610,12 @@ const ensureContentCounts = (treeData) => {
       ...item,
       contentCount: item.contentCount !== undefined ? item.contentCount : 0
     };
-
     // 递归处理子节点
     if (item.children && item.children.length > 0) {
       enhancedItem.children = ensureContentCounts(item.children);
     }
 
     return enhancedItem;
-  });
-};
-
-// 从树形数据更新缓存
-const updateCategoryCacheFromTree = (treeData, parentPath = '') => {
-  if (!treeData || !treeData.length) return;
-
-  treeData.forEach(category => {
-    // 只缓存基本信息，详细信息仍需通过API获取
-    const basicInfo = {
-      id: category.id,
-      name: category.name,
-      type: category.type,
-      icon: category.icon || 'AppstoreOutlined',
-      parentId: category.parentId,
-      contentCount: category.contentCount || 0,
-      childCount: (category.children || []).length,
-      // 记录路径信息，便于显示
-      path: parentPath ? `${parentPath} > ${category.name}` : category.name,
-      level: parentPath ? parentPath.split('>').length + 1 : 1
-    };
-
-    // 更新缓存，设置较短的过期时间
-    setCategoryToCache(category.id, basicInfo, 2 * 60 * 1000); // 2分钟过期
-
-    // 递归处理子分类
-    if (category.children && category.children.length) {
-      updateCategoryCacheFromTree(
-          category.children,
-          basicInfo.path
-      );
-    }
   });
 };
 
@@ -1727,7 +1731,7 @@ const handleTreeSearch = () => {
 };
 
 // 树节点选择处理
-const onTreeSelect = (selectedKeys, info) => {
+const onTreeSelect = async (selectedKeys, info) => {
   if (selectedKeys.length === 0) {
     selectedCategory.value = null;
     childCategories.value = [];
@@ -1737,67 +1741,30 @@ const onTreeSelect = (selectedKeys, info) => {
   selectedTreeKeys.value = selectedKeys;
   const categoryId = selectedKeys[0];
 
-  // 首先尝试从缓存获取
-  const cachedCategory = getCategoryFromCache(categoryId);
-  if (cachedCategory) {
-    selectedCategory.value = cachedCategory;
-    // 异步刷新缓存但不阻塞UI
-    fetchCategoryDetails(categoryId, false);
-    fetchCategoryChildren(categoryId);
-    return;
+  // 直接加载详情，不使用缓存
+  loading.value = true;
+  try {
+    const response = await getCategoryByIdUsingGet({id: categoryId});
+    if (response.data && response.data.code === 200) {
+      selectedCategory.value = response.data.data;
+      // 获取关联内容和子分类
+      await fetchRelatedItems(categoryId);
+      await fetchCategoryChildren(categoryId);
+    } else {
+      throw new Error(response.data?.message || '获取分类详情失败');
+    }
+  } catch (error) {
+    console.error('获取分类详情错误:', error);
+    message.error('获取分类详情失败');
+    selectedCategory.value = {
+      id: categoryId,
+      name: '数据加载失败',
+      type: 'learning',
+      description: '请尝试刷新或选择其他分类'
+    };
+  } finally {
+    loading.value = false;
   }
-
-  // 如果缓存中没有，则正常加载
-  fetchCategoryDetails(categoryId, true);
-};
-
-// 抽取获取分类详情的函数
-const fetchCategoryDetails = (categoryId, showLoading = true) => {
-  if (showLoading) {
-    loading.value = true;
-  }
-
-  getCategoryByIdUsingGet({id: categoryId})
-      .then(response => {
-        if (response.data && response.data.code === 200 && response.data.data) {
-          const categoryData = response.data.data;
-          // 更新缓存
-          setCategoryToCache(categoryId, categoryData);
-          // 如果当前选中的仍然是这个分类，则更新UI
-          if (selectedTreeKeys.value.includes(categoryId)) {
-            selectedCategory.value = categoryData;
-          }
-          // 同时获取关联内容
-          return fetchRelatedItems(categoryId);
-        } else {
-          throw new Error(response.data?.message || '获取分类详情失败');
-        }
-      })
-      .then(() => {
-        // 获取子分类
-        return fetchCategoryChildren(categoryId);
-      })
-      .catch(error => {
-        console.error('获取分类详情错误:', error);
-        if (showLoading) {
-          message.error('获取分类详情失败');
-        }
-
-        // 失败时也重置状态，确保UI不卡住
-        if (selectedTreeKeys.value.includes(categoryId)) {
-          selectedCategory.value = {
-            id: categoryId,
-            name: '数据加载失败',
-            type: 'learning',
-            description: '请尝试刷新或选择其他分类'
-          };
-        }
-      })
-      .finally(() => {
-        if (showLoading) {
-          loading.value = false;
-        }
-      });
 };
 
 // 获取分类子分类数据
@@ -1848,31 +1815,6 @@ const expandCategoryList = (expanded) => {
   }
 };
 
-// 添加缓存对象
-const categoryCache = reactive({
-  data: new Map(),
-  // 缓存过期时间（毫秒）
-  ttl: 5 * 60 * 1000 // 5分钟
-});
-
-// 从缓存获取分类详情
-const getCategoryFromCache = (categoryId) => {
-  const cached = categoryCache.data.get(categoryId);
-  if (cached && Date.now() - cached.timestamp < categoryCache.ttl) {
-    return cached.data;
-  }
-  return null;
-};
-
-// 将分类详情存入缓存
-const setCategoryToCache = (categoryId, categoryData, customTtl) => {
-  categoryCache.data.set(categoryId, {
-    data: categoryData,
-    timestamp: Date.now(),
-    ttl: customTtl || categoryCache.ttl
-  });
-};
-
 // 打开创建分类模态框
 const openCreateModal = () => {
   // 重置表单为默认值
@@ -1883,7 +1825,7 @@ const openCreateModal = () => {
   // 设置默认值
   categoryForm.type = 'learning';
   categoryForm.sortOrder = 100;
-  categoryForm.icon = 'AppstoreOutlined';
+  categoryForm.icon = '';
 
   // 标记为创建模式
   isEditing.value = false;
@@ -1893,34 +1835,29 @@ const openCreateModal = () => {
 };
 
 // 编辑分类
-const editCategory = (id) => {
-  // 首先从缓存中查询以加快响应
-  let category = getCategoryFromCache(id);
+const editCategory = async (id) => {
+  try {
+    // 从API获取最新数据
+    const response = await getCategoryByIdUsingGet({id});
+    if (response.data && response.data.code === 200) {
+      const category = response.data.data;
 
-  // 如果缓存中没有，则从表格数据中查找
-  if (!category) {
-    category = categoryData.value.find(item => item.id === id);
-  }
+      // 复制分类数据到编辑表单
+      Object.keys(categoryForm).forEach(key => {
+        if (key in category) {
+          categoryForm[key] = category[key];
+        }
+      });
 
-  if (!category) {
-    message.error('未找到该分类信息');
-    return;
-  }
-
-  // 复制分类数据到编辑表单
-  Object.keys(categoryForm).forEach(key => {
-    if (key in category) {
-      // 对于parentId需要特殊处理
-      if (key === 'parentId' && (!category[key] || category[key] === 0)) {
-        categoryForm[key] = null; // 使用null表示顶级分类
-      } else {
-        categoryForm[key] = category[key];
-      }
+      isEditing.value = true;
+      categoryModalVisible.value = true;
+    } else {
+      message.error('获取分类信息失败');
     }
-  });
-
-  isEditing.value = true;
-  categoryModalVisible.value = true;
+  } catch (error) {
+    console.error('获取分类信息错误:', error);
+    message.error('加载分类信息失败，请稍后重试');
+  }
 };
 
 // 查看分类详情
@@ -1932,43 +1869,28 @@ const viewCategory = async (record) => {
     // 设置加载状态
     loading.value = true;
 
-    // 获取分类详情 - 优先使用缓存提升性能
-    const cachedCategory = getCategoryFromCache(record.id);
-
-    if (cachedCategory) {
-      selectedCategory.value = cachedCategory;
+    // 直接从API获取最新数据
+    const response = await getCategoryByIdUsingGet({id: record.id});
+    if (response.data && response.data.code === 200) {
+      // 设置选中的节点和展开视图
       selectedTreeKeys.value = [record.id];
+      selectedCategory.value = response.data.data;
 
-      // 确保展开到该节点
+      // 展开到该节点
       expandToNode(record.id);
 
-      // 异步更新详情和关联内容，但不阻塞UI显示
-      fetchCategoryDetails(record.id, false);
-      loading.value = false;
+      // 获取关联内容
+      await fetchRelatedItems(record.id);
+
+      // 获取子分类
+      await fetchCategoryChildren(record.id);
     } else {
-      // 如果缓存中没有，则正常加载
-      const response = await getCategoryByIdUsingGet({id: record.id});
-      if (response.data && response.data.code === 200) {
-        // 设置选中的节点和展开视图
-        selectedTreeKeys.value = [record.id];
-        selectedCategory.value = response.data.data;
-
-        // 展开到该节点
-        expandToNode(record.id);
-
-        // 获取关联内容
-        await fetchRelatedItems(record.id);
-
-        // 获取子分类
-        await fetchCategoryChildren(record.id);
-      } else {
-        throw new Error(response.data?.message || '获取分类详情失败');
-      }
-      loading.value = false;
+      throw new Error(response.data?.message || '获取分类详情失败');
     }
   } catch (error) {
     console.error('获取分类详情错误:', error);
     message.error('获取分类详情失败');
+  } finally {
     loading.value = false;
   }
 };
@@ -1997,7 +1919,7 @@ const fetchRelatedItems = async (categoryId) => {
 };
 
 // 添加子分类
-const addChildCategory = (parentId) => {
+const addChildCategory = async (parentId) => {
   // 重置表单
   Object.keys(categoryForm).forEach(key => {
     categoryForm[key] = key === 'type' ? 'learning' :
@@ -2009,12 +1931,17 @@ const addChildCategory = (parentId) => {
   // 设置父分类ID
   categoryForm.parentId = parentId;
 
-  // 自动设置类型与父分类一致
-  const parentCategory = getCategoryFromCache(parentId) ||
-      categoryData.value.find(item => item.id === parentId);
-
-  if (parentCategory) {
-    categoryForm.type = parentCategory.type;
+  // 获取父分类详情以设置一致的类型
+  try {
+    const response = await getCategoryByIdUsingGet({id: parentId});
+    if (response.data && response.data.code === 200) {
+      const parentCategory = response.data.data;
+      categoryForm.type = parentCategory.type;
+    }
+  } catch (error) {
+    console.error('获取父分类详情错误:', error);
+    // 如果获取失败，使用默认类型
+    categoryForm.type = 'learning';
   }
 
   isEditing.value = false;
@@ -2059,8 +1986,8 @@ const initCategoryForm = () => {
   // 如果是新建分类，设置默认值
   if (!isEditing.value) {
     categoryForm.type = 'learning';  // 默认类型为"技术学习"
-    categoryForm.sortOrder = 100;    // 默认排序值
-    categoryForm.icon = 'AppstoreOutlined';  // 默认图标
+    categoryForm.sortOrder = 100;
+    categoryForm.icon = 'AppstoreOutlined';
   }
 };
 
@@ -2202,7 +2129,6 @@ const selectCategoryAfterSave = async (categoryId) => {
         throw new Error(response.data?.message || '获取分类详情失败');
       }
     } else {
-
       // 如果需要确保该项在当前页面显示，但不选中它
       const index = categoryData.value.findIndex(item => item.id === categoryId);
       if (index >= 0) {
@@ -2228,28 +2154,17 @@ const selectCategoryAfterSave = async (categoryId) => {
 
 // 辅助函数：查找父分类
 const findParentCategory = (categoryId) => {
-  // 首先尝试从缓存中获取更好的性能
-  const category = getCategoryFromCache(categoryId);
-
+  // 直接从原始数据查找
+  const category = categoryData.value.find(item => item.id === categoryId);
   if (category && category.parentId) {
-    return getCategoryFromCache(category.parentId) ||
-        categoryData.value.find(item => item.id === category.parentId);
+    return categoryData.value.find(item => item.id === category.parentId);
   }
-
-  // 如果缓存中没有，则从原始数据查找
-  const fallbackCategory = categoryData.value.find(item => item.id === categoryId);
-  if (fallbackCategory && fallbackCategory.parentId) {
-    return categoryData.value.find(item => item.id === fallbackCategory.parentId);
-  }
-
   return null;
 };
 
 // 辅助函数：展开到指定节点
 const expandToNode = (categoryId) => {
-  const category = getCategoryFromCache(categoryId) ||
-      categoryData.value.find(item => item.id === categoryId);
-
+  const category = categoryData.value.find(item => item.id === categoryId);
   if (!category) return;
 
   // 收集所有父节点ID
@@ -2258,9 +2173,7 @@ const expandToNode = (categoryId) => {
 
   while (currentParentId) {
     parentIds.push(currentParentId);
-    const parentCategory = getCategoryFromCache(currentParentId) ||
-        categoryData.value.find(item => item.id === currentParentId);
-
+    const parentCategory = categoryData.value.find(item => item.id === currentParentId);
     currentParentId = parentCategory ? parentCategory.parentId : null;
   }
 
@@ -2275,11 +2188,6 @@ const expandToNode = (categoryId) => {
 const getParentName = (parentId) => {
   if (!parentId) return '顶级分类';
 
-  // 首先检查缓存以获得更好的性能
-  const cachedParent = getCategoryFromCache(parentId);
-  if (cachedParent) return cachedParent.name;
-
-  // 如果缓存中没有，检查数据源
   if (!categoryData.value || categoryData.value.length === 0) return '加载中...';
 
   const parent = categoryData.value.find(item => item.id === parentId);
@@ -2287,41 +2195,47 @@ const getParentName = (parentId) => {
 };
 
 // 显示删除确认对话框
-const showDeleteConfirm = (id) => {
-  // 优先从缓存中获取
-  const category = getCategoryFromCache(id) || categoryData.value.find(item => item.id === id);
-  if (!category) {
-    message.error('无法获取分类信息');
-    return;
-  }
+const showDeleteConfirm = async (id) => {
+  // 直接从API获取最新数据
+  try {
+    const response = await getCategoryByIdUsingGet({id});
+    if (response.data && response.data.code === 200) {
+      const category = response.data.data;
 
-  // 检查是否有子分类
-  const hasChildren = category.childCount > 0 || childCategories.value.length > 0 ||
-      categoryData.value.some(item => item.parentId === id);
+      // 检查是否有子分类
+      const hasChildren = category.childCount > 0 || childCategories.value.length > 0 ||
+          categoryData.value.some(item => item.parentId === id);
 
-  // 检查是否有关联内容
-  const hasContents = category.contentCount > 0;
+      // 检查是否有关联内容
+      const hasContents = category.contentCount > 0;
 
-  const modal = Modal;
+      const modal = Modal;
 
-  let confirmContent = '删除后将无法恢复，请谨慎操作。';
-  if (hasChildren) {
-    confirmContent = '该分类下包含子分类，删除后所有子分类将一并删除，且无法恢复，请谨慎操作。';
-  }
-  if (hasContents) {
-    confirmContent += `\n该分类下有${category.contentCount}个关联内容，删除分类后内容不会被删除，但会失去分类关联。`;
-  }
+      let confirmContent = '删除后将无法恢复，请谨慎操作。';
+      if (hasChildren) {
+        confirmContent = '该分类下包含子分类，删除后所有子分类将一并删除，且无法恢复，请谨慎操作。';
+      }
+      if (hasContents) {
+        confirmContent += `\n该分类下有${category.contentCount}个关联内容，删除分类后内容不会被删除，但会失去分类关联。`;
+      }
 
-  modal.confirm({
-    title: '确定要删除此分类吗?',
-    content: confirmContent,
-    okText: '确定删除',
-    okType: 'danger',
-    cancelText: '取消',
-    onOk() {
-      deleteCategory(id);
+      modal.confirm({
+        title: '确定要删除此分类吗?',
+        content: confirmContent,
+        okText: '确定删除',
+        okType: 'danger',
+        cancelText: '取消',
+        onOk() {
+          deleteCategory(id);
+        }
+      });
+    } else {
+      message.error('获取分类信息失败');
     }
-  });
+  } catch (error) {
+    console.error('获取分类信息错误:', error);
+    message.error('无法获取分类信息');
+  }
 };
 
 // 删除分类
@@ -2373,70 +2287,78 @@ const handleBatchDelete = async () => {
   }
 
   // 检查是否有子分类和关联内容
-  const selectedCategories = selectedRowKeys.value.map(id => {
-    return getCategoryFromCache(id) ||
-        categoryData.value.find(item => item.id === id) ||
-        {id, name: `ID为${id}的分类`, type: 'default'};
-  });
+  // 通过API获取所选分类的详细信息
+  try {
+    const promises = selectedRowKeys.value.map(id => getCategoryByIdUsingGet({id}));
+    const responses = await Promise.allSettled(promises);
 
-  const hasChildren = selectedCategories.some(category =>
-      category.childCount > 0 || categoryData.value.some(item => item.parentId === category.id)
-  );
+    // 提取成功获取的分类数据
+    const selectedCategories = responses
+        .filter(result => result.status === 'fulfilled' && result.value.data && result.value.data.code === 200)
+        .map(result => result.value.data.data);
 
-  const totalContents = selectedCategories.reduce((sum, category) => sum + (category.contentCount || 0), 0);
+    // 检查子分类和内容情况
+    const hasChildren = selectedCategories.some(category =>
+        category.childCount > 0 || categoryData.value.some(item => item.parentId === category.id)
+    );
 
-  const modal = Modal;
+    const totalContents = selectedCategories.reduce((sum, category) => sum + (category.contentCount || 0), 0);
 
-  let confirmContent = `确定要删除选中的 ${selectedRowKeys.value.length} 个分类吗？删除后将无法恢复。`;
-  if (hasChildren) {
-    confirmContent += '\n\n所选分类中有包含子分类的项，删除后所有子分类将一并删除。';
-  }
-  if (totalContents > 0) {
-    confirmContent += `\n\n所选分类关联了共计 ${totalContents} 个内容项，删除分类后内容不会被删除，但会失去分类关联。`;
-  }
+    const modal = Modal;
 
-
-  modal.confirm({
-    title: '批量删除分类',
-    content: confirmContent,
-    okText: '确定删除',
-    okType: 'danger',
-    cancelText: '取消',
-    async onOk() {
-      loading.value = true;
-      try {
-        const response = await batchDeleteCategoriesUsingDelete({
-          ids: selectedRowKeys.value
-        });
-
-        if (response.data && response.data.code === 200) {
-          selectedRowKeys.value = [];
-          selectedTreeKeys.value = [];
-          selectedCategory.value = null;
-
-          message.success('已批量删除分类');
-
-          // 重新获取数据
-          await fetchCategoryData();
-
-          // 刷新统计数据
-          await fetchCategoryStatistics();
-
-          // 如果在树视图中，需要刷新树
-          if (viewMode.value === 'tree') {
-            await fetchCategoryTree();
-          }
-        } else {
-          message.error('批量删除分类失败: ' + (response.data?.message || '未知错误'));
-        }
-      } catch (error) {
-        console.error('批量删除分类错误:', error);
-        message.error('批量删除分类失败，请稍后重试');
-      } finally {
-        loading.value = false;
-      }
+    let confirmContent = `确定要删除选中的 ${selectedRowKeys.value.length} 个分类吗？删除后将无法恢复。`;
+    if (hasChildren) {
+      confirmContent += '\n\n所选分类中有包含子分类的项，删除后所有子分类将一并删除。';
     }
-  });
+    if (totalContents > 0) {
+      confirmContent += `\n\n所选分类关联了共计 ${totalContents} 个内容项，删除分类后内容不会被删除，但会失去分类关联。`;
+    }
+
+    modal.confirm({
+      title: '批量删除分类',
+      content: confirmContent,
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      async onOk() {
+        loading.value = true;
+        try {
+          const response = await batchDeleteCategoriesUsingDelete({
+            ids: selectedRowKeys.value
+          });
+
+          if (response.data && response.data.code === 200) {
+            selectedRowKeys.value = [];
+            selectedTreeKeys.value = [];
+            selectedCategory.value = null;
+
+            message.success('已批量删除分类');
+
+            // 重新获取数据
+            await fetchCategoryData();
+
+            // 刷新统计数据
+            await fetchCategoryStatistics();
+
+            // 如果在树视图中，需要刷新树
+            if (viewMode.value === 'tree') {
+              await fetchCategoryTree();
+            }
+          } else {
+            message.error('批量删除分类失败: ' + (response.data?.message || '未知错误'));
+          }
+        } catch (error) {
+          console.error('批量删除分类错误:', error);
+          message.error('批量删除分类失败，请稍后重试');
+        } finally {
+          loading.value = false;
+        }
+      }
+    });
+  } catch (error) {
+    console.error('获取分类详情错误:', error);
+    message.error('获取分类信息失败，请稍后重试');
+  }
 };
 
 // 批量导出分类
@@ -2577,15 +2499,25 @@ const getCategoryPath = (category) => {
 };
 
 // 添加移动单个分类的函数
-const moveCategory = (record) => {
-  // 设置源分类信息
-  const sourceCategory = {...record};
+const moveCategory = async (record) => {
+  try {
+    // 设置源分类信息 - 确保获取最新数据
+    const response = await getCategoryByIdUsingGet({id: record.id});
+    if (response.data && response.data.code === 200) {
+      const sourceCategory = response.data.data;
 
-  // 加载可用的目标分类（排除自身及其子分类）
-  loadAvailableCategories(sourceCategory.id);
+      // 加载可用的目标分类（排除自身及其子分类）
+      await loadAvailableCategories(sourceCategory.id);
 
-  // 打开移动模态框
-  showCategoryMoveModal(sourceCategory);
+      // 打开移动模态框
+      showCategoryMoveModal(sourceCategory);
+    } else {
+      message.error('获取分类信息失败');
+    }
+  } catch (error) {
+    console.error('获取分类信息错误:', error);
+    message.error('加载分类信息失败，请稍后重试');
+  }
 };
 
 // 批量移动分类
@@ -2606,14 +2538,11 @@ const handleBatchMove = async () => {
     return;
   }
 
-  // 假设我们使用第一个选中的分类作为主要显示（也可以显示计数）
-  const primaryCategory = selectedCategories[0];
-
   // 获取所有ID，用于排除不可选的目标
   const allSelectedIds = selectedRowKeys.value;
 
   // 加载可用的目标分类（排除所有选中的分类及其子分类）
-  loadAllAvailableCategories(allSelectedIds);
+  await loadAllAvailableCategories(allSelectedIds);
 
   // 打开批量移动模态框
   showBatchMoveModal(selectedCategories);
@@ -2887,316 +2816,6 @@ onMounted(() => {
 .category-management-container {
   padding: 24px;
   background-color: #f5f7fa;
-}
-
-/* 页面顶部标题区域 */
-.tm-header {
-  background: linear-gradient(135deg, #ffffff 0%, #f5f5ff 100%);
-  padding: 24px;
-  margin-bottom: 24px;
-  border-radius: 12px;
-  box-shadow: 0 3px 10px rgba(101, 84, 192, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.tm-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #6554C0, #9F44D3);
-}
-
-.tm-header-left {
-  display: flex;
-  align-items: center;
-  z-index: 1;
-}
-
-.tm-icon-container {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
-  border-radius: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 20px;
-  box-shadow: 0 4px 12px rgba(101, 84, 192, 0.2);
-}
-
-.tm-icon {
-  font-size: 28px;
-  color: white;
-}
-
-.tm-header-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.tm-title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.tm-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #262626;
-  margin: 0;
-}
-
-.tm-description {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-.tm-header-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  z-index: 1;
-}
-
-.tm-metrics {
-  display: flex;
-  background-color: white;
-  border-radius: 12px;
-  padding: 12px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.tm-metric-item {
-  padding: 0 16px;
-  position: relative;
-}
-
-.tm-divider {
-  width: 1px;
-  height: 24px;
-  background-color: #f0f0f0;
-  margin: 8px 0;
-}
-
-.tm-metric-label {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
-  color: #8c8c8c;
-  margin-bottom: 4px;
-}
-
-.tm-metric-label .anticon {
-  margin-right: 6px;
-}
-
-.tm-metric-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* 数据统计卡片样式 */
-.stat-cards {
-  margin-bottom: 32px;
-}
-
-.stat-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  transition: all 0.3s;
-  position: relative;
-  border: none;
-  background: white;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #6554C0, #9F44D3);
-}
-
-.stat-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 8px 30px rgba(101, 84, 192, 0.12);
-}
-
-.card-content {
-  display: flex;
-  align-items: center;
-}
-
-.icon-container {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  margin-right: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  position: relative;
-  overflow: hidden;
-}
-
-.icon-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
-  opacity: 0.8;
-  z-index: 1;
-}
-
-.icon-container .anticon {
-  position: relative;
-  z-index: 2;
-}
-
-.bg-purple {
-  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
-}
-
-.bg-blue {
-  background: linear-gradient(135deg, #1890FF 0%, #36CEFF 100%);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #95DE64 100%);
-}
-
-.bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFD666 100%);
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #262626;
-  line-height: 1.1;
-  margin-bottom: 8px;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.stat-trend {
-  font-size: 13px;
-  margin-left: 8px;
-  font-weight: 500;
-}
-
-.trend-up {
-  color: #52C41A;
-}
-
-.trend-down {
-  color: #F5222D;
-}
-
-.trend-flat {
-  color: #8C8C8C;
-}
-
-.stat-title {
-  font-size: 15px;
-  color: #8C8C8C;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.stat-change {
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  font-weight: 500;
-}
-
-.increase {
-  color: #52C41A;
-  background-color: rgba(82, 196, 26, 0.1);
-}
-
-.decrease {
-  color: #F5222D;
-  background-color: rgba(245, 34, 45, 0.1);
-}
-
-.stat-change .anticon {
-  margin-right: 4px;
-}
-
-.card-decoration {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.decoration-circle {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.circle-1 {
-  width: 140px;
-  height: 140px;
-  right: -70px;
-  top: -70px;
-  background: rgba(101, 84, 192, 0.05);
-}
-
-.circle-2 {
-  width: 80px;
-  height: 80px;
-  right: 20px;
-  bottom: -40px;
-  background: rgba(101, 84, 192, 0.03);
-}
-
-.decoration-line {
-  position: absolute;
-  background: rgba(101, 84, 192, 0.05);
-}
-
-.line-1 {
-  width: 2px;
-  height: 60px;
-  transform: rotate(45deg);
-  right: 30px;
-  bottom: 20px;
-}
-
-.line-2 {
-  width: 80px;
-  height: 2px;
-  transform: rotate(45deg);
-  right: -20px;
-  bottom: 50px;
 }
 
 /* 搜索表单样式 */
@@ -3884,29 +3503,6 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-/* 图标选择器样式 */
-.icon-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.icon-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.selected-icon-preview {
-  width: 36px;
-  height: 36px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 20px;
-}
 
 /* 预览区域样式 */
 .preview-section {
@@ -4395,6 +3991,18 @@ onMounted(() => {
   border-color: #e1e1e1;
 }
 
+:deep(.ant-tree-node-selected) {
+  background-color: #f0eaff !important;
+}
+
+:deep(.ant-tree-node-content-wrapper:hover) {
+  background-color: #f9f5ff;
+}
+
+:deep(.ant-tree-switcher) {
+  color: #6554C0;
+}
+
 /* 自定义Tree组件样式 */
 .custom-tree :deep(.ant-tree-node-content-wrapper) {
   display: flex;
@@ -4405,6 +4013,20 @@ onMounted(() => {
 .custom-tree :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
   background-color: #f0eaff;
 }
+
+
+.modal-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 确保表单项标签对齐 */
+.url-icon-row .ant-form-item-label {
+  min-width: 80px;
+}
+
 
 /* 响应式设计 */
 @media (max-width: 992px) {
@@ -4538,4 +4160,3 @@ onMounted(() => {
   }
 }
 </style>
-  

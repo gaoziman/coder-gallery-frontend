@@ -496,7 +496,7 @@ const formatNumber = (num: any) => {
 };
 
 // 格式化日期
-const formatDate = (dateString, type = 'relative') => {
+const formatDate = (dateString :any, type = 'relative') => {
   if (!dateString) return '未知时间';
 
   const date = dayjs(dateString);
@@ -562,10 +562,9 @@ const navigateToPrev = async () => {
     const response = await getPreviousPictureUsingGet({ id: imageId.value });
 
     if (response && response.data) {
-      // 修正：API返回的数据可能有额外的嵌套结构
       const newImage = response.data.data || response.data;
 
-      // 更新URL - 移除replace: true以保留正常导航历史
+      // 更新URL
       router.push({
         name: 'PictureDetail',
         params: { id: newImage.id }
@@ -574,7 +573,7 @@ const navigateToPrev = async () => {
       // 更新当前图片数据并重置状态
       currentImage.value = newImage;
       imageId.value = newImage.id;
-      imageLoaded.value = false; // 重置图片加载状态
+      imageLoaded.value = false;
 
       // 重新检查导航状态
       checkHasPrevImage();
@@ -597,10 +596,9 @@ const navigateToNext = async () => {
     const response = await getNextPictureUsingGet({ id: imageId.value });
 
     if (response && response.data) {
-      // 修正：API返回的数据可能有额外的嵌套结构
       const newImage = response.data.data || response.data;
 
-      // 更新URL - 移除replace: true以保留正常导航历史
+      // 更新URL
       router.push({
         name: 'PictureDetail',
         params: { id: newImage.id }
@@ -609,7 +607,7 @@ const navigateToNext = async () => {
       // 更新当前图片数据并重置状态
       currentImage.value = newImage;
       imageId.value = newImage.id;
-      imageLoaded.value = false; // 重置图片加载状态
+      imageLoaded.value = false;
 
       // 重新检查导航状态
       checkHasPrevImage();

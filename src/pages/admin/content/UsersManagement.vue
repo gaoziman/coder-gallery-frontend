@@ -1,76 +1,14 @@
 <template>
   <div class="user-management-container">
-    <div class="um-page-container">
-      <!-- 用户管理页面标题区域 -->
-      <div class="um-header">
-        <div class="um-header-left">
-          <div class="um-icon-container">
-            <team-outlined class="um-icon"/>
-          </div>
-          <div class="um-header-info">
-            <div class="um-title-row">
-              <h1 class="um-title">用户管理</h1>
-              <a-tag color="#6554C0">内容管理</a-tag>
-            </div>
-            <p class="um-description">
-              管理系统用户，分配角色权限，查看用户活动记录
-            </p>
-          </div>
-        </div>
+    <DashboardHeader
+        title="用户管理"
+        description="管理系统用户，分配角色权限，查看用户活动记录"
+        parent-module="内容管理"
+        :module-icon="TeamOutlined"
+        :metrics="headerMetrics"
+    />
 
-        <div class="um-header-right">
-          <div class="um-metrics">
-            <div class="um-metric-item today-logins">
-              <div class="um-metric-label">
-                <calendar-outlined/>
-                今日登录
-              </div>
-              <div class="um-metric-value">{{ stats.todayLoginUsers || 0 }}</div>
-            </div>
-            <div class="um-divider"></div>
-            <div class="um-metric-item week-new-users">
-              <div class="um-metric-label">
-                <user-add-outlined/>
-                本周新增
-              </div>
-              <div class="um-metric-value">{{ stats.newUsersThisWeek || 0 }}</div>
-            </div>
-            <div class="um-divider"></div>
-            <div class="um-metric-item banned-users">
-              <div class="um-metric-label">
-                <warning-outlined/>
-                禁用账户
-              </div>
-              <div class="um-metric-value">{{ stats.bannedUsers || 0 }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 顶部卡片统计信息 -->
-    <div class="stat-cards">
-      <a-row :gutter="16">
-        <a-col :span="6" v-for="(card, index) in statCards" :key="index">
-          <a-card class="stat-card" :body-style="{ padding: '20px' }">
-            <div class="card-content">
-              <div class="icon-container" :class="`bg-${card.color}`">
-                <component :is="card.icon"/>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">{{ card.title }}</div>
-                <div class="stat-value">{{ card.value }}</div>
-                <div class="stat-change" :class="{ 'increase': card.change > 0, 'decrease': card.change < 0 }">
-                  <arrow-up-outlined v-if="card.change > 0"/>
-                  <arrow-down-outlined v-if="card.change < 0"/>
-                  {{ Math.abs(card.change) }}% 较上月
-                </div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-    </div>
+    <StatCards :cards="statCards"/>
 
     <!-- 搜索条件区域 -->
     <a-card class="search-form-card" :body-style="{ padding: '24px' }">
@@ -783,16 +721,12 @@ import {
   EditOutlined,
   DeleteOutlined,
   KeyOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
   InfoCircleOutlined,
   TeamOutlined,
   CalendarOutlined,
-  UserAddOutlined,
   SafetyOutlined,
   SettingOutlined,
-  MoreOutlined,
-  WarningOutlined
+  MoreOutlined, UserAddOutlined, WarningOutlined,
 } from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
@@ -806,6 +740,8 @@ import {
   resetUserPasswordUsingPost,
   updateUserUsingPut
 } from "@/api/yonghuguanli.js";
+import DashboardHeader from "@/components/common/DashboardHeader.vue";
+import StatCards from "@/components/common/StatCards.vue";
 
 
 // 表格数据和加载状态
@@ -905,6 +841,26 @@ const columns = [
     className: 'action-column'
   }
 ];
+
+// 为头部指标准备数据
+const headerMetrics = computed(() => [
+  {
+    icon: CalendarOutlined,
+    label: '今日登录',
+    value: stats.value.todayLoginUsers || 0
+  },
+  {
+    icon: UserAddOutlined,
+    label: '本周新增',
+    value: stats.value.newUsersThisWeek || 0
+  },
+  {
+    icon: WarningOutlined,
+    label: '禁用账户',
+    value: stats.value.bannedUsers || 0
+  }
+]);
+
 
 // 顶部卡片数据
 const statCards = reactive([
@@ -1700,70 +1656,6 @@ defineExpose({
   padding: 16px;
 }
 
-/* 数据统计卡片样式 */
-.stat-cards {
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.card-content {
-  display: flex;
-  align-items: center;
-}
-
-.icon-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  margin-right: 16px;
-  color: white;
-  font-size: 22px;
-}
-
-.stat-info {
-  flex: 1;
-}
-
-.stat-title {
-  font-size: 14px;
-  color: #8C8C8C;
-  margin-bottom: 5px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 600;
-  color: #262626;
-  line-height: 1.2;
-  margin-bottom: 5px;
-}
-
-.stat-change {
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-}
-
-.increase {
-  color: #52C41A;
-}
-
-.decrease {
-  color: #F5222D;
-}
 
 /* 优化的搜索表单样式 */
 .search-form-card {
@@ -2244,112 +2136,6 @@ defineExpose({
   }
 }
 
-/* 用户管理专用样式 - 使用um-前缀避免冲突 */
-.um-page-container {
-  padding: 0; /* 移除内边距，让子元素决定间距 */
-}
-
-.um-header {
-  background: linear-gradient(135deg, #ffffff 0%, #f6f5ff 100%);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(101, 84, 192, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.um-header-left {
-  display: flex;
-  align-items: center;
-}
-
-.um-icon-container {
-  width: 52px;
-  height: 52px;
-  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
-  border-radius: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 20px;
-  box-shadow: 0 4px 12px rgba(101, 84, 192, 0.2);
-}
-
-.um-icon {
-  font-size: 28px;
-  color: white;
-}
-
-.um-header-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.um-title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.um-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.um-description {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-.um-header-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.um-metrics {
-  display: flex;
-  background-color: white;
-  border-radius: 8px;
-  padding: 8px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.um-metric-item {
-  padding: 0 16px;
-  position: relative;
-}
-
-.um-divider {
-  width: 1px;
-  height: 24px;
-  background-color: #f0f0f0;
-  margin: 8px 0;
-}
-
-.um-metric-label {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
-  color: #8c8c8c;
-  margin-bottom: 4px;
-}
-
-.um-metric-label .anticon {
-  margin-right: 6px;
-}
-
-.um-metric-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
 
 /* 操作列样式优化 */
 .action-buttons {
@@ -2427,59 +2213,6 @@ defineExpose({
     right: 0;
     background-color: #fff;
     z-index: 1;
-  }
-}
-
-/* 响应式设计 */
-@media (max-width: 992px) {
-  .um-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .um-header-right {
-    margin-top: 16px;
-    align-items: flex-start;
-    width: 100%;
-  }
-
-  .um-metrics {
-    width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .um-metric-item {
-    padding: 0 10px;
-  }
-
-  .um-metric-value {
-    font-size: 16px;
-  }
-
-  .um-title {
-    font-size: 20px;
-  }
-}
-
-@media (max-width: 576px) {
-  .um-metrics {
-    flex-direction: column;
-    padding: 12px;
-  }
-
-  .um-metric-item {
-    padding: 8px 0;
-    width: 100%;
-  }
-
-  .um-divider {
-    display: none;
-  }
-
-  .um-metric-item:not(:last-child) {
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 8px;
   }
 }
 

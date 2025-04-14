@@ -1,173 +1,15 @@
 <template>
   <div class="comment-management-container">
-    <div class="cm-page-container">
-      <!-- 评论管理页面标题区域 -->
-      <div class="cm-header">
-        <div class="cm-header-left">
-          <div class="cm-icon-container">
-            <comment-outlined class="cm-icon"/>
-          </div>
-          <div class="cm-header-info">
-            <div class="cm-title-row">
-              <h1 class="cm-title">评论管理</h1>
-              <a-tag color="#6554C0">内容管理</a-tag>
-            </div>
-            <p class="cm-description">
-              管理系统内用户评论，支持审核、回复、分类以及举报处理
-            </p>
-          </div>
-        </div>
 
-        <div class="cm-header-right">
-          <div class="cm-metrics">
-            <div class="cm-metric-item">
-              <div class="cm-metric-label">
-                <calendar-outlined/>
-                今日评论
-              </div>
-              <div class="cm-metric-value">36</div>
-            </div>
-            <div class="cm-divider"></div>
-            <div class="cm-metric-item">
-              <div class="cm-metric-label">
-                <team-outlined/>
-                待审核
-              </div>
-              <div class="cm-metric-value">12</div>
-            </div>
-            <div class="cm-divider"></div>
-            <div class="cm-metric-item">
-              <div class="cm-metric-label">
-                <warning-outlined/>
-                举报量
-              </div>
-              <div class="cm-metric-value">8</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DashboardHeader
+        title="评论管理"
+        description="管理系统内用户评论，支持审核、回复、分类以及举报处理"
+        parent-module="内容管理"
+        :module-icon="CommentOutlined"
+        :metrics="headerMetrics"
+    />
 
-    <!-- 顶部卡片统计信息 -->
-    <div class="stat-cards">
-      <a-row :gutter="16">
-        <a-col :span="6">
-          <a-card class="stat-card" :body-style="{ padding: '24px' }">
-            <div class="card-content">
-              <div class="icon-container bg-purple">
-                <comment-outlined/>
-                <div class="icon-ring"></div>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">评论总数</div>
-                <div class="stat-value">3,842
-                  <span class="stat-trend">
-                    <trend-badge :value="15.3"/>
-                  </span>
-                </div>
-                <div class="stat-change increase">
-                  <arrow-up-outlined/>
-                  15.3% 较上月
-                </div>
-              </div>
-              <div class="card-decoration">
-                <div class="decoration-circle circle-1"></div>
-                <div class="decoration-circle circle-2"></div>
-                <div class="decoration-line line-1"></div>
-                <div class="decoration-line line-2"></div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-
-        <a-col :span="6">
-          <a-card class="stat-card" :body-style="{ padding: '24px' }">
-            <div class="card-content">
-              <div class="icon-container bg-blue">
-                <like-outlined/>
-                <div class="icon-ring"></div>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">本月新增</div>
-                <div class="stat-value">528
-                  <span class="stat-trend">
-                    <trend-badge :value="9.6"/>
-                  </span>
-                </div>
-                <div class="stat-change increase">
-                  <arrow-up-outlined/>
-                  9.6% 较上月
-                </div>
-              </div>
-              <div class="card-decoration">
-                <div class="decoration-circle circle-1"></div>
-                <div class="decoration-circle circle-2"></div>
-                <div class="decoration-line line-1"></div>
-                <div class="decoration-line line-2"></div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-
-        <a-col :span="6">
-          <a-card class="stat-card" :body-style="{ padding: '24px' }">
-            <div class="card-content">
-              <div class="icon-container bg-green">
-                <check-circle-outlined/>
-                <div class="icon-ring"></div>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">已审核</div>
-                <div class="stat-value">3,614
-                  <span class="stat-trend">
-                    <trend-badge :value="12.8"/>
-                  </span>
-                </div>
-                <div class="stat-change increase">
-                  <arrow-up-outlined/>
-                  12.8% 较上月
-                </div>
-              </div>
-              <div class="card-decoration">
-                <div class="decoration-circle circle-1"></div>
-                <div class="decoration-circle circle-2"></div>
-                <div class="decoration-line line-1"></div>
-                <div class="decoration-line line-2"></div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-
-        <a-col :span="6">
-          <a-card class="stat-card" :body-style="{ padding: '24px' }">
-            <div class="card-content">
-              <div class="icon-container bg-gold">
-                <flag-outlined/>
-                <div class="icon-ring"></div>
-              </div>
-              <div class="stat-info">
-                <div class="stat-title">举报评论</div>
-                <div class="stat-value">86
-                  <span class="stat-trend">
-                    <trend-badge :value="-4.7"/>
-                  </span>
-                </div>
-                <div class="stat-change decrease">
-                  <arrow-down-outlined/>
-                  4.7% 较上月
-                </div>
-              </div>
-              <div class="card-decoration">
-                <div class="decoration-circle circle-1"></div>
-                <div class="decoration-circle circle-2"></div>
-                <div class="decoration-line line-1"></div>
-                <div class="decoration-line line-2"></div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-    </div>
+    <StatCards :cards="statCards"/>
 
 
     <!-- 搜索条件区域 -->
@@ -289,7 +131,7 @@
           <!-- 评论用户列 -->
           <template v-if="column.dataIndex === 'user'">
             <div class="user-info">
-              <a-avatar :src="record.userAvatar" :size="32" />
+              <a-avatar :src="record.userAvatar" :size="32"/>
               <span class="user-name">{{ record.userName }}</span>
             </div>
           </template>
@@ -410,7 +252,7 @@
               </div>
               <div class="comment-card-body">
                 <div class="comment-user-info">
-                  <a-avatar :src="comment.userAvatar" :size="40" />
+                  <a-avatar :src="comment.userAvatar" :size="40"/>
                   <div class="user-details">
                     <div class="user-name">{{ comment.userName }}</div>
                     <div class="comment-time">{{ formatDateTime(comment.createTime) }}</div>
@@ -425,13 +267,13 @@
                 </div>
                 <div class="comment-metrics">
                   <span class="metric-item">
-                    <like-outlined /> {{ comment.likes }}
+                    <like-outlined/> {{ comment.likes }}
                   </span>
                   <span class="metric-item">
-                    <dislike-outlined /> {{ comment.dislikes }}
+                    <dislike-outlined/> {{ comment.dislikes }}
                   </span>
                   <span class="metric-item">
-                    <message-outlined /> {{ comment.replies }}
+                    <message-outlined/> {{ comment.replies }}
                   </span>
                 </div>
               </div>
@@ -514,8 +356,6 @@
     </div>
 
 
-
-
     <!-- 评论详情弹窗 -->
     <a-modal
         v-model:visible="commentDetailVisible"
@@ -528,22 +368,22 @@
       <template v-if="selectedComment">
         <div class="comment-detail-header">
           <div class="user-profile">
-            <a-avatar :src="selectedComment.userAvatar" :size="64" />
+            <a-avatar :src="selectedComment.userAvatar" :size="64"/>
             <div class="user-info">
               <div class="user-name">{{ selectedComment.userName }}</div>
               <div class="user-meta">
                 <span>评论次数: {{ selectedComment.userCommentCount || 32 }}</span>
-                <a-divider type="vertical" />
+                <a-divider type="vertical"/>
                 <span>注册时间: {{ formatDate(selectedComment.userRegisterTime || new Date(2024, 5, 15)) }}</span>
               </div>
             </div>
           </div>
           <div class="comment-status">
-            <a-badge :status="getStatusType(selectedComment.status)" :text="getStatusText(selectedComment.status)" />
+            <a-badge :status="getStatusType(selectedComment.status)" :text="getStatusText(selectedComment.status)"/>
           </div>
         </div>
 
-        <a-divider />
+        <a-divider/>
 
         <div class="comment-detail-content">
           <div class="comment-target-section">
@@ -552,7 +392,7 @@
               <a-tag color="blue">{{ getCommentTypeName(selectedComment.type) }}</a-tag>
               <div class="target-title">{{ selectedComment.targetTitle }}</div>
               <div class="target-link">
-                <link-outlined />
+                <link-outlined/>
                 <a href="#">查看原内容</a>
               </div>
             </div>
@@ -565,15 +405,15 @@
             </div>
             <div class="comment-meta">
               <div class="meta-item">
-                <clock-circle-outlined />
+                <clock-circle-outlined/>
                 评论时间: {{ formatDateTime(selectedComment.createTime) }}
               </div>
               <div class="meta-item">
-                <like-outlined />
+                <like-outlined/>
                 点赞数: {{ selectedComment.likes }}
               </div>
               <div class="meta-item">
-                <message-outlined />
+                <message-outlined/>
                 回复数: {{ selectedComment.replies }}
               </div>
             </div>
@@ -585,7 +425,7 @@
               <!-- 这里可以放回复列表 -->
               <div class="reply-item" v-for="(reply, index) in commentReplies" :key="index">
                 <div class="reply-user">
-                  <a-avatar :src="reply.userAvatar" :size="32" />
+                  <a-avatar :src="reply.userAvatar" :size="32"/>
                   <span class="reply-username">{{ reply.userName }}</span>
                   <span class="reply-time">{{ formatDateTime(reply.createTime) }}</span>
                 </div>
@@ -601,7 +441,7 @@
             <div class="report-list">
               <div class="report-item" v-for="(report, index) in commentReports" :key="index">
                 <div class="report-user">
-                  <warning-outlined style="color: #ff4d4f; margin-right: 8px;" />
+                  <warning-outlined style="color: #ff4d4f; margin-right: 8px;"/>
                   <span class="reporter">{{ report.reporterName }}</span>
                   <span class="report-time">{{ formatDateTime(report.reportTime) }}</span>
                 </div>
@@ -623,7 +463,9 @@
                   type="primary"
                   @click="approveComment(selectedComment)"
               >
-                <template #icon><check-outlined /></template>
+                <template #icon>
+                  <check-outlined/>
+                </template>
                 通过
               </a-button>
               <a-button
@@ -631,20 +473,24 @@
                   danger
                   @click="rejectComment(selectedComment)"
               >
-                <template #icon><stop-outlined /></template>
+                <template #icon>
+                  <stop-outlined/>
+                </template>
                 拒绝
               </a-button>
               <a-button
                   danger
                   @click="showDeleteConfirm(selectedComment)"
               >
-                <template #icon><delete-outlined /></template>
+                <template #icon>
+                  <delete-outlined/>
+                </template>
                 删除
               </a-button>
             </div>
           </div>
 
-          <a-divider />
+          <a-divider/>
 
           <div class="reply-form">
             <div class="reply-title">回复评论</div>
@@ -660,7 +506,9 @@
               </a-form-item>
               <a-form-item>
                 <a-button type="primary" @click="submitReply">
-                  <template #icon><send-outlined /></template>
+                  <template #icon>
+                    <send-outlined/>
+                  </template>
                   发送回复
                 </a-button>
               </a-form-item>
@@ -671,7 +519,6 @@
     </a-modal>
   </div>
 </template>
-
 
 
 <script setup>
@@ -695,21 +542,17 @@ import {
   DislikeOutlined,
   FlagOutlined,
   StarOutlined,
-  CheckCircleOutlined,
   WarningOutlined,
-  CalendarOutlined,
-  TeamOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
   ClockCircleOutlined,
   LinkOutlined,
-  SendOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined
+  SendOutlined, CalendarOutlined, TeamOutlined, CheckCircleOutlined,
 } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import dayjs from 'dayjs';
-import TrendBadge from '@/components/common/TrendBadge.vue';
+import DashboardHeader from "@/components/common/DashboardHeader.vue";
+import StatCards from "@/components/common/StatCards.vue";
 
 // 评论列表数据
 const commentData = ref([]);
@@ -802,10 +645,57 @@ const columns = [
   },
 ];
 
-// 生命周期钩子
-onMounted(() => {
-  fetchCommentData();
-});
+// 为头部指标准备数据
+const headerMetrics = computed(() => [
+  {
+    icon: CalendarOutlined,
+    label: '今日评论',
+    value: 36
+  },
+  {
+    icon: TeamOutlined,
+    label: '待审核',
+    value: 12
+  },
+  {
+    icon: WarningOutlined,
+    label: '举报量',
+    value: 8
+  }
+]);
+
+// 为统计卡片准备数据
+const statCards = computed(() => [
+  {
+    title: '评论总数',
+    value: '3,842',
+    change: 15.3,
+    color: 'purple',
+    icon: CommentOutlined
+  },
+  {
+    title: '本月新增',
+    value: '528',
+    change: 9.6,
+    color: 'blue',
+    icon: LikeOutlined
+  },
+  {
+    title: '已审核',
+    value: '3,614',
+    change: 12.8,
+    color: 'green',
+    icon: CheckCircleOutlined
+  },
+  {
+    title: '举报评论',
+    value: '86',
+    change: -4.7,
+    color: 'gold',
+    icon: FlagOutlined
+  }
+]);
+
 
 // 获取评论数据
 function fetchCommentData() {
@@ -828,17 +718,17 @@ function fetchCommentData() {
         replies: 3
       },
       {
-      id: 2,
-            userName: '李华',
-            userAvatar: 'https://via.placeholder.com/40',
-            content: '产品质量很好，但是发货速度有点慢，希望可以改进一下物流环节。',
-            type: 'product',
-            targetTitle: '智能家居控制套装 Pro',
-            status: 'approved',
-            createTime: new Date(2025, 2, 14, 16, 45).getTime(),
-            likes: 18,
-            dislikes: 3,
-            replies: 1
+        id: 2,
+        userName: '李华',
+        userAvatar: 'https://via.placeholder.com/40',
+        content: '产品质量很好，但是发货速度有点慢，希望可以改进一下物流环节。',
+        type: 'product',
+        targetTitle: '智能家居控制套装 Pro',
+        status: 'approved',
+        createTime: new Date(2025, 2, 14, 16, 45).getTime(),
+        likes: 18,
+        dislikes: 3,
+        replies: 1
       },
       {
         id: 3,
@@ -944,12 +834,12 @@ function fetchCommentData() {
         dislikes: 3,
         replies: 5
       }
-];
+    ];
 
-  commentData.value = data;
-  pagination.total = data.length;
-  loading.value = false;
-}, 600);
+    commentData.value = data;
+    pagination.total = data.length;
+    loading.value = false;
+  }, 600);
 }
 
 // 模拟评论回复数据
@@ -1393,296 +1283,17 @@ function deleteComment(record) {
     }
   }, 500);
 }
+
+// 生命周期钩子
+onMounted(() => {
+  fetchCommentData();
+});
 </script>
 
 <style scoped>
 /* 评论管理容器样式 */
 .comment-management-container {
   padding: 16px;
-}
-
-/* 页面头部样式 */
-.cm-page-container {
-  padding: 0;
-}
-
-.cm-header {
-  background: linear-gradient(135deg, #ffffff 0%, #f6f5ff 100%);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(101, 84, 192, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.cm-header-left {
-  display: flex;
-  align-items: center;
-}
-
-.cm-icon-container {
-  width: 52px;
-  height: 52px;
-  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
-  border-radius: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 20px;
-  box-shadow: 0 4px 12px rgba(101, 84, 192, 0.2);
-}
-
-.cm-icon {
-  font-size: 28px;
-  color: white;
-}
-
-.cm-header-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.cm-title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.cm-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.cm-description {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-.cm-header-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.cm-metrics {
-  display: flex;
-  background-color: white;
-  border-radius: 8px;
-  padding: 8px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.cm-metric-item {
-  padding: 0 16px;
-  position: relative;
-}
-
-.cm-divider {
-  width: 1px;
-  height: 24px;
-  background-color: #f0f0f0;
-  margin: 8px 0;
-}
-
-.cm-metric-label {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
-  color: #8c8c8c;
-  margin-bottom: 4px;
-}
-
-.cm-metric-label .anticon {
-  margin-right: 6px;
-}
-
-.cm-metric-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* 数据统计卡片样式 */
-.stat-cards {
-  margin-bottom: 32px;
-}
-
-.stat-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.3s;
-  position: relative;
-  border: none;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #6554C0, #9F44D3);
-}
-
-.stat-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 8px 30px rgba(101, 84, 192, 0.15);
-}
-
-.card-content {
-  display: flex;
-  align-items: center;
-}
-
-.icon-container {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  margin-right: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  position: relative;
-  overflow: hidden;
-  color: white;
-}
-
-.icon-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
-  opacity: 0.8;
-  z-index: 1;
-}
-
-.icon-container .anticon {
-  position: relative;
-  z-index: 2;
-}
-
-.bg-purple {
-  background: linear-gradient(135deg, #6554C0 0%, #9F44D3 100%);
-}
-
-.bg-blue {
-  background: linear-gradient(135deg, #1890FF 0%, #36CEFF 100%);
-}
-
-.bg-green {
-  background: linear-gradient(135deg, #52C41A 0%, #95DE64 100%);
-}
-
-.bg-gold {
-  background: linear-gradient(135deg, #FAAD14 0%, #FFD666 100%);
-}
-
-.stat-info {
-  flex: 1;
-}
-
-.stat-title {
-  font-size: 15px;
-  color: #8C8C8C;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #262626;
-  line-height: 1.1;
-  margin-bottom: 8px;
-  position: relative;
-}
-
-.stat-change {
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  font-weight: 500;
-}
-
-.increase {
-  color: #52C41A;
-  background-color: rgba(82, 196, 26, 0.1);
-}
-
-.decrease {
-  color: #F5222D;
-  background-color: rgba(245, 34, 45, 0.1);
-}
-
-.stat-change .anticon {
-  margin-right: 4px;
-}
-
-.card-decoration {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.decoration-circle {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.circle-1 {
-  width: 140px;
-  height: 140px;
-  right: -70px;
-  top: -70px;
-  background: rgba(101, 84, 192, 0.05);
-}
-
-.circle-2 {
-  width: 80px;
-  height: 80px;
-  right: 20px;
-  bottom: -40px;
-  background: rgba(101, 84, 192, 0.03);
-}
-
-.decoration-line {
-  position: absolute;
-  background: rgba(101, 84, 192, 0.05);
-}
-
-.line-1 {
-  width: 2px;
-  height: 60px;
-  transform: rotate(45deg);
-  right: 30px;
-  bottom: 20px;
-}
-
-.line-2 {
-  width: 80px;
-  height: 2px;
-  transform: rotate(45deg);
-  right: -20px;
-  bottom: 50px;
 }
 
 /* 搜索表单样式 */
@@ -2166,21 +1777,6 @@ function deleteComment(record) {
 
 /* 响应式设计 */
 @media (max-width: 992px) {
-  .cm-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .cm-header-right {
-    margin-top: 16px;
-    align-items: flex-start;
-    width: 100%;
-  }
-
-  .cm-metrics {
-    width: 100%;
-  }
-
   .operation-bar {
     flex-direction: column;
     align-items: flex-start;
@@ -2196,18 +1792,6 @@ function deleteComment(record) {
 }
 
 @media (max-width: 768px) {
-  .cm-metric-item {
-    padding: 0 10px;
-  }
-
-  .cm-metric-value {
-    font-size: 16px;
-  }
-
-  .cm-title {
-    font-size: 20px;
-  }
-
   .comment-detail-header {
     flex-direction: column;
     align-items: flex-start;
@@ -2220,24 +1804,6 @@ function deleteComment(record) {
 }
 
 @media (max-width: 576px) {
-  .cm-metrics {
-    flex-direction: column;
-    padding: 12px;
-  }
-
-  .cm-metric-item {
-    padding: 8px 0;
-    width: 100%;
-  }
-
-  .cm-divider {
-    display: none;
-  }
-
-  .cm-metric-item:not(:last-child) {
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 8px;
-  }
 
   .user-profile {
     flex-direction: column;
