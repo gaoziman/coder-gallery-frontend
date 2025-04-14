@@ -1406,7 +1406,6 @@ const ensureFontAwesomeCssLoaded = () => {
     linkElement.rel = 'stylesheet';
     linkElement.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
     document.head.appendChild(linkElement);
-    console.log('Font Awesome CSS已加载');
   }
 };
 
@@ -1820,7 +1819,7 @@ const previewFontAwesomeIcon = (icon) => {
 }
 
 .icon-name {
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.2;
   color: #8c8c8c;
   text-align: center;
@@ -1828,7 +1827,8 @@ const previewFontAwesomeIcon = (icon) => {
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
-  padding: 0 4px;
+  margin-bottom: -5px;
+  padding: 0 2px;
 }
 
 .icon-grid-item:hover {

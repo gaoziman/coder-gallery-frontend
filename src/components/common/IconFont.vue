@@ -1,5 +1,5 @@
 <template>
-  <component :is="tag" :style="styles" :class="classes" v-bind="$attrs">
+  <component :is="tag" :style="styles" :class="['icon-wrapper', classes]" v-bind="$attrs">
     <svg class="icon" aria-hidden="true" v-if="svgMode">
       <use :xlink:href="`#${type}`"></use>
     </svg>
@@ -55,11 +55,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
 .icon {
   width: 1em;
   height: 1em;
-  vertical-align: -0.15em;
   fill: currentColor;
   overflow: hidden;
+  margin-right: 8px;
+  line-height: 1;
+  transform: translateY(-1px);
+  flex-shrink: 0;
 }
 </style>
