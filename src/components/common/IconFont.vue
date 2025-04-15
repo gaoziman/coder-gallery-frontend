@@ -8,7 +8,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue';
-import iconService from '@/api/IconService';
+import iconService from '@/services/IconService';
 
 const props = defineProps({
   type: {

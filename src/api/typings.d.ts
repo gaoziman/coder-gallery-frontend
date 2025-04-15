@@ -17,6 +17,8 @@ declare namespace API {
     password: string;
     /** 用户手机号 */
     phone?: string;
+    /** 用户备注 */
+    remark?: string;
     /** 用户角色 */
     role?: string;
     /** 用户状态 */
@@ -174,6 +176,8 @@ declare namespace API {
     children?: CategoryTreeVO[];
     /** 内容数量 */
     contentCount?: number;
+    /** 创建时间 */
+    createTime?: string;
     /** 分类描述 */
     description?: string;
     /** 分类图标 */
@@ -350,6 +354,8 @@ declare namespace API {
   type exportLoginLogsUsingGETParams = {
     /** 浏览器 */
     browser?: string;
+    /** 用户ID */
+    createBy?: number;
     /** 创建结束时间 */
     createTimeEnd?: string;
     /** 创建开始时间 */
@@ -371,6 +377,8 @@ declare namespace API {
   type exportOperationLogsUsingGETParams = {
     /** 操作类型 */
     action?: string;
+    /** 用户ID */
+    createBy?: number;
     /** 创建结束时间 */
     createTimeEnd?: string;
     /** 创建开始时间 */
@@ -518,6 +526,8 @@ declare namespace API {
   type listLoginLogsUsingGETParams = {
     /** 浏览器 */
     browser?: string;
+    /** 用户ID */
+    createBy?: number;
     /** 创建结束时间 */
     createTimeEnd?: string;
     /** 创建开始时间 */
@@ -539,6 +549,8 @@ declare namespace API {
   type listOperationLogsUsingGETParams = {
     /** 操作类型 */
     action?: string;
+    /** 用户ID */
+    createBy?: number;
     /** 创建结束时间 */
     createTimeEnd?: string;
     /** 创建开始时间 */
@@ -629,8 +641,6 @@ declare namespace API {
     role?: string;
     /** 登录状态 */
     status?: number;
-    /** 用户ID */
-    userId?: number;
     /** 用户名 */
     username?: string;
   };
@@ -799,10 +809,10 @@ declare namespace API {
     action?: string;
     /** 用户头像 */
     avatar?: string;
+    /** 创建人 */
+    createBy?: number;
     /** 创建时间 */
     createTime?: string;
-    /** 错误消息 */
-    errorMsg?: string;
     /** 日志ID */
     id?: number;
     /** 操作IP */
@@ -821,8 +831,6 @@ declare namespace API {
     status?: number;
     /** 执行时长(毫秒) */
     time?: number;
-    /** 用户ID */
-    userId?: number;
     /** 用户名 */
     username?: string;
   };

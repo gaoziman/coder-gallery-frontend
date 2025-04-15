@@ -150,7 +150,7 @@ import { SearchOutlined } from '@ant-design/icons-vue';
 import * as AntIcons from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import IconFont from '@/components/common/IconFont.vue';
-import iconService from '@/api/IconService';
+import iconService from '@/services/IconService';
 
 const props = defineProps({
   value: String,

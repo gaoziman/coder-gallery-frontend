@@ -1,14 +1,11 @@
 <template>
   <div class="user-management-container">
-    <DashboardHeader
-        title="用户管理"
-        description="管理系统用户，分配角色权限，查看用户活动记录"
-        parent-module="内容管理"
-        :module-icon="TeamOutlined"
-        :metrics="headerMetrics"
+    <!-- 使用实时统计组件 -->
+    <RealTimeStats
+        :header-config="headerConfig"
+        :refresh-interval="refreshInterval"
+        @data-updated="handleDataUpdated"
     />
-
-    <StatCards :cards="statCards"/>
 
     <!-- 搜索条件区域 -->
     <a-card class="search-form-card" :body-style="{ padding: '24px' }">
@@ -61,11 +58,11 @@
             <!-- 操作按钮 - 不需要form-item包装，直接放在一个div里 -->
             <div class="search-buttons">
               <a-button type="primary" html-type="submit" class="search-button">
-                <search-outlined/>
+                <IconFont type="icon-chaxun2"/>
                 查询
               </a-button>
               <a-button @click="resetSearchForm" class="reset-button">
-                <reload-outlined/>
+                <IconFont type="icon-zhongzhi-xian"/>
                 重置
               </a-button>
             </div>
@@ -78,136 +75,89 @@
     <div class="operation-bar">
       <a-space>
         <a-button type="primary" @click="openAddUserModal">
-          <plus-outlined/>
+          <IconFont type="icon-chuangjian2"/>
           添加用户
         </a-button>
         <a-button @click="handleRefresh">
-          <reload-outlined/>
+          <IconFont type="icon-icon"/>
           刷新
         </a-button>
         <a-button danger :disabled="!hasSelected" @click="handleBatchDelete">
-          <delete-outlined/>
+          <IconFont type="icon-piliangshanchu3"/>
           批量删除
         </a-button>
       </a-space>
     </div>
 
-
-    <!-- 确认删除对话框 -->
-    <a-modal
-        v-model:visible="deleteModalVisible"
-        title="确认删除"
-        okText="确定"
-        cancelText="取消"
-        @ok="handleDeleteConfirm"
-    >
-      <p>确定要删除用户 "{{ deleteUserInfo.username || '此用户' }}" 吗？此操作不可恢复！</p>
-    </a-modal>
-
-    <!-- 用户数据表格 -->
-    <a-table
+    <!-- 使用BaseTable组件替换原始的a-table -->
+    <BaseTable
         :columns="columns"
         :data-source="userData"
         :loading="loading"
         :pagination="pagination"
-        :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
-        @change="handleTableChange"
-        row-key="id"
+        :show-selection="true"
+        :selected-keys="selectedRowKeys"
+        :row-key="'id'"
+        :row-actions="getRowActions"
+        @refresh="handleRefresh"
+        @selection-change="onSelectChange"
+        @row-action="handleTableRowAction"
+        @table-change="handleTableChange"
     >
-      <template #bodyCell="{ column, record }">
-
-        <!-- ID列自定义渲染 -->
-        <template v-if="column.dataIndex === 'id'">
-          <a-tooltip placement="topLeft">
-            <template #title>{{ record.id }}</template>
-            <span class="truncated-id" @mouseenter="showFullId = record.id" @mouseleave="showFullId = ''">
-          {{ formatId(record.id) }}
-        </span>
-          </a-tooltip>
-        </template>
-
-        <!-- 用户头像列 -->
-        <template v-if="column.dataIndex === 'avatar'">
-          <a-avatar :src="record.avatar" :alt="record.username"/>
-        </template>
-
-        <!-- 角色列 -->
-        <template v-if="column.dataIndex === 'role'">
-          <a-tag :color="getRoleColor(record.role)">{{ getRoleName(record.role) }}</a-tag>
-        </template>
-
-        <!-- 状态列 -->
-        <template v-if="column.dataIndex === 'status'">
-          <a-badge
-              :status="getStatusType(record.status)"
-              :text="getStatusText(record.status)"
-          />
-        </template>
-
-
-        <template v-if="column.dataIndex === 'registerTime'">
-          {{ formatDateTime(record.registerTime, true) }}
-        </template>
-
-        <!-- 操作列 -->
-        <template v-if="column.dataIndex === 'action'">
-          <div class="action-buttons">
-            <a-button type="link" size="small" @click="viewUserDetails(record)">
-              <eye-outlined/>
-              查看
-            </a-button>
-            <a-button type="link" size="small" @click="editUser(record)">
-              <edit-outlined/>
-              编辑
-            </a-button>
-
-            <template v-if="record.role !== 'admin' && record.role !== 'superAdmin'">
-              <a-dropdown>
-                <template #overlay>
-                  <a-menu>
-                    <a-menu-item key="reset" @click="resetPassword(record)">
-                      <key-outlined/>
-                      重置密码
-                    </a-menu-item>
-                    <a-menu-divider/>
-                    <a-menu-item key="delete" danger @click="confirmDelete(record)">
-                      <delete-outlined/>
-                      删除
-                    </a-menu-item>
-                  </a-menu>
-                </template>
-                <a-button type="link" size="small">
-                  <more-outlined/>
-                  更多
-                </a-button>
-              </a-dropdown>
-            </template>
-          </div>
-        </template>
+      <!-- 自定义列 -->
+      <template #column-id="{ record }">
+        <a-tooltip placement="topLeft">
+          <template #title>{{ record.id }}</template>
+          <span class="truncated-id" @mouseenter="showFullId = record.id" @mouseleave="showFullId = ''">
+            {{ formatId(record.id) }}
+          </span>
+        </a-tooltip>
       </template>
-    </a-table>
+
+      <template #column-avatar="{ record }">
+        <a-avatar :src="record.avatar" :alt="record.username"/>
+      </template>
+
+      <template #column-role="{ record }">
+        <a-tag :color="getRoleColor(record.role)">{{ getRoleName(record.role) }}</a-tag>
+      </template>
+
+      <template #column-status="{ record }">
+        <a-badge
+            :status="getStatusType(record.status)"
+            :text="getStatusText(record.status)"
+        />
+      </template>
+
+      <template #column-registerTime="{ record }">
+        {{ formatDateTime(record.registerTime, true) }}
+      </template>
+    </BaseTable>
 
     <!-- 查看用户信息弹窗 -->
     <a-modal
         v-model:visible="viewModalVisible"
-        title="用户详细信息"
         :footer="null"
         width="720px"
         :mask-closable="true"
         :destroyOnClose="true"
         class="custom-user-modal"
     >
-      <div class="modal-header">
-        <div class="header-icon">
-          <eye-outlined/>
-        </div>
-        <div class="header-title">
-          <h2>用户详细信息</h2>
-          <p>查看用户的完整资料与系统状态</p>
+
+      <div class="edit-modal-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <IconFont type="icon-chakan" />
+          </div>
+          <div class="header-text">
+            <h2>用户详细信息</h2>
+            <p>查看用户的完整资料与系统状态</p>
+          </div>
         </div>
       </div>
 
       <a-divider/>
+
 
       <div class="user-profile-container">
         <!-- 用户基本信息区 -->
@@ -231,13 +181,13 @@
             <a-space>
               <a-button type="primary" @click="editThisUser">
                 <template #icon>
-                  <edit-outlined/>
+                  <IconFont type="icon-a-bianji1" />
                 </template>
                 编辑
               </a-button>
               <a-button @click="resetPasswordForUser">
                 <template #icon>
-                  <key-outlined/>
+                  <IconFont type="icon-zhongzhimima2" />
                 </template>
                 重置密码
               </a-button>
@@ -253,7 +203,7 @@
                 <div class="info-grid">
                   <div class="info-item">
                     <div class="info-label">
-                      <user-outlined/>
+                      <IconFont type="icon-yonghu"/>
                       <span>账户名</span>
                     </div>
                     <div class="info-value">{{ currentUser.account }}</div>
@@ -261,7 +211,7 @@
 
                   <div class="info-item">
                     <div class="info-label">
-                      <solution-outlined/>
+                      <IconFont type="icon-yonghu-mingpian-L"/>
                       <span>用户名</span>
                     </div>
                     <div class="info-value">{{ currentUser.username }}</div>
@@ -269,7 +219,7 @@
 
                   <div class="info-item">
                     <div class="info-label">
-                      <phone-outlined/>
+                      <IconFont type="icon-shoujihao1"/>
                       <span>手机号</span>
                     </div>
                     <div class="info-value">{{ currentUser.phone }}</div>
@@ -277,7 +227,7 @@
 
                   <div class="info-item">
                     <div class="info-label">
-                      <team-outlined/>
+                      <IconFont type="icon-huoyueyonghu2"/>
                       <span>角色</span>
                     </div>
                     <div class="info-value">
@@ -287,7 +237,7 @@
 
                   <div class="info-item">
                     <div class="info-label">
-                      <check-circle-outlined/>
+                      <IconFont type="icon-yonghuzongshu"/>
                       <span>状态</span>
                     </div>
                     <div class="info-value">
@@ -297,7 +247,7 @@
 
                   <div class="info-item">
                     <div class="info-label">
-                      <calendar-outlined/>
+                      <IconFont type="icon-jiaoyiyuntubiao-1" />
                       <span>注册时间</span>
                     </div>
                     <div class="info-value">{{ formatDateTime(currentUser.registerTime) }}</div>
@@ -305,7 +255,7 @@
 
                   <div class="info-item">
                     <div class="info-label">
-                      <clock-circle-outlined/>
+                      <IconFont type="icon-wodeshenfenquequan" />
                       <span>最后登录</span>
                     </div>
                     <div class="info-value">{{ formatDateTime(currentUser.lastLoginTime) }}</div>
@@ -313,7 +263,7 @@
 
                   <div class="info-item" v-if="currentUser.remark">
                     <div class="info-label">
-                      <message-outlined/>
+                      <IconFont type="icon-document" />
                       <span>备注</span>
                     </div>
                     <div class="info-value">{{ currentUser.remark || '暂无备注' }}</div>
@@ -341,7 +291,57 @@
             </a-tab-pane>
 
             <a-tab-pane key="3" tab="操作记录">
-              <a-empty description="暂无操作记录"/>
+              <div class="operation-history-container">
+                <a-empty v-if="!operationHistory.length" description="暂无操作记录"/>
+                <a-list v-else :data-source="operationHistory" item-layout="horizontal" class="operation-history-list">
+                  <template #renderItem="{ item }">
+                    <a-list-item class="operation-record-item">
+                      <div class="operation-record-card">
+                        <div class="operation-header">
+                          <div class="operation-title">
+                            <span class="module-name">{{ item.module || '系统模块' }}</span>
+                            <span class="action-divider">-</span>
+                            <span class="action-name">{{ item.action || '系统操作' }}</span>
+                          </div>
+                          <a-tag
+                              :color="item.status === 0 ? 'success' : 'error'"
+                              class="operation-status"
+                          >
+                            {{ item.status === 0 ? '成功' : '失败' }}
+                          </a-tag>
+                        </div>
+
+                        <div class="operation-content">
+                          <div class="operation-details">
+                            <div class="detail-item">
+                              <IconFont type="icon-shijian" class="detail-icon" />
+                              <span class="detail-text">{{ formatDateTime(item.operationTime) }}</span>
+                            </div>
+                            <div class="detail-item" v-if="item.ip">
+                              <IconFont type="icon-dingwei" />
+                              <span class="detail-text">{{ item.ip }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </a-list-item>
+                  </template>
+                </a-list>
+                <div class="operation-history-pagination">
+                  <a-pagination
+                      v-if="operationHistory.length > 0"
+                      v-model:current="operationHistoryPagination.current"
+                      :total="operationHistoryPagination.total"
+                      :page-size="operationHistoryPagination.pageSize"
+                      :show-size-changer="operationHistoryPagination.showSizeChanger"
+                      :show-quick-jumper="operationHistoryPagination.showQuickJumper"
+                      :page-size-options="operationHistoryPagination.pageSizeOptions"
+                      :show-total="operationHistoryPagination.showTotal"
+                      @change="handleOperationHistoryPageChange"
+                      @showSizeChange="handleOperationHistoryPageSizeChange"
+                  />
+                </div>
+              </div>
             </a-tab-pane>
           </a-tabs>
         </div>
@@ -351,238 +351,92 @@
         <a-button @click="closeUserDetails">关闭</a-button>
       </div>
     </a-modal>
-    <!-- 编辑用户信息弹窗 -->
+
+
+    <!-- 统一的用户表单模态框 -->
     <a-modal
-        v-model:visible="editModalVisible"
-        title="编辑用户信息"
-        width="720px"
+        v-model:visible="userFormModalVisible"
         :mask-closable="false"
         :destroyOnClose="true"
         :footer="null"
+        width="720px"
         class="custom-user-modal"
     >
-      <div class="modal-header">
-        <div class="header-icon">
-          <edit-outlined/>
-        </div>
-        <div class="header-title">
-          <h2>编辑用户信息</h2>
-          <p>请修改以下信息更新用户账号</p>
+      <div class="edit-modal-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <IconFont :type="isEditMode ? 'icon-bianji4' : 'icon-yonghu'"/>
+          </div>
+          <div class="header-text">
+            <h2>{{ isEditMode ? '编辑用户信息' : '添加新用户' }}</h2>
+            <p>{{ isEditMode ? '请修改以下信息更新用户账号' : '请填写以下信息创建一个新的用户账号' }}</p>
+          </div>
         </div>
       </div>
 
       <a-divider/>
 
       <a-form
-          :model="editForm"
-          :rules="rules"
-          ref="editFormRef"
+          :model="userFormState"
+          :rules="formRules"
+          ref="userFormRef"
           layout="vertical"
       >
         <div class="form-row-container">
           <!-- 左侧表单列 -->
           <div class="form-column">
             <div class="column-header">
-              <profile-outlined/>
+              <IconFont type="icon-jibenxinxi2"/>
               <span>基本信息</span>
             </div>
 
-            <a-form-item label="账户名" name="account">
+            <a-form-item label="账户名" name="account" :rules="accountRules">
               <a-input
-                  v-model:value="editForm.account"
+                  v-model:value="userFormState.account"
                   placeholder="请输入账户名"
-                  disabled
+                  :disabled="isEditMode"
+                  :maxLength="20"
+                  :showCount="!isEditMode"
               >
                 <template #prefix>
-                  <user-outlined style="color: rgba(0, 0, 0, 0.25)"/>
+                  <IconFont type="icon-yonghu"/>
                 </template>
               </a-input>
             </a-form-item>
 
-            <a-form-item label="用户名" name="username">
+            <a-form-item label="用户名" name="username" :rules="[{ required: true, message: '请输入用户名' }]">
               <a-input
-                  v-model:value="editForm.username"
+                  v-model:value="userFormState.username"
                   placeholder="请输入用户名"
               >
                 <template #prefix>
-                  <solution-outlined style="color: rgba(0, 0, 0, 0.25)"/>
+                  <IconFont type="icon-yonghu-mingpian-L"/>
                 </template>
               </a-input>
             </a-form-item>
 
-            <a-form-item label="手机号" name="phone">
+            <a-form-item label="手机号" name="phone" :rules="phoneRules">
               <a-input
-                  v-model:value="editForm.phone"
+                  v-model:value="userFormState.phone"
                   placeholder="请输入手机号"
               >
                 <template #prefix>
-                  <phone-outlined style="color: rgba(0, 0, 0, 0.25)"/>
+                  <IconFont type="icon-shoujihao1"/>
                 </template>
               </a-input>
             </a-form-item>
-          </div>
 
-          <!-- 右侧表单列 -->
-          <div class="form-column">
-            <div class="column-header">
-              <setting-outlined/>
-              <span>账户设置</span>
-            </div>
-
-            <a-form-item label="角色" name="role">
-              <a-select
-                  v-model:value="editForm.role"
-                  placeholder="请选择用户角色"
-                  :options="roleOptions"
-              >
-                <template #suffixIcon>
-                  <team-outlined/>
-                </template>
-              </a-select>
-            </a-form-item>
-
-            <a-form-item label="状态" name="status">
-              <a-select
-                  v-model:value="editForm.status"
-                  placeholder="请选择用户状态"
-                  :options="statusOptions"
-              >
-                <template #suffixIcon>
-                  <check-circle-outlined/>
-                </template>
-              </a-select>
-            </a-form-item>
-
-            <a-form-item label="头像" name="avatar">
+            <a-form-item v-if="!isEditMode" label="头像" name="avatar">
               <div class="avatar-uploader">
                 <div class="upload-container" @click="handleAvatarUpload">
-                  <div v-if="!editForm.avatar" class="upload-placeholder">
-                    <upload-outlined/>
+                  <div v-if="!userFormState.avatar" class="upload-placeholder">
+                    <IconFont type="icon-upload11"/>
                     <div>点击上传</div>
                   </div>
-                  <img v-else :src="editForm.avatar" class="avatar-preview" alt="用户头像"/>
+                  <img v-else :src="userFormState.avatar" class="avatar-preview" alt="用户头像"/>
                 </div>
                 <div class="avatar-tips">
-                  <info-circle-outlined/>
-                  <span>支持 jpg、png 格式，大小不超过 2MB</span>
-                </div>
-              </div>
-            </a-form-item>
-          </div>
-        </div>
-
-        <a-form-item label="备注" name="remark">
-          <a-textarea
-              v-model:value="editForm.remark"
-              placeholder="请输入用户备注信息）"
-              :rows="3"
-              :maxLength="200"
-              :showCount="true"
-          />
-        </a-form-item>
-
-        <div class="form-footer">
-          <a-space>
-            <a-button @click="handleEditCancel">取消</a-button>
-            <a-button type="primary" @click="handleEditSubmit" :loading="submitLoading">
-              <template #icon>
-                <save-outlined/>
-              </template>
-              保存
-            </a-button>
-          </a-space>
-        </div>
-      </a-form>
-    </a-modal>
-    <!-- 添加用户弹窗 -->
-    <a-modal
-        v-model:visible="visible"
-        title="添加用户"
-        width="720px"
-        :mask-closable="false"
-        :destroyOnClose="true"
-        :footer="null"
-        class="custom-user-modal"
-    >
-      <div class="modal-header">
-        <div class="header-icon">
-          <user-outlined/>
-        </div>
-        <div class="header-title">
-          <h2>添加新用户</h2>
-          <p>请填写以下信息创建一个新的用户账号</p>
-        </div>
-      </div>
-
-      <a-divider/>
-
-      <a-form
-          :model="formState"
-          :rules="rules"
-          ref="formRef"
-          layout="vertical"
-      >
-        <div class="form-row-container">
-          <!-- 左侧表单列 -->
-          <div class="form-column">
-            <div class="column-header">
-              <profile-outlined/>
-              <span>基本信息</span>
-            </div>
-
-            <a-form-item label="账户名" name="accountName" :rules="[{ required: true, message: '请输入账户名' }]">
-              <a-input
-                  v-model:value="formState.accountName"
-                  placeholder="请输入账户名"
-                  :maxLength="20"
-                  :showCount="true"
-
-              >
-                <template #prefix>
-                  <user-outlined style="color: rgba(0, 0, 0, 0.25)"/>
-                </template>
-              </a-input>
-            </a-form-item>
-
-            <a-form-item label="用户名" name="userName" :rules="[{ required: true, message: '请输入用户名' }]">
-              <a-input
-                  v-model:value="formState.userName"
-                  placeholder="请输入用户名"
-              >
-                <template #prefix>
-                  <solution-outlined style="color: rgba(0, 0, 0, 0.25)"/>
-                </template>
-              </a-input>
-            </a-form-item>
-
-            <a-form-item label="手机号" name="phone" :rules="[
-            { required: true, message: '请输入手机号' },
-            { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码' }
-          ]">
-              <a-input
-                  v-model:value="formState.phone"
-                  placeholder="请输入手机号"
-              >
-                <template #prefix>
-                  <phone-outlined style="color: rgba(0, 0, 0, 0.25)"/>
-                </template>
-              </a-input>
-            </a-form-item>
-
-            <a-form-item label="头像" name="avatar">
-              <div class="avatar-uploader">
-                <div
-                    class="upload-container"
-                    @click="handleAvatarUpload"
-                >
-                  <div v-if="!formState.avatar" class="upload-placeholder">
-                    <upload-outlined/>
-                    <div>点击上传</div>
-                  </div>
-                  <img v-else :src="formState.avatar" class="avatar-preview" alt="用户头像"/>
-                </div>
-                <div class="avatar-tips">
-                  <info-circle-outlined/>
+                  <IconFont type="icon-shuxing"/>
                   <span>支持 jpg、png 格式，大小不超过 2MB</span>
                 </div>
               </div>
@@ -596,71 +450,83 @@
               <span>账户设置</span>
             </div>
 
-            <a-form-item label="密码" name="password" :rules="[
-            { required: true, message: '请输入密码' },
-            { min: 6, message: '密码长度不能少于6个字符' }
-          ]">
-              <a-input-password
-                  v-model:value="formState.password"
-                  placeholder="请输入密码"
-              >
-                <template #prefix>
-                  <lock-outlined style="color: rgba(0, 0, 0, 0.25)"/>
-                </template>
-              </a-input-password>
-              <div class="password-strength" v-if="formState.password">
-                <div class="strength-label">密码强度：</div>
-                <div class="strength-indicator">
-                  <div class="indicator-bar" :class="getPasswordStrengthClass()"></div>
+            <template v-if="!isEditMode">
+              <a-form-item label="密码" name="password" :rules="passwordRules">
+                <a-input-password
+                    v-model:value="userFormState.password"
+                    placeholder="请输入密码"
+                >
+                  <template #prefix>
+                    <IconFont type="icon-mima4"/>
+                  </template>
+                </a-input-password>
+                <div class="password-strength" v-if="userFormState.password">
+                  <div class="strength-label">密码强度：</div>
+                  <div class="strength-indicator">
+                    <div class="indicator-bar" :class="getPasswordStrengthClass()"></div>
+                  </div>
+                  <div class="strength-text">{{ getPasswordStrengthText() }}</div>
                 </div>
-                <div class="strength-text">{{ getPasswordStrengthText() }}</div>
-              </div>
-            </a-form-item>
+              </a-form-item>
 
-            <a-form-item label="确认密码" name="confirmPassword" :rules="[
-                { required: true, message: '请确认密码' },
-                { validator: validateConfirmPassword }
-              ]">
-              <a-input-password
-                  v-model:value="formState.confirmPassword"
-                  placeholder="请确认密码"
-              >
-                <template #prefix>
-                  <safety-outlined style="color: rgba(0, 0, 0, 0.25)"/>
-                </template>
-              </a-input-password>
-            </a-form-item>
+              <a-form-item label="确认密码" name="confirmPassword" :rules="confirmPasswordRules">
+                <a-input-password
+                    v-model:value="userFormState.confirmPassword"
+                    placeholder="请确认密码"
+                >
+                  <template #prefix>
+                    <IconFont type="icon-querenmima1"/>
+                  </template>
+                </a-input-password>
+              </a-form-item>
+            </template>
 
             <a-form-item label="角色" name="role" :rules="[{ required: true, message: '请选择角色' }]">
               <a-select
-                  v-model:value="formState.role"
+                  v-model:value="userFormState.role"
                   placeholder="请选择用户角色"
                   :options="roleOptions"
               >
                 <template #suffixIcon>
-                  <team-outlined/>
+                  <IconFont type="icon-huoyueyonghu2"/>
                 </template>
               </a-select>
             </a-form-item>
 
             <a-form-item label="状态" name="status" :rules="[{ required: true, message: '请选择状态' }]">
               <a-select
-                  v-model:value="formState.status"
+                  v-model:value="userFormState.status"
                   placeholder="请选择用户状态"
                   :options="statusOptions"
               >
                 <template #suffixIcon>
-                  <check-circle-outlined/>
+                  <IconFont type="icon-yonghuzongshu"/>
                 </template>
               </a-select>
+            </a-form-item>
+
+            <a-form-item v-if="isEditMode" label="头像" name="avatar">
+              <div class="avatar-uploader">
+                <div class="upload-container" @click="handleAvatarUpload">
+                  <div v-if="!userFormState.avatar" class="upload-placeholder">
+                    <IconFont type="icon-upload11"/>
+                    <div>点击上传</div>
+                  </div>
+                  <img v-else :src="userFormState.avatar" class="avatar-preview" alt="用户头像"/>
+                </div>
+                <div class="avatar-tips">
+                  <IconFont type="icon-shuxing"/>
+                  <span>支持 jpg、png 格式，大小不超过 2MB</span>
+                </div>
+              </div>
             </a-form-item>
           </div>
         </div>
 
         <a-form-item label="备注" name="remark">
           <a-textarea
-              v-model:value="formState.remark"
-              placeholder="请输入用户备注信息（选填）"
+              v-model:value="userFormState.remark"
+              :placeholder="isEditMode ? '请输入用户备注信息' : '请输入用户备注信息（选填）'"
               :rows="3"
               :maxLength="200"
               :showCount="true"
@@ -669,8 +535,8 @@
 
         <div class="form-footer">
           <a-space>
-            <a-button @click="handleCancel">取消</a-button>
-            <a-button type="primary" @click="handleSubmit" :loading="submitLoading">
+            <a-button @click="handleUserFormCancel">取消</a-button>
+            <a-button type="primary" @click="handleUserFormSubmit" :loading="submitLoading">
               <template #icon>
                 <save-outlined/>
               </template>
@@ -680,6 +546,8 @@
         </div>
       </a-form>
     </a-modal>
+
+
     <!-- 重置密码弹窗 -->
     <a-modal
         v-model:visible="resetPasswordModalVisible"
@@ -710,25 +578,9 @@ import {
   ref,
   reactive,
   onMounted,
-  computed
+  computed, h
 } from 'vue';
-import {
-  SearchOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  UserOutlined,
-  EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  KeyOutlined,
-  InfoCircleOutlined,
-  TeamOutlined,
-  CalendarOutlined,
-  SafetyOutlined,
-  SettingOutlined,
-  MoreOutlined, UserAddOutlined, WarningOutlined,
-} from '@ant-design/icons-vue';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import dayjs from 'dayjs';
 import {
   addUserUsingPost,
@@ -740,9 +592,12 @@ import {
   resetUserPasswordUsingPost,
   updateUserUsingPut
 } from "@/api/yonghuguanli.js";
-import DashboardHeader from "@/components/common/DashboardHeader.vue";
-import StatCards from "@/components/common/StatCards.vue";
-
+import BaseTable from "@/components/common/BaseTable.vue";
+// 引入 IconFont 组件
+import IconFont from '@/components/common/IconFont.vue';
+import {listOperationLogsUsingGet} from "@/api/caozuorizhiguanli.js";
+import {listLoginLogsUsingGet} from "@/api/denglurizhiguanli.js";
+import RealTimeStats from "@/components/common/RealTimeStats.vue";
 
 // 表格数据和加载状态
 const loading = ref(false);
@@ -765,19 +620,95 @@ const hasSelected = computed(() => selectedRowKeys.value.length > 0);
 const viewModalVisible = ref(false);
 const visible = ref(false);
 const formRef = ref();
-const editModalVisible = ref(false);
 const resetPasswordModalVisible = ref(false);
 const submitLoading = ref(false);
 const currentUser = ref({});
 
+// 统一的用户表单模态框相关状态
+const userFormModalVisible = ref(false);
+const userFormRef = ref(null);
+const isEditMode = ref(false);
+
 // 表单引用
-const editFormRef = ref(null);
 const resetPasswordFormRef = ref(null);
 
-const deleteModalVisible = ref(false);
-const deleteUserInfo = ref({});
 
 const showFullId = ref('');
+
+// 操作记录数据
+const operationHistory = ref([]);
+
+const operationHistoryPagination = reactive({
+  current: 1,         // 当前页码
+  pageSize: 3,        // 每页条数 (默认值更改为5)
+  total: 0,           // 总记录数
+  showSizeChanger: true,  // 显示每页条数选择器
+  showQuickJumper: true,  // 显示快速跳转
+  pageSizeOptions: ['3', '5', '10', '20'], // 每页条数选项
+  showTotal: (total) => `共 ${total} 条`,  // 总记录数展示文本
+});
+
+const userFormState = reactive({
+  id: '',          // 编辑模式才会有
+  account: '',     // 账户名
+  username: '',    // 用户名
+  password: '',    // 密码（仅新增模式）
+  confirmPassword: '', // 确认密码（仅新增模式）
+  phone: '',       // 手机号
+  role: 'user',    // 角色
+  status: 'active', // 状态
+  avatar: '',      // 头像
+  remark: ''       // 备注
+});
+
+
+// 刷新间隔 - 30秒
+const refreshInterval = ref(30000);
+
+// 头部配置
+const headerConfig = {
+  title: '用户管理',
+  description: '管理系统用户，分配角色权限，查看用户活动记录',
+  parentModule: '内容管理',
+  iconType: 'icon-yonghuguanli1'
+};
+
+
+// 处理数据更新事件
+const handleDataUpdated = (data) => {
+  console.log('统计数据已更新:', data);
+};
+
+// 搜索表单数据
+const searchForm = reactive({
+  username: '',
+  role: undefined,
+  status: undefined,
+  registerTime: [],
+});
+
+// 模拟登录历史数据
+const loginHistory = ref([
+  {
+    time: new Date(2025, 2, 30, 10, 25, 0).getTime(),
+    device: '苹果 iPhone 13',
+    ip: '192.168.1.1',
+    location: '北京市海淀区'
+  },
+  {
+    time: new Date(2025, 2, 28, 16, 42, 0).getTime(),
+    device: 'Chrome 浏览器 (Windows)',
+    ip: '192.168.1.1',
+    location: '北京市海淀区'
+  },
+  {
+    time: new Date(2025, 2, 25, 9, 15, 0).getTime(),
+    device: 'Safari 浏览器 (MacOS)',
+    ip: '220.181.38.148',
+    location: '北京市朝阳区'
+  }
+]);
+
 
 
 // 表格列定义
@@ -842,20 +773,91 @@ const columns = [
   }
 ];
 
+// 行操作按钮配置
+const getRowActions = (record) => {
+  const actions = [
+    {
+      key: 'view',
+      text: '查看',
+      type: 'link',
+      icon: () => h(IconFont, {type: 'icon-chakan2', style: {color: 'inherit'}})
+    },
+    {
+      key: 'edit',
+      text: '编辑',
+      type: 'link',
+      icon: () => h(IconFont, {type: 'icon-bianji4', style: {color: 'inherit'}})
+    }
+  ];
+
+  // 非管理员角色才显示更多操作
+  if (record.role !== 'admin' && record.role !== 'superAdmin') {
+    actions.push({
+      key: 'dropdown',
+      text: '更多',
+      type: 'dropdown',
+      items: [
+        {
+          key: 'resetPassword',
+          text: '重置密码',
+          icon: () => h(IconFont, {type: 'icon-zhongzhimima2', style: {color: 'inherit'}})
+        },
+        {
+          divider: true
+        },
+        {
+          key: 'delete',
+          text: '删除',
+          icon: () => h(IconFont, {type: 'icon-shanchu', style: {color: 'inherit'}}),
+          danger: true,
+          confirm: {
+            title: '确认删除',
+            content: `确定要删除用户 "${record.username}" 吗？此操作不可恢复！`
+          }
+        }
+      ]
+    });
+  }
+
+  return actions;
+};
+// 处理表格行操作
+const handleTableRowAction = ({action, record}) => {
+  console.log('收到行操作:', action);
+
+  // 使用 action.key 来判断是哪种操作
+  switch (action.key) {
+    case 'view':
+      viewUserDetails(record);
+      break;
+    case 'edit':
+      editUser(record);
+      break;
+    case 'resetPassword':
+      resetPassword(record);
+      break;
+    case 'delete':
+      confirmDelete(record);
+      break;
+    default:
+      console.log('未处理的操作:', action.key, record);
+  }
+};
+
 // 为头部指标准备数据
 const headerMetrics = computed(() => [
   {
-    icon: CalendarOutlined,
+    icon: () => h(IconFont, {type: 'icon-jinri1'}),
     label: '今日登录',
     value: stats.value.todayLoginUsers || 0
   },
   {
-    icon: UserAddOutlined,
+    icon: () => h(IconFont, {type: 'icon-benzhouremen-'}),
     label: '本周新增',
     value: stats.value.newUsersThisWeek || 0
   },
   {
-    icon: WarningOutlined,
+    icon: () => h(IconFont, {type: 'icon-user-locking'}),
     label: '禁用账户',
     value: stats.value.bannedUsers || 0
   }
@@ -869,85 +871,29 @@ const statCards = reactive([
     value: 673,
     change: 9.3,
     color: 'purple',
-    icon: UserOutlined,
+    icon: () => h(IconFont, {type: 'icon-pingtaiyonghuzongshu'})
   },
   {
     title: '本月新增用户',
     value: 86,
     change: 12.5,
     color: 'blue',
-    icon: UserOutlined,
+    icon: () => h(IconFont, {type: 'icon-benzhouxinzengtishishuliang'})
   },
   {
     title: 'VIP用户总数',
     value: 128,
     change: 5.2,
     color: 'gold',
-    icon: UserOutlined,
+    icon: () => h(IconFont, {type: 'icon-17003'})
   },
   {
     title: '活跃用户比例',
     value: '78.6%',
     change: -2.3,
     color: 'green',
-    icon: UserOutlined,
+    icon: () => h(IconFont, {type: 'icon-huoyueyonghu'})
   },
-]);
-
-
-// 编辑表单数据
-const editForm = reactive({
-  id: '',
-  account: '',
-  username: '',
-  phone: '',
-  avatar: '',
-  role: '',
-  status: '',
-  remark: ''
-});
-
-const formState = reactive({
-  accountName: '', // 对应API中的account
-  userName: '',    // 对应API中的username
-  password: '',
-  confirmPassword: '',
-  phone: '',
-  role: 'user',    // 默认为普通用户
-  status: 'active',
-  avatar: '',
-  remark: ''       // 备注字段
-});
-
-
-// 搜索表单数据
-const searchForm = reactive({
-  username: '',
-  role: undefined,
-  status: undefined,
-  registerTime: [],
-});
-
-// 模拟登录历史数据
-const loginHistory = ref([
-  {
-    time: new Date(2025, 2, 30, 10, 25, 0).getTime(),
-    device: '苹果 iPhone 13',
-    ip: '192.168.1.1',
-    location: '北京市海淀区'
-  },
-  {
-    time: new Date(2025, 2, 28, 16, 42, 0).getTime(),
-    device: 'Chrome 浏览器 (Windows)',
-    ip: '192.168.1.1',
-    location: '北京市海淀区'
-  },
-  {
-    time: new Date(2025, 2, 25, 9, 15, 0).getTime(),
-    device: 'Safari 浏览器 (MacOS)',
-    ip: '220.181.38.148',
-    location: '北京市朝阳区'
-  }
 ]);
 
 // 获取时间线颜色
@@ -989,16 +935,6 @@ const resetPasswordForm = reactive({
 });
 
 
-// 密码确认验证
-const validateConfirmPassword = async (_rule, value) => {
-  if (value === '') {
-    return Promise.reject('请确认密码');
-  } else if (value !== formState.password) {
-    return Promise.reject('两次输入的密码不一致');
-  }
-  return Promise.resolve();
-};
-
 // 重置密码确认验证
 const validateResetPasswordConfirm = (rule, value) => {
   if (value !== resetPasswordForm.newPassword) {
@@ -1007,6 +943,23 @@ const validateResetPasswordConfirm = (rule, value) => {
   return Promise.resolve();
 };
 
+
+// 重置用户表单状态
+const resetUserFormState = () => {
+  userFormState.id = '';
+  userFormState.account = '';
+  userFormState.username = '';
+  userFormState.password = '';
+  userFormState.confirmPassword = '';
+  userFormState.phone = '';
+  userFormState.role = 'user';
+  userFormState.status = 'active';
+  userFormState.avatar = '';
+  userFormState.remark = '';
+
+  // 如果表单引用存在，重置表单验证状态
+  userFormRef.value && userFormRef.value.resetFields();
+};
 
 // 重置密码验证规则
 const resetPasswordRules = {
@@ -1022,27 +975,44 @@ const resetPasswordRules = {
 
 
 // 表单验证规则
-const rules = {
-  account: [
-    {required: true, message: '请输入账户名', trigger: 'blur'},
-    {min: 3, max: 20, message: '账户名长度应为3-20个字符', trigger: 'blur'}
-  ],
+const accountRules = [
+  {required: true, message: '请输入账户名', trigger: 'blur'},
+  {min: 3, max: 20, message: '账户名长度应为3-20个字符', trigger: 'blur'}
+];
+
+const phoneRules = [
+  {required: true, message: '请输入手机号', trigger: 'blur'},
+  {pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur'}
+];
+
+const passwordRules = [
+  {required: true, message: '请输入密码', trigger: 'blur'},
+  {min: 6, max: 20, message: '密码长度应为6-20个字符', trigger: 'blur'}
+];
+
+// 确认密码验证规则
+const confirmPasswordRules = computed(() => [
+  {required: true, message: '请确认密码', trigger: 'blur'},
+  {validator: validateUserFormConfirmPassword, trigger: 'blur'}
+]);
+
+// 密码确认验证
+const validateUserFormConfirmPassword = async (_rule, value) => {
+  if (value === '') {
+    return Promise.reject('请确认密码');
+  } else if (value !== userFormState.password) {
+    return Promise.reject('两次输入的密码不一致');
+  }
+  return Promise.resolve();
+};
+
+const formRules = {
+  account: accountRules,
   username: [
     {required: true, message: '请输入用户名', trigger: 'blur'},
     {min: 2, max: 20, message: '用户名长度应为2-20个字符', trigger: 'blur'}
   ],
-  password: [
-    {required: true, message: '请输入密码', trigger: 'blur'},
-    {min: 6, max: 20, message: '密码长度应为6-20个字符', trigger: 'blur'}
-  ],
-  confirmPassword: [
-    {required: true, message: '请确认密码', trigger: 'blur'},
-    {validator: validateConfirmPassword, trigger: 'blur'}
-  ],
-  phone: [
-    {required: true, message: '请输入手机号', trigger: 'blur'},
-    {pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur'}
-  ],
+  phone: phoneRules,
   role: [
     {required: true, message: '请选择角色', trigger: 'change'}
   ],
@@ -1052,9 +1022,141 @@ const rules = {
 };
 
 
+// 打开添加用户表单
+const openAddUserForm = () => {
+  // 设置为新增模式
+  isEditMode.value = false;
+
+  // 重置表单数据
+  resetUserFormState();
+
+  // 打开模态框
+  userFormModalVisible.value = true;
+};
+
+// 打开编辑用户表单
+const openEditUserForm = async (record) => {
+  try {
+    // 设置为编辑模式
+    isEditMode.value = true;
+
+    // 获取完整的用户信息
+    const response = await getUserByIdUsingGet({id: record.id});
+
+    if (response.data && response.data.data) {
+      const userData = response.data.data;
+
+      // 填充表单数据
+      userFormState.id = userData.id.toString();
+      userFormState.account = userData.account || '';
+      userFormState.username = userData.username || '';
+      userFormState.phone = userData.phone || '';
+      userFormState.avatar = userData.avatar || '';
+      userFormState.role = userData.role || '';
+      userFormState.status = userData.status || '';
+      userFormState.remark = userData.remark || '';
+
+      // 清空密码字段（编辑模式不需要）
+      userFormState.password = '';
+      userFormState.confirmPassword = '';
+
+      // 打开模态框
+      userFormModalVisible.value = true;
+    } else {
+      message.error('获取用户信息失败');
+    }
+  } catch (error) {
+    console.error('加载用户信息错误:', error);
+    message.error('加载用户信息失败，请稍后重试');
+  }
+};
+
+
+// 用户表单取消处理
+const handleUserFormCancel = () => {
+  resetUserFormState();
+  userFormModalVisible.value = false;
+};
+
+// 用户表单提交处理
+const handleUserFormSubmit = () => {
+  userFormRef.value.validate()
+      .then(async () => {
+        submitLoading.value = true;
+        try {
+          if (isEditMode.value) {
+            // 编辑模式 - 更新用户
+            const params = {
+              id: userFormState.id,
+              username: userFormState.username,
+              phone: userFormState.phone,
+              avatar: userFormState.avatar,
+              role: userFormState.role,
+              status: userFormState.status,
+              remark: userFormState.remark
+            };
+
+            const response = await updateUserUsingPut(params);
+
+            if (response.data && response.data.data) {
+              message.success('用户信息已更新');
+
+              // 更新表格中的数据
+              const index = userData.value.findIndex(user => user.id === userFormState.id);
+              if (index !== -1) {
+                userData.value[index] = {...userData.value[index], ...params};
+              }
+
+              // 关闭表单
+              userFormModalVisible.value = false;
+
+              // 刷新用户列表
+              fetchUserData();
+            } else {
+              message.error('更新用户信息失败: ' + (response.data?.message || '未知错误'));
+            }
+          } else {
+            // 新增模式 - 添加用户
+            const params = {
+              account: userFormState.account,
+              username: userFormState.username,
+              password: userFormState.password,
+              phone: userFormState.phone,
+              avatar: userFormState.avatar,
+              role: userFormState.role,
+              status: userFormState.status,
+              remark: userFormState.remark
+            };
+
+            const response = await addUserUsingPost(params);
+
+            if (response.data) {
+              message.success('添加用户成功');
+
+              // 关闭表单
+              userFormModalVisible.value = false;
+
+              // 刷新用户列表
+              fetchUserData();
+            } else {
+              message.error('添加用户失败');
+            }
+          }
+        } catch (error) {
+          console.error(isEditMode.value ? '更新用户信息错误:' : '添加用户错误:', error);
+          message.error((isEditMode.value ? '更新用户信息' : '添加用户') + '失败，请稍后重试');
+        } finally {
+          submitLoading.value = false;
+        }
+      })
+      .catch(error => {
+        console.error('表单验证失败', error);
+      });
+};
+
 // 密码强度计算
 const getPasswordStrength = computed(() => {
-  const password = formState.password || '';
+  const password = userFormState.password || '';
   if (!password) return 0;
 
   let strength = 0;
@@ -1120,11 +1222,6 @@ const showModal = () => {
   visible.value = true;
 };
 
-// 关闭对话框
-const handleCancel = () => {
-  resetForm();
-  visible.value = false;
-};
 
 // 重置表单
 const resetForm = () => {
@@ -1201,8 +1298,8 @@ const onSelectChange = (selected) => {
 const handleTableChange = (pag, filters, sorter) => {
   console.log("表格变化:", pag);
   // 更新分页信息
-  pagination.current = pag.current;
-  pagination.pageSize = pag.pageSize;
+  pagination.current = pag.pagination.current;
+  pagination.pageSize = pag.pagination.pageSize;
   // 重新获取数据
   fetchUserData();
 };
@@ -1267,7 +1364,7 @@ const formatId = (id) => {
 const fetchUserData = async () => {
   loading.value = true;
   try {
-    // 构建查询参数 - 修改为后端期望的参数名
+    // 构建查询参数
     const params = {
       pageNum: pagination.current,
       pageSize: pagination.pageSize,
@@ -1313,11 +1410,40 @@ const viewUserDetails = async (record) => {
     // 确保使用完整的ID字符串
     const userId = record.id;
 
-    const response = await getUserByIdUsingGet({id: userId});
-    const result = response.data;
+    // 重置操作记录分页到第一页
+    operationHistoryPagination.current = 1;
 
-    if (result.data && result.code === 200) {
-      currentUser.value = result.data;
+    // 并行发起用户详情和登录历史请求
+    const [userResponse, loginHistoryResponse] = await Promise.all([
+      getUserByIdUsingGet({id: userId}),
+      listLoginLogsUsingGet({
+        createBy: userId,
+        pageNum: 1,
+        pageSize: 3
+      })
+    ]);
+
+    if (userResponse.data && userResponse.data.code === 200) {
+      // 设置用户基本信息
+      currentUser.value = userResponse.data.data;
+
+      // 处理登录历史
+      if (loginHistoryResponse.data && loginHistoryResponse.data.code === 200) {
+        // 转换登录历史数据，保留全部字段
+        loginHistory.value = loginHistoryResponse.data.data.records.map(log => ({
+          time: log.loginTime,
+          device: `${log.browser} (${log.os})`,
+          ip: log.ip,
+          location: log.location
+        }));
+      } else {
+        loginHistory.value = [];
+      }
+
+      // 而是通过封装的方法获取
+      await fetchOperationHistory(userId);
+
+      // 打开详情模态框
       viewModalVisible.value = true;
     } else {
       message.error('获取用户详情失败');
@@ -1328,20 +1454,78 @@ const viewUserDetails = async (record) => {
   }
 };
 
+
+const fetchOperationHistory = async (userId) => {
+  const userIdToUse = userId || (currentUser.value ? currentUser.value.id : null);
+
+  // 如果没有有效的用户ID，则不进行请求
+  if (!userIdToUse) {
+    operationHistory.value = [];
+    operationHistoryPagination.total = 0;
+    return;
+  }
+
+  try {
+    // 构建请求参数
+    const params = {
+      createBy: userIdToUse,
+      pageNum: operationHistoryPagination.current,
+      pageSize: operationHistoryPagination.pageSize
+    };
+
+    const response = await listOperationLogsUsingGet(params);
+
+
+    if (response.data && response.data.code === 200) {
+      const operationData = response.data.data;
+
+      // 更新数据与分页信息
+      operationHistory.value = operationData?.records || [];
+      operationHistoryPagination.total = operationData?.total || 0;
+      operationHistoryPagination.current = operationData?.pageNum || 1;
+    } else {
+      // 获取失败时的处理
+      operationHistory.value = [];
+      operationHistoryPagination.total = 0;
+      message.warning('未获取到操作记录');
+    }
+  } catch (error) {
+    console.error('获取操作记录错误:', error);
+    message.error('获取操作记录失败');
+
+    // 发生错误时重置
+    operationHistory.value = [];
+    operationHistoryPagination.total = 0;
+  }
+};
+
+// 处理操作记录分页变化
+const handleOperationHistoryPageChange = async (page, pageSize) => {
+  // 更新分页信息
+  operationHistoryPagination.current = page;
+  operationHistoryPagination.pageSize = pageSize;
+
+  // 获取操作记录数据 - 使用当前用户ID
+  await fetchOperationHistory(currentUser.value?.id);
+};
+
+// 页大小变化处理函数
+const handleOperationHistoryPageSizeChange = async (current, size) => {
+  // 更新分页信息，页码重置为1
+  operationHistoryPagination.current = 1;
+  operationHistoryPagination.pageSize = size;
+
+  // 获取操作记录数据 - 使用当前用户ID
+  await fetchOperationHistory(currentUser.value?.id);
+};
+
 // 打开添加用户弹窗
 const openAddUserModal = () => {
-  // 重置添加表单数据
-  formState.accountName = '';
-  formState.userName = '';
-  formState.password = '';
-  formState.confirmPassword = '';
-  formState.phone = '';
-  formState.role = 'user';
-  formState.status = 'active';
-  formState.avatar = '';
+  openAddUserForm(); // 替换原来的打开添加用户弹窗逻辑
+};
 
-  // 使用正确的状态变量打开弹窗
-  visible.value = true;
+const editUser = (record) => {
+  openEditUserForm(record); // 替换原来的打开编辑用户弹窗逻辑
 };
 
 
@@ -1359,144 +1543,14 @@ const resetSearchForm = () => {
   message.success('搜索条件已重置');
 };
 
-// 取消编辑
-const handleEditCancel = () => {
-  editModalVisible.value = false;
-};
 
-// 编辑用户信息
-const editUser = async (record) => {
-  try {
-    // 获取完整的用户信息
-    const response = await getUserByIdUsingGet({id: record.id});
-
-    if (response.data && response.data.data) {
-      const userData = response.data.data;
-
-      // 确保使用完整ID
-      editForm.id = userData.id.toString();
-
-      // 复制其他用户数据到编辑表单
-      editForm.account = userData.account || '';
-      editForm.username = userData.username || '';
-      editForm.phone = userData.phone || '';
-      editForm.avatar = userData.avatar || '';
-      editForm.role = userData.role || '';
-      editForm.status = userData.status || '';
-      editForm.remark = userData.remark || '';
-
-      // 打开编辑弹窗
-      editModalVisible.value = true;
-    } else {
-      message.error('获取用户信息失败');
-    }
-  } catch (error) {
-    console.error('加载用户信息错误:', error);
-    message.error('加载用户信息失败，请稍后重试');
-  }
-};
-
-// 处理编辑提交
-const handleEditSubmit = () => {
-  editFormRef.value.validate()
-      .then(async () => {
-        submitLoading.value = true;
-        try {
-          // 构建请求参数 - 确保与后端API期望的格式一致
-          const params = {
-            id: editForm.id,
-            username: editForm.username,
-            phone: editForm.phone,
-            avatar: editForm.avatar,
-            role: editForm.role,
-            status: editForm.status,
-            remark: editForm.remark // 如果后端也需要remark字段
-          };
-
-          console.log("提交更新请求参数:", params); // 调试日志
-
-          // 调用更新API
-          const response = await updateUserUsingPut(params);
-
-          if (response.data && response.data.data) {
-            message.success('用户信息已更新');
-
-            // 更新表格中的数据
-            const index = userData.value.findIndex(user => user.id === editForm.id);
-            if (index !== -1) {
-              userData.value[index] = {...userData.value[index], ...editForm};
-            }
-
-            // 关闭编辑弹窗
-            editModalVisible.value = false;
-
-            // 刷新用户列表
-            fetchUserData();
-          } else {
-            message.error('更新用户信息失败: ' + (response.data?.message || '未知错误'));
-          }
-        } catch (error) {
-          console.error('更新用户信息错误:', error);
-          message.error('更新用户信息失败，请稍后重试: ' + (error.message || '未知错误'));
-        } finally {
-          submitLoading.value = false;
-        }
-      })
-      .catch(error => {
-        console.error('表单验证失败', error);
-      });
-};
-
-// 添加用户提交事件
-const handleSubmit = () => {
-  formRef.value
-      .validate()
-      .then(async () => {
-        submitLoading.value = true;
-        try {
-          // 构建请求参数
-          const params = {
-            account: formState.accountName,
-            password: formState.password,
-            username: formState.userName,
-            phone: formState.phone,
-            avatar: formState.avatar,
-            role: formState.role,
-            status: formState.status,
-            remark: formState.remark
-          };
-
-          // 调用添加用户API
-          const response = await addUserUsingPost(params);
-
-          if (response.data) {
-            message.success('添加用户成功');
-            visible.value = false;
-            resetForm();
-            // 刷新用户列表
-            fetchUserData();
-          } else {
-            message.error('添加用户失败');
-          }
-        } catch (error) {
-          console.error('添加用户错误:', error);
-          message.error('添加用户失败，请稍后重试');
-        } finally {
-          submitLoading.value = false;
-        }
-      })
-      .catch(error => {
-        console.log('表单校验失败:', error);
-      });
-};
-
+// 头像上传处理函数
 const handleAvatarUpload = () => {
   // 这里实现头像上传逻辑，可以使用input file或者其他上传组件
   // 简单模拟上传成功后设置头像
   const mockAvatar = 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png';
-  formState.avatar = mockAvatar;
+  userFormState.avatar = mockAvatar;
 };
-
 
 // 重置用户密码
 const resetPassword = (record) => {
@@ -1542,20 +1596,19 @@ const handleResetPassword = () => {
 
 // 确认删除方法
 const confirmDelete = (record) => {
-  deleteUserInfo.value = record;
-  deleteModalVisible.value = true;
+  // 使用 Modal.confirm 替代当前的简单 Modal
+  Modal.confirm({
+    title: '确定要删除此用户吗?',
+    content: '删除后将无法恢复，请谨慎操作。',
+    okText: '确定删除',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk() {
+      deleteUser(record);
+    }
+  });
 };
 
-// 处理确认删除
-const handleDeleteConfirm = async () => {
-  try {
-    await deleteUser(deleteUserInfo.value);
-    deleteModalVisible.value = false;
-    deleteUserInfo.value = {};
-  } catch (error) {
-    console.error('删除用户出错:', error);
-  }
-};
 
 // 删除用户
 const deleteUser = async (record) => {
@@ -1597,44 +1650,53 @@ const handleBatchDelete = async () => {
     return;
   }
 
-  loading.value = true;
-  try {
-    // 记录当前页码
-    const currentPage = pagination.current;
+  Modal.confirm({
+    title: '批量删除用户',
+    content: `确定要删除选中的 ${selectedRowKeys.value.length} 个用户吗？删除后将无法恢复。`,
+    okText: '确定删除',
+    okType: 'danger',
+    cancelText: '取消',
+    async onOk() {
+      loading.value = true;
+      try {
+        // 记录当前页码
+        const currentPage = pagination.current;
 
-    // 记录当前页选中的行数
-    const currentPageSelectedCount = userData.value.filter(
-        user => selectedRowKeys.value.includes(user.id)
-    ).length;
+        // 记录当前页选中的行数
+        const currentPageSelectedCount = userData.value.filter(
+            user => selectedRowKeys.value.includes(user.id)
+        ).length;
 
-    // 使用批量删除API
-    const response = await batchDeleteUsersUsingDelete({
-      ids: selectedRowKeys.value
-    });
+        // 使用批量删除API
+        const response = await batchDeleteUsersUsingDelete({
+          ids: selectedRowKeys.value
+        });
 
-    if (response.data) {
-      // 更新总条数
-      pagination.total -= selectedRowKeys.value.length;
-      selectedRowKeys.value = [];
+        if (response.data) {
+          // 更新总条数
+          pagination.total -= selectedRowKeys.value.length;
+          selectedRowKeys.value = [];
 
-      // 判断是否会删除当前页的所有数据
-      if (currentPageSelectedCount === userData.value.length && currentPage > 1) {
-        // 如果当前页所有数据都被删除且不是第一页，则跳转到前一页
-        pagination.current = currentPage - 1;
+          // 判断是否会删除当前页的所有数据
+          if (currentPageSelectedCount === userData.value.length && currentPage > 1) {
+            // 如果当前页所有数据都被删除且不是第一页，则跳转到前一页
+            pagination.current = currentPage - 1;
+          }
+
+          message.success('已批量删除用户');
+          // 刷新用户列表
+          await fetchUserData();
+        } else {
+          message.error('批量删除用户失败');
+        }
+      } catch (error) {
+        console.error('批量删除用户错误:', error);
+        message.error('批量删除用户失败，请稍后重试');
+      } finally {
+        loading.value = false;
       }
-
-      message.success('已批量删除用户');
-      // 刷新用户列表
-      await fetchUserData();
-    } else {
-      message.error('批量删除用户失败');
     }
-  } catch (error) {
-    console.error('批量删除用户错误:', error);
-    message.error('批量删除用户失败，请稍后重试');
-  } finally {
-    loading.value = false;
-  }
+  });
 };
 
 // 组件挂载时获取数据
@@ -1705,6 +1767,18 @@ defineExpose({
   border-color: #7C68EE;
 }
 
+/* 操作按钮区域样式 */
+.operation-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 /* 响应式布局 */
 @media (max-width: 768px) {
   .search-form-items {
@@ -1750,6 +1824,83 @@ defineExpose({
   box-sizing: border-box;
 }
 
+.edit-modal-header {
+  background: linear-gradient(135deg, #6554C0, #8A7AD8);
+  border-radius: 8px 8px 0 0;
+  padding: 20px 24px;
+  margin: -24px -24px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.edit-modal-header::after {
+  content: '';
+  position: absolute;
+  right: -15px;
+  top: -15px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header-icon :deep(svg) {
+  font-size: 24px;
+  color: white;
+}
+
+.header-text h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.header-text p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 配合模态框其他部分的样式调整 */
+.custom-user-modal :deep(.ant-modal-body) {
+  padding-top: 0;
+}
+
+.custom-user-modal :deep(.ant-modal-close) {
+  color: white;
+  top: 16px;
+}
+
+.custom-user-modal :deep(.ant-modal-close:hover) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 让顶部与内容之间的分隔线更加协调 */
+.edit-modal-header + .ant-divider {
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
 
 .upload-container {
   width: 100px;
@@ -1819,19 +1970,6 @@ defineExpose({
   display: flex;
   align-items: center;
   padding: 20px 0 4px;
-}
-
-.header-icon {
-  width: 40px;
-  height: 40px;
-  background-color: #6554C0;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 16px;
-  color: white;
-  font-size: 20px;
 }
 
 .header-title h2 {
@@ -1964,6 +2102,31 @@ defineExpose({
   transition: width 0.3s;
 }
 
+/* 密码强度颜色 */
+.indicator-bar.very-weak {
+  width: 20%;
+  background-color: #ff4d4f;
+}
+
+.indicator-bar.weak {
+  width: 40%;
+  background-color: #faad14;
+}
+
+.indicator-bar.medium {
+  width: 60%;
+  background-color: #1890ff;
+}
+
+.indicator-bar.strong {
+  width: 80%;
+  background-color: #52c41a;
+}
+
+.indicator-bar.very-strong {
+  width: 100%;
+  background-color: #52c41a;
+}
 
 .strength-text {
   color: #666;
@@ -2100,10 +2263,6 @@ defineExpose({
   color: #888;
 }
 
-.operation-bar {
-  margin-bottom: 24px; /* 增加与下方表格的间距 */
-}
-
 /* 页脚样式 */
 .modal-footer {
   display: flex;
@@ -2113,38 +2272,7 @@ defineExpose({
   border-top: 1px solid #f0f0f0;
 }
 
-/* 响应式处理 */
-@media (max-width: 768px) {
-  .profile-header {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .profile-avatar {
-    margin-right: 0;
-    margin-bottom: 16px;
-  }
-
-  .profile-actions {
-    margin-top: 16px;
-    justify-content: center;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-
 /* 操作列样式优化 */
-.action-buttons {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
 .action-buttons .ant-btn {
   padding: 0 8px;
 }
@@ -2152,19 +2280,6 @@ defineExpose({
 /* 当操作按钮位于表格最后一列时，确保下拉菜单向左展开 */
 .action-buttons .ant-dropdown-menu {
   min-width: 120px;
-}
-
-/* 动画效果 */
-.ant-dropdown-menu-item {
-  transition: all 0.2s;
-}
-
-.ant-dropdown-menu-item:hover {
-  background-color: #f6f5ff;
-}
-
-.ant-dropdown-menu-item-danger:hover {
-  background-color: #fff1f0;
 }
 
 /* ID列样式增强 */
@@ -2182,6 +2297,115 @@ defineExpose({
 .truncated-id:hover {
   color: #6554C0;
   text-decoration: underline;
+}
+
+/* 操作记录列表样式 */
+.operation-history-list {
+  margin-bottom: 16px;
+}
+
+.operation-record-item {
+  padding: 0 !important;
+  margin-bottom: 16px;
+}
+
+.operation-record-card {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.operation-record-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.operation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.operation-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.module-name {
+  color: #6554C0;
+  font-weight: 600;
+}
+
+.action-divider {
+  margin: 0 8px;
+  color: #aaa;
+}
+
+.action-name {
+  color: #333;
+}
+
+.operation-status {
+  font-weight: 500;
+}
+
+.operation-content {
+  padding-top: 8px;
+}
+
+.operation-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.detail-icon {
+  margin-right: 6px;
+  font-size: 14px;
+  color: #8A7AD8;
+}
+
+.operation-description {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #f9f9ff;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #555;
+}
+
+.description-label {
+  color: #6554C0;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.description-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 优化分页组件样式 */
+.operation-history-pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 /* 增强 Tooltip 的可见性 */
@@ -2218,6 +2442,26 @@ defineExpose({
 
 /* 响应式处理 */
 @media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .profile-avatar {
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
+
+  .profile-actions {
+    margin-top: 16px;
+    justify-content: center;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
   .form-column {
     flex: 0 0 100%;
   }
@@ -2227,12 +2471,4 @@ defineExpose({
     max-width: 500px;
   }
 }
-
-/* 响应式处理 */
-@media (max-width: 768px) {
-  .form-column {
-    flex: 0 0 100%;
-  }
-}
-
 </style>
