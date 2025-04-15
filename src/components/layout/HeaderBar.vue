@@ -1,4 +1,3 @@
-<!-- src/components/layout/HeaderBar.vue -->
 <template>
   <a-layout-header class="header">
     <div class="header-content">
@@ -67,16 +66,20 @@
         <!-- 上传按钮 -->
         <a-button type="primary" :disabled="!userStore.isLoggedIn" @click="handleUploadClick">
           <template #icon>
-            <upload-outlined/>
+            <IconFont type="icon-upload11"/>
           </template>
           上传图片
+        </a-button>
+        <a-button type="primary" :disabled="!userStore.isLoggedIn" @click="navigateToBatchCreatePicture">
+          <IconFont type="icon-piliangguanli"/>
+          批量创建图片
         </a-button>
 
         <!-- 通知 - 仅登录后显示 -->
         <a-badge dot v-if="userStore.isLoggedIn">
           <a-button type="text" shape="circle" class="notification-button">
             <template #icon>
-              <bell-outlined/>
+              <IconFont type="icon-tongzhi"/>
             </template>
           </a-button>
         </a-badge>
@@ -85,7 +88,8 @@
         <!-- 用户头像或登录按钮 -->
         <template v-if="userStore.isLoggedIn">
           <!-- 用户头像及下拉菜单 -->
-          <a-dropdown :trigger="['click']" placement="bottomRight" :getPopupContainer="triggerNode => triggerNode.parentNode">
+          <a-dropdown :trigger="['click']" placement="bottomRight"
+                      :getPopupContainer="triggerNode => triggerNode.parentNode">
             <div class="user-avatar-container">
               <a-badge :dot="hasNotifications" color="#52c41a">
                 <a-avatar
@@ -95,23 +99,23 @@
                 />
               </a-badge>
               <span class="username-text">
-      {{ userStore.userInfo?.username || userStore.userInfo?.account || '用户' }}
-    </span>
+                {{ userStore.userInfo?.username || userStore.userInfo?.account || '用户' }}
+              </span>
             </div>
 
             <!-- 自定义下拉菜单 -->
             <template #overlay>
               <div class="user-dropdown-menu">
                 <router-link to="/profile" class="dropdown-item">
-                  <user-outlined class="item-icon" />
+                  <IconFont type="icon-gerenzhuye"/>
                   <span>个人资料</span>
                 </router-link>
                 <router-link v-if="userStore.isAdmin" to="/admin/dashboard" class="dropdown-item">
-                  <dashboard-outlined class="item-icon" />
+                  <IconFont type="icon-yibiaopan"/>
                   <span>管理控制台</span>
                 </router-link>
                 <a @click="handleLogout" class="dropdown-item">
-                  <logout-outlined class="item-icon" />
+                  <IconFont type="icon-tuichudenglu"/>
                   <span>退出登录</span>
                 </a>
               </div>
@@ -126,7 +130,7 @@
               @click="openAuthModal"
           >
             <template #icon>
-              <login-outlined/>
+              <IconFont type="icon-denglu"/>
             </template>
             登录
           </a-button>
@@ -140,29 +144,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, nextTick, onUnmounted } from 'vue';
+import {ref, onMounted, watch, computed, nextTick, onUnmounted, h} from 'vue';
 import {useRouter, useRoute} from 'vue-router';
 import {useMotion} from '@vueuse/motion';
 import {useUserStore} from '@/stores/user';
 import {useMenuStore} from '@/stores/menu';
 import {message} from 'ant-design-vue';
 import AuthModal from '@/components/auth/AuthModal.vue';
-import {
-  HomeOutlined,
-  PlusOutlined,
-  UserOutlined,
-  PictureOutlined,
-  TagOutlined,
-  AppstoreOutlined,
-  UploadOutlined,
-  BellOutlined,
-  DownOutlined,
-  DashboardOutlined,
-  CommentOutlined,
-  SettingOutlined,
-  LoginOutlined,
-  LogoutOutlined, CloudOutlined, CrownOutlined, FolderOpenOutlined,
-} from '@ant-design/icons-vue';
+import IconFont from "@/components/common/IconFont.vue";
 
 // 获取路由和状态管理
 const router = useRouter();
@@ -173,7 +162,6 @@ const menuStore = useMenuStore();
 
 // 添加这些变量和计算属性
 const hasNotifications = ref(false); // 是否有通知，可以根据实际情况修改
-const isMobile = ref(window.innerWidth <= 768); // 是否是移动设备
 
 // 默认头像
 const defaultAvatar = computed(() => {
@@ -181,56 +169,111 @@ const defaultAvatar = computed(() => {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
 });
 
-// 用户角色显示
-const userRoleDisplay = computed(() => {
-  if (!userStore.userInfo) return '用户';
-
-  switch (userStore.userInfo.role) {
-    case 'admin':
-      return '管理员';
-    case 'superAdmin':
-      return '超级管理员';
-    default:
-      return '普通用户';
-  }
-});
-
 // 导航菜单数据
 const navItems = ref([
-  {key: 'home', path: '/', title: '主页', icon: HomeOutlined, active: false},
-  {key: 'create-picture', path: '/create-picture', title: '创建图片', icon: PlusOutlined, active: false},
+  {
+    key: 'home',
+    path: '/',
+    title: '主页',
+    icon: () => h(IconFont, {type: 'icon-guanggaoguanli'}),
+    active: false
+  },
+  {
+    key: 'create-picture',
+    path: '/create-picture',
+    title: '创建图片',
+    icon: () => h(IconFont, {type: 'icon-chuangjian2'}),
+    active: false
+  },
   {
     key: 'content-management',
     title: '内容管理',
-    icon: AppstoreOutlined,
+    icon: () => h(IconFont, {type: 'icon-jianli'}),
     active: false,
     children: [
-      {key: 'dashboard', path: '/admin/dashboard', title: '仪表盘', icon: DashboardOutlined},
-      {key: 'users', path: '/admin/users', title: '用户管理', icon: UserOutlined},
-      {key: 'images', path: '/admin/images', title: '图片管理', icon: PictureOutlined},
-      {key: 'spaces', path: '/admin/spaces', title: '空间管理', icon: CrownOutlined},
-      {key: 'categories', path: '/admin/categories', title: '分类管理', icon: FolderOpenOutlined},
-      {key: 'tags', path: '/admin/tags', title: '标签管理', icon: TagOutlined},
-      {key: 'comments', path: '/admin/comments', title: '评论管理', icon: CommentOutlined}
-    ]
-  },
-  {
-    key: 'system-settings',
-    title: '系统设置',
-    icon: SettingOutlined,
-    active: false,
-    children: [
-      {key: 'settings', path: '/admin/storage', title: '存储管理', icon: CloudOutlined},
+      {
+        key: 'dashboard',
+        path: '/admin/dashboard',
+        title: '仪表盘',
+        icon: () => h(IconFont, {type: 'icon-yibiaopan'})
+      },
+      {
+        key: 'users',
+        path: '/admin/users',
+        title: '用户管理',
+        icon: () => h(IconFont, {type: 'icon-yonghuguanli1'})
+      },
+      {
+        key: 'images',
+        path: '/admin/images',
+        title: '图片管理',
+        icon: () => h(IconFont, {type: 'icon-tupian'})
+      },
+      {
+        key: 'spaces',
+        path: '/admin/spaces',
+        title: '空间管理',
+        icon: () => h(IconFont, {type: 'icon-APPshengji'})
+      },
+      {
+        key: 'categories',
+        path: '/admin/categories',
+        title: '分类管理',
+        icon: () => h(IconFont, {type: 'icon-cedaohang_zidianguanli'})
+      },
+      {
+        key: 'tags',
+        path: '/admin/tags',
+        title: '标签管理',
+        icon: () => h(IconFont, {type: 'icon-biaoqian4'})
+      },
+      {
+        key: 'comments',
+        path: '/admin/comments',
+        title: '评论管理',
+        icon: () => h(IconFont, {type: 'icon-a-xiaoxi2'})
+      },
+      {
+        key: 'icons',
+        path: '/admin/icons',
+        title: '图标管理',
+        icon: () => h(IconFont, {type: 'icon-wode'})
+      },
+
     ]
   },
   {
     key: 'logs',
     title: '日志管理',
-    icon: LoginOutlined,
+    icon: () => h(IconFont, {type: 'icon-denglurizhi2'}),
     active: false,
     children: [
-      {key: 'login_log', path: '/admin/login_log', title: '登录日志管理', icon: LoginOutlined},
-      {key: 'operation_log', path: '/admin/operation_log', title: '操作日志管理', icon: LoginOutlined},
+      {
+        key: 'login_log',
+        path: '/admin/login_log',
+        title: '登录日志管理',
+        icon: () => h(IconFont, {type: 'icon-denglurizhi'})
+      },
+      {
+        key: 'operation_log',
+        path: '/admin/operation_log',
+        title: '操作日志管理',
+        icon: () => h(IconFont, {type: 'icon-rizhi2'})
+      },
+    ]
+  },
+  {
+    key: 'system-settings',
+    title: '系统设置',
+    icon: () => h(IconFont, {type: 'icon-xitongshezhi2'}),
+    active: false,
+    children: [
+      {
+        key: 'settings',
+        path: '/admin/storage',
+        title: '存储管理',
+        icon: () => h(IconFont, {type: 'icon-036piliangjia'})
+      },
     ]
   },
 ]);
@@ -278,6 +321,11 @@ const isParentActive = (item: any) => {
   });
 };
 
+
+const navigateToBatchCreatePicture = () => {
+  router.push('/create-batch-picture');
+}
+
 // 监听菜单状态变化，更新导航栏高亮
 watch(() => menuStore.topSelectedKeys, (newKeys) => {
   updateNavItemsActiveState(newKeys);
@@ -287,7 +335,7 @@ watch(() => menuStore.topSelectedKeys, (newKeys) => {
 watch(() => userStore.userInfo, (newVal) => {
   // 用户信息变化时，强制视图更新
   nextTick();
-}, { deep: true });
+}, {deep: true});
 
 
 // 导航项点击处理
@@ -406,8 +454,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', () => {});
-  window.removeEventListener('userLoggedIn', () => {});
+  window.removeEventListener('resize', () => {
+  });
+  window.removeEventListener('userLoggedIn', () => {
+  });
 });
 </script>
 

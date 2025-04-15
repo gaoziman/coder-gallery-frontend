@@ -31,6 +31,7 @@ export const useMenuStore = defineStore('menu', () => {
         '/admin/categories': { top: ['content-management', 'categories'], side: '' },
         '/admin/tags': { top: ['content-management', 'tags'], side: '' },
         '/admin/comments': { top: ['content-management', 'comments'], side: '' },
+        '/admin/icons': { top: ['content-management', 'icons'], side: '' },
         '/admin/storage': { top: ['system-settings', 'storage'], side: '' },
         '/admin/login_log': { top: ['logs', 'loginlogs'], side: '' },
         '/admin/operation_log': { top: ['logs', 'operationlogs'], side: '' },

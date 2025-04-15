@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { fas } from '@fortawesome/free-solid-svg-icons' // 导入所有实底风格图标
 import { far } from '@fortawesome/free-regular-svg-icons' // 导入所有线框风格图标
 import { fab } from '@fortawesome/free-brands-svg-icons' // 导入所有品牌图标
-import iconService from '@/api/IconService';
+import iconService from '@/services/IconService';
 
 // 初始化图标服务
 iconService.init();
