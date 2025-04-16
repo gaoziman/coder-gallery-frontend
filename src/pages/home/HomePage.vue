@@ -1,4 +1,3 @@
-<!-- pages/home/HomePage.vue -->
 <template>
   <div class="home-page">
     <!-- 搜索区域 -->
@@ -15,108 +14,130 @@
       </div>
     </div>
 
-    <!-- 分类和筛选器 -->
-    <a-card class="filter-card" :bordered="false">
-      <!-- 排序和筛选器 -->
-      <div class="filter-header">
-        <div class="filter-actions">
-          <a-button type="primary"
-                    @click="showCreateFilterModal"
-                    @mousedown="addRippleEffect">
-            <template #icon>
-              <plus-outlined/>
-            </template>
-            创建筛选器
-          </a-button>
-
-          <!-- 添加我的筛选器下拉菜单 -->
-          <filter-list
-              :filters="filterStore.savedFilters"
-              @select="handleApplyFilter"
-              @delete="handleDeleteFilter"
-              @create="showCreateFilterModal"
-          />
+    <!-- 筛选区域 -->
+    <div class="filter-container">
+      <!-- 分类筛选 -->
+      <div class="filter-section category-section">
+        <div class="filter-title">分类</div>
+        <div class="filter-options">
+          <div class="category-tags-wrapper">
+            <a-tag
+                :class="['category-tag', selectedCategory === 'all' ? 'category-tag-active' : '']"
+                @click="selectCategory('all')"
+            >
+              <span class="category-icon all-icon"></span>
+              全部
+            </a-tag>
+            <a-tag
+                v-for="category in categories"
+                :key="category.id"
+                :class="['category-tag', selectedCategory === category.id ? 'category-tag-active' : '']"
+                @click="selectCategory(category.id)"
+            >
+              <span :class="['category-icon', `${category.id}-icon`]"></span>
+              {{ category.name }}
+            </a-tag>
+          </div>
         </div>
-
-        <a-dropdown :trigger="['click']">
-          <a-button>
-            筛选排序：{{ getSortLabel(filterStore.currentSort) }}
-            <down-outlined/>
-          </a-button>
-          <template #overlay>
-            <a-menu @click="handleSortMenuClick">
-              <a-menu-item key="newest">最新发布</a-menu-item>
-              <a-menu-item key="popular">最受欢迎</a-menu-item>
-              <a-menu-item key="look">最多浏览</a-menu-item>
-              <a-menu-item key="oldest">最多收藏</a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
       </div>
 
-      <!-- 显示活动筛选器 -->
-      <div v-if="filterStore.activeFilter" class="active-filter">
-        <a-alert type="info" show-icon>
-          <template #message>
-            <div class="active-filter-info">
-              <span>当前筛选器: <b>{{ filterStore.activeFilter.name }}</b></span>
-              <a-button type="link" size="small" @click="handleClearFilter">
-                清除筛选
-              </a-button>
-            </div>
-          </template>
-        </a-alert>
-      </div>
-
-      <!-- 分类导航 -->
-      <div class="category-section">
-        <div class="section-title">
-          <h3>分类浏览</h3>
-        </div>
-
-        <div class="category-tags">
+      <!-- 标签筛选 -->
+      <div class="filter-section tags-section">
+        <div class="filter-title">标签</div>
+        <div class="filter-options tags-container">
           <a-tag
-              v-for="(category, index) in filterStore.categories"
-              :key="index"
-              :class="{
-                  'category-tag': true,
-                  'category-tag-active': category.active,
-                  'category-filter-applied': filterStore.activeFilter && filterStore.activeFilter.categories.includes(category.name)
-                }"
-              @click="toggleCategoryActive(index)"
+              :class="['tag-item', selectedTags.length === 0 ? 'tag-active' : '']"
+              @click="clearTagSelection"
           >
-            {{ category.name }}
+            <span class="tag-dot"></span>
+            全部
           </a-tag>
-        </div>
-      </div>
-
-      <!-- 标签选择器 -->
-      <div class="tag-section">
-        <div class="section-title">
-          <h3>热门标签</h3>
-        </div>
-
-        <div class="tag-list">
           <a-tag
-              v-for="(tag, index) in filterStore.tags"
-              :key="index"
-              :class="{
-                  'custom-tag': true,
-                  'tag-hot': tag.hot || tag.name === '热门',
-                  'tag-filter-applied': filterStore.activeFilter && filterStore.activeFilter.tags.includes(tag.name)
-                }"
-              @click="toggleTagActive(index)"
+              v-for="tag in popularTags"
+              :key="tag.id"
+              :class="['tag-item', selectedTags.includes(tag.id) ? 'tag-active' : '']"
+              @click="toggleTag(tag.id)"
           >
+            <span class="tag-dot" :style="{ backgroundColor: getTagColor(tag.id) }"></span>
             {{ tag.name }}
-            <span v-if="tag.count" class="tag-count">{{ tag.count }}</span>
           </a-tag>
+          <a-button
+              v-if="hasMoreTags"
+              class="more-tags-btn"
+              type="link"
+              @click="showMoreTags"
+          >
+            更多标签
+            <template #icon>
+              <DownOutlined/>
+            </template>
+          </a-button>
         </div>
       </div>
-    </a-card>
 
-    <!-- 瀑布流图片展示 (使用抽取的组件) -->
+      <!-- 排序选项 -->
+      <div class="filter-section sort-section">
+        <div class="filter-title">排序</div>
+        <a-select
+            v-model:value="sortOption"
+            class="sort-select"
+            @change="handleSortChange"
+        >
+          <a-select-option value="latest">
+            <ClockCircleOutlined /> 最新发布
+          </a-select-option>
+          <a-select-option value="popular">
+            <FireOutlined /> 最受欢迎
+          </a-select-option>
+          <a-select-option value="mostViewed">
+            <EyeOutlined /> 最多浏览
+          </a-select-option>
+          <a-select-option value="mostLiked">
+            <HeartOutlined /> 最多点赞
+          </a-select-option>
+          <a-select-option value="mostBookmarked">
+            <StarOutlined /> 最多收藏
+          </a-select-option>
+        </a-select>
+      </div>
+    </div>
+
+    <!-- 活跃筛选标签展示 -->
+    <div class="active-filters" v-if="hasActiveFilters">
+      <div class="active-filters-title">已选择：</div>
+      <div class="active-filters-tags">
+        <a-tag
+            v-if="selectedCategory !== 'all'"
+            closable
+            @close="selectCategory('all')"
+        >
+          {{ getCategoryName(selectedCategory) }}
+        </a-tag>
+        <a-tag
+            v-for="tagId in selectedTags"
+            :key="tagId"
+            closable
+            @close="toggleTag(tagId)"
+        >
+          {{ getTagName(tagId) }}
+        </a-tag>
+        <a-tag
+            v-if="sortOption !== 'latest'"
+            closable
+            @close="resetSort"
+        >
+          {{ getSortName(sortOption) }}
+        </a-tag>
+        <a-button type="link" @click="resetAllFilters" v-if="hasActiveFilters">
+          清除全部
+        </a-button>
+      </div>
+    </div>
+
+    <!-- 瀑布流图片展示 -->
     <image-gallery
         :images="galleryImages"
+        :loading="loading"
         empty-text="加载中..."
         @view="viewImage"
         @download="downloadImage"
@@ -125,12 +146,12 @@
         @share="shareImage"
         @delete="confirmDelete"
         @navigate-to-detail="navigateToDetail"
-        @refresh="handleClearFilter"
+        @refresh="fetchGalleryImages"
     />
 
     <!-- 加载更多 -->
-    <div class="load-more">
-      <a-button type="primary" @click="loadMore">
+    <div class="load-more" v-if="hasMore">
+      <a-button type="primary" @click="loadMore" :loading="loadingMore">
         加载更多
         <template #icon>
           <down-outlined/>
@@ -138,74 +159,274 @@
       </a-button>
     </div>
 
-    <!-- 创建筛选器弹窗 -->
-    <create-filter-modal
-        v-model:visible="filterModalVisible"
-        :categories="categories"
-        :tags="tags"
-        @save="saveFilter"
-    />
+    <!-- 无更多数据提示 -->
+    <div class="no-more" v-else-if="!loading && galleryImages.length > 0">
+      <a-divider>已经到底了</a-divider>
+    </div>
+
+    <!-- 更多标签弹窗 -->
+    <a-modal
+        v-model:visible="tagsModalVisible"
+        title="选择标签"
+        width="600px"
+        @ok="handleTagsModalOk"
+    >
+      <div class="tags-modal-content">
+        <a-tag
+            v-for="tag in allTags"
+            :key="tag.id"
+            :class="['modal-tag-item', selectedTags.includes(tag.id) ? 'tag-active' : '']"
+            @click="toggleTag(tag.id)"
+        >
+          {{ tag.name }}
+        </a-tag>
+      </div>
+      <div class="tags-modal-footer">
+        <a-button @click="clearTagSelection">清除选择</a-button>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue';
+import {ref, reactive, onMounted, computed} from 'vue';
 import {
-  PlusOutlined,
   DownOutlined,
-  ShareAltOutlined,
+  ClockCircleOutlined,
+  FireOutlined,
+  EyeOutlined,
+  HeartOutlined,
+  StarOutlined
 } from '@ant-design/icons-vue';
-import CreateFilterModal from "@/pages/home/CreateFilterModal.vue";
-import FilterList from "@/pages/home/FilterList.vue";
-import { useFilterStore } from '@/stores/filterStore';
-import 'animate.css';
-import { message, Modal } from "ant-design-vue";
+import {message} from "ant-design-vue";
 import router from "@/router";
-import dayjs from 'dayjs';
-import { createVNode } from 'vue';
-import { LinkOutlined, WechatOutlined, WeiboOutlined, QqOutlined } from '@ant-design/icons-vue';
+import {
+  getWaterfallPicturesUsingPost,
+  loadMoreWaterfallPicturesUsingPost,
+} from '@/api/tupianxiangguanjiekou';
 import ImageGallery from '@/components/common/ImageGallery.vue';
+
+// 图片数据状态
+const galleryImages = reactive([]);
+const loading = ref(false);
+const loadingMore = ref(false);
+const hasMore = ref(true);
+const currentOffset = ref(0);
+const lastId = ref(null);
+const lastValue = ref(null);
+const pageSize = ref(12);
 
 // 搜索文本
 const searchText = ref('');
-const onSearch = (value: string) => {
-  console.log('搜索：', value);
+const selectedCategory = ref('all');
+
+
+const selectedTags = ref([]);
+
+// 只展示前10个热门标签，其余在弹窗中显示
+const popularTags = computed(() => {
+  return allTags.value.slice(0, 10);
+});
+const hasMoreTags = computed(() => {
+  return allTags.value.length > 10;
+});
+
+// 标签弹窗控制
+const tagsModalVisible = ref(false);
+const showMoreTags = () => {
+  tagsModalVisible.value = true;
+};
+const handleTagsModalOk = () => {
+  tagsModalVisible.value = false;
 };
 
-// 使用筛选器Store
-const filterStore = useFilterStore();
+// 排序选项
+const sortOption = ref('latest'); // 默认最新发布
 
-// 获取排序标签
-const getSortLabel = (sortKey: string) => {
-  const sortLabels = {
-    'newest': '最新发布',
-    'popular': '最受欢迎',
-    'look': '最多浏览',
-    'oldest': '最多收藏'
-  };
-  return sortLabels[sortKey] || '最新发布';
-};
-
-// 排序方式
-const handleSortMenuClick = (e: any) => {
-  filterStore.setSort(e.key);
-  fetchGalleryImages();
-};
+// 判断是否有活跃的筛选条件
+const hasActiveFilters = computed(() => {
+  return selectedCategory.value !== 'all' || selectedTags.value.length > 0 || sortOption.value !== 'latest';
+});
 
 // 分类数据
-const categories = reactive([
-  {name: '全部', active: true},
-  {name: '个人', active: false},
-  {name: '星球', active: false},
-  {name: '面试题', active: false},
-  {name: '表情包', active: false},
-  {name: '素材', active: false},
-  {name: '学习', active: false},
-  {name: 'Bugs', active: false},
-  {name: '海报', active: false},
-  {name: '壁纸', active: false},
-  {name: '动漫', active: false},
+const categories = ref([
+  {id: 'nature', name: '自然风光'},
+  {id: 'city', name: '城市建筑'},
+  {id: 'people', name: '人物肖像'},
+  {id: 'animals', name: '动物世界'},
+  {id: 'food', name: '美食佳肴'},
+  {id: 'travel', name: '旅行探险'},
+  {id: 'art', name: '艺术创作'},
+  {id: 'tech', name: '科技数码'}
 ]);
+
+// 标签数据
+const allTags = ref([
+  {id: 'mountains', name: '山脉'},
+  {id: 'ocean', name: '海洋'},
+  {id: 'forest', name: '森林'},
+  {id: 'sunset', name: '日落'},
+  {id: 'architecture', name: '建筑'},
+  {id: 'skyscraper', name: '摩天大楼'},
+  {id: 'portrait', name: '肖像'},
+  {id: 'wildlife', name: '野生动物'},
+  {id: 'pets', name: '宠物'},
+  {id: 'cuisine', name: '美食'},
+  {id: 'dessert', name: '甜点'},
+  {id: 'adventure', name: '冒险'},
+  {id: 'illustration', name: '插画'},
+  {id: 'photography', name: '摄影'},
+  {id: 'gadgets', name: '数码产品'},
+  {id: 'minimal', name: '极简主义'},
+  {id: 'colorful', name: '多彩'},
+  {id: 'blackandwhite', name: '黑白'},
+  {id: 'abstract', name: '抽象'},
+  {id: 'vintage', name: '复古'}
+]);
+
+
+// 获取标签颜色的方法
+const getTagColor = (tagId) => {
+  // 为不同的标签分配固定的颜色
+  const colorMap = {
+    'mountains': '#4ade80', // 绿色
+    'ocean': '#38bdf8',     // 蓝色
+    'forest': '#14b8a6',    // 青绿色
+    'sunset': '#f97316',    // 橙色
+    'architecture': '#8b5cf6', // 紫色
+    'skyscraper': '#6366f1',  // 靛蓝色
+    'portrait': '#ec4899',    // 粉色
+    'wildlife': '#eab308',    // 黄色
+    'pets': '#f43f5e',        // 红色
+    'cuisine': '#d946ef',     // 品红色
+    'dessert': '#f472b6',     // 浅粉色
+    'adventure': '#0ea5e9',   // 天蓝色
+    'illustration': '#a855f7', // 亮紫色
+    'photography': '#64748b', // 灰蓝色
+    'gadgets': '#0891b2',     // 深青色
+    'minimal': '#475569',     // 深灰色
+    'colorful': '#f59e0b',    // 琥珀色
+    'blackandwhite': '#334155', // 深灰色
+    'abstract': '#dc2626',    // 红色
+    'vintage': '#b45309'      // 棕色
+  };
+
+  return colorMap[tagId] || '#6366f1'; // 默认返回主题色
+}
+
+// 获取分类名称
+const getCategoryName = (categoryId) => {
+  const category = categories.value.find(c => c.id === categoryId);
+  return category ? category.name : '未知分类';
+};
+
+// 获取标签名称
+const getTagName = (tagId) => {
+  const tag = allTags.value.find(t => t.id === tagId);
+  return tag ? tag.name : '未知标签';
+};
+
+// 获取排序名称
+const getSortName = (sort) => {
+  const sortMap = {
+    'latest': '最新发布',
+    'popular': '最受欢迎',
+    'mostViewed': '最多浏览',
+    'mostLiked': '最多点赞',
+    'mostBookmarked': '最多收藏'
+  };
+  return sortMap[sort] || '未知排序';
+};
+
+// 选择分类
+const selectCategory = (categoryId) => {
+  if (selectedCategory.value === categoryId) return;
+
+  selectedCategory.value = categoryId;
+  // 重新获取图片数据
+  applyFilters();
+};
+
+// 切换标签选择
+const toggleTag = (tagId) => {
+  const index = selectedTags.value.indexOf(tagId);
+  if (index === -1) {
+    selectedTags.value.push(tagId);
+  } else {
+    selectedTags.value.splice(index, 1);
+  }
+  // 重新获取图片数据
+  applyFilters();
+};
+
+// 清除标签选择
+const clearTagSelection = () => {
+  selectedTags.value = [];
+  // 重新获取图片数据
+  applyFilters();
+};
+
+// 处理排序变更
+const handleSortChange = (value) => {
+  sortOption.value = value;
+  // 重新获取图片数据
+  applyFilters();
+};
+
+// 重置排序
+const resetSort = () => {
+  sortOption.value = 'latest';
+  // 重新获取图片数据
+  applyFilters();
+};
+
+// 重置所有筛选条件
+const resetAllFilters = () => {
+  selectedCategory.value = 'all';
+  selectedTags.value = [];
+  sortOption.value = 'latest';
+  // 重新获取图片数据
+  applyFilters();
+};
+
+// 应用所有筛选条件并重新获取数据
+const applyFilters = () => {
+  // 构建筛选参数
+  const params = {};
+
+  // 添加分类筛选
+  if (selectedCategory.value !== 'all') {
+    params.category = selectedCategory.value;
+  }
+
+  // 添加标签筛选
+  if (selectedTags.value.length > 0) {
+    params.tags = selectedTags.value;
+  }
+
+  // 添加排序
+  params.sortBy = sortOption.value;
+
+  // 添加搜索关键词
+  if (searchText.value.trim()) {
+    params.keyword = searchText.value.trim();
+  }
+
+  // 获取筛选后的图片数据
+  fetchGalleryImagesWithParams(params);
+};
+
+const onSearch = (value: string) => {
+  console.log('搜索：', value);
+  // 重置并根据搜索条件获取图片
+  currentOffset.value = 0;
+  lastId.value = null;
+  lastValue.value = null;
+  searchText.value = value;
+
+  // 应用所有筛选条件
+  applyFilters();
+};
 
 // 导航到图片详情页
 const navigateToDetail = (image: any) => {
@@ -236,7 +457,7 @@ const downloadImage = (image: any) => {
   message.success('图片下载中...');
   // 实际下载逻辑
   const a = document.createElement('a');
-  a.href = image.src;
+  a.href = image.src || image.url;
   a.download = image.title || 'download-image';
   document.body.appendChild(a);
   a.click();
@@ -279,678 +500,286 @@ const shareImage = (image) => {
   message.success(`已打开"${image.title}"的分享选项`);
 };
 
-// 处理应用筛选器
-const handleApplyFilter = (filter) => {
-  const result = filterStore.applyFilter(filter);
-  if (result.success) {
-    message.info(result.message);
-    fetchGalleryImages();
+// 加载更多图片
+const loadMore = async () => {
+  if (!hasMore.value || loadingMore.value) return;
 
-    // 添加滚动到图片区域的代码
-    setTimeout(() => {
-      const galleryEl = document.querySelector('.masonry-gallery');
-      if (galleryEl) {
-        galleryEl.scrollIntoView({behavior: 'smooth'});
-      }
-    }, 300);
-  }
-};
+  try {
+    loadingMore.value = true;
 
-// 切换分类选中状态
-const toggleCategoryActive = (index: number) => {
-  filterStore.toggleCategoryActive(index);
-  fetchGalleryImages();
-};
+    // 准备请求参数 - 使用lastId和lastValue
+    const params = {
+      offset: currentOffset.value,
+      limit: pageSize.value,
+      lastId: lastId.value,
+      lastValue: lastValue.value
+    };
 
-// 标签数据
-const tags = reactive([
-  {name: '热门', hot: true, count: '120+'},
-  {name: '头像', hot: false},
-  {name: '高清', hot: false},
-  {name: '艺术', hot: false},
-  {name: '校园', hot: false},
-  {name: '风景', hot: false},
-  {name: '简历', hot: false},
-  {name: '创意', hot: false},
-  {name: 'Spring', hot: false},
-  {name: 'SpringBoot', hot: false},
-  {name: '美女', hot: false},
-  {name: '海边', hot: false},
-  {name: 'Mac壁纸', hot: false},
-]);
+    // 构建包含所有筛选条件的请求体
+    const requestBody = {};
 
-// 切换标签选中状态
-const toggleTagActive = (index: number) => {
-  filterStore.toggleTagActive(index);
-  fetchGalleryImages();
-};
-
-// 更新后的图库数据 - 更换为本地/CDN图片资源
-const galleryImages = reactive([
-  {
-    id: '1',
-    src: 'https://cdn.pixabay.com/photo/2016/11/23/14/37/coding-1853305_1280.jpg',
-    title: 'macbook-workspace',
-    author: {
-      name: '程序员Leo',
-      avatar: 'https://cdn.pixabay.com/photo/2016/11/18/23/38/child-1837375_1280.png',
-    },
-    category: '海报',
-    tags: [
-      {name: 'Mac壁纸', color: ''},
-      {name: '高清', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-09-15T08:30:00.000Z',
-    views: 1250,
-    likes: 520,
-    comments: 45,
-    aspectRatio: '1/1',
-  },
-  {
-    id: '2',
-    src: 'https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_1280.jpg',
-    title: '山脉风光摄影',
-    author: {
-      name: '摄影师小王',
-      avatar: 'https://cdn.pixabay.com/photo/2015/03/04/22/35/avatar-659651_1280.png',
-    },
-    category: '风景',
-    tags: [
-      {name: '高清', color: ''},
-      {name: '自然', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-10-10T14:20:00.000Z',
-    views: 3840,
-    likes: 1520,
-    comments: 120,
-    aspectRatio: '16/9',
-  },
-  {
-    id: '3',
-    src: 'https://cdn.pixabay.com/photo/2016/11/29/04/19/ocean-1867285_1280.jpg',
-    title: '城市夜景',
-    author: {
-      name: '城市摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2014/04/03/10/32/user-310807_1280.png',
-    },
-    category: '城市',
-    tags: [
-      {name: '夜景', color: ''},
-      {name: '建筑', color: ''},
-    ],
-    liked: true,
-    bookmarked: true,
-    createTime: '2023-11-15T20:30:00.000Z',
-    views: 4260,
-    likes: 2180,
-    comments: 235,
-    aspectRatio: '21/9',
-  },
-  {
-    id: '4',
-    src: 'https://cdn.pixabay.com/photo/2023/05/15/18/13/boat-8036952_1280.jpg',
-    title: '二次元精选壁纸',
-    author: {
-      name: '动漫爱好者',
-      avatar: 'https://cdn.pixabay.com/photo/2016/08/20/05/38/avatar-1606916_1280.png',
-    },
-    category: '动漫',
-    tags: [
-      {name: '壁纸', color: ''},
-      {name: '绘画', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-08-05T18:45:00.000Z',
-    views: 4531,
-    likes: 1820,
-    comments: 156,
-    aspectRatio: '4/3',
-  },
-  {
-    id: '5',
-    src: 'https://cdn.pixabay.com/photo/2017/08/30/01/05/milky-way-2695569_1280.jpg',
-    title: '时尚模特写真',
-    author: {
-      name: '时尚摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2017/01/31/21/23/avatar-2027366_1280.png',
-    },
-    category: '时尚',
-    tags: [
-      {name: '模特', color: ''},
-      {name: '写真', color: ''},
-      {name: '人像', color: ''},
-    ],
-    liked: true,
-    bookmarked: true,
-    createTime: '2023-07-20T14:30:00.000Z',
-    views: 6720,
-    likes: 2760,
-    comments: 320,
-    aspectRatio: '2/3',
-  },
-  {
-    id: '6',
-    src: 'https://cdn.pixabay.com/photo/2016/03/04/19/36/beach-1236581_1280.jpg',
-    title: '校园风光集',
-    author: {
-      name: '校园摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2014/03/25/16/54/user-297566_1280.png',
-    },
-    category: '校园',
-    tags: [
-      {name: '风景', color: ''},
-      {name: '四季', color: ''},
-      {name: '摄影', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-09-20T16:10:00.000Z',
-    views: 1874,
-    likes: 756,
-    comments: 89,
-    aspectRatio: '4/3',
-  },
-  {
-    id: '7',
-    src: 'https://cdn.pixabay.com/photo/2019/11/25/16/30/mountains-4652248_1280.jpg',
-    title: '山脉日出',
-    author: {
-      name: '风景摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2016/11/18/23/38/child-1837375_1280.png',
-    },
-    category: '风景',
-    tags: [
-      {name: '山脉', color: ''},
-      {name: '日出', color: ''},
-      {name: '自然', color: ''},
-    ],
-    liked: true,
-    bookmarked: true,
-    createTime: '2023-05-15T05:40:00.000Z',
-    views: 8532,
-    likes: 3420,
-    comments: 412,
-    aspectRatio: '21/9',
-  },
-  {
-    id: '8',
-    src: 'https://cdn.pixabay.com/photo/2014/12/27/14/37/living-room-581073_1280.jpg',
-    title: '咖啡艺术',
-    author: {
-      name: '咖啡师',
-      avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
-    },
-    category: '美食',
-    tags: [
-      {name: '咖啡', color: ''},
-      {name: '艺术', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-11-08T09:15:00.000Z',
-    views: 2140,
-    likes: 845,
-    comments: 97,
-    aspectRatio: '1/1',
-  },
-  {
-    id: '9',
-    src: 'https://cdn.pixabay.com/photo/2016/08/11/23/48/mountains-1587287_1280.jpg',
-    title: '建筑摄影专辑',
-    author: {
-      name: '建筑摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2013/07/13/10/07/man-156584_1280.png',
-    },
-    category: '建筑',
-    tags: [
-      {name: '城市', color: ''},
-      {name: '现代', color: ''},
-      {name: '摄影', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-10-25T13:50:00.000Z',
-    views: 3210,
-    likes: 1284,
-    comments: 156,
-    aspectRatio: '9/21',
-  },
-  {
-    id: '10',
-    src: 'https://cdn.pixabay.com/photo/2016/02/22/20/22/mountains-1216029_1280.jpg',
-    title: '现代抽象艺术作品',
-    author: {
-      name: '艺术家小陈',
-      avatar: 'https://cdn.pixabay.com/photo/2013/07/13/10/07/man-156584_1280.png',
-    },
-    category: '艺术',
-    tags: [
-      {name: '抽象', color: ''},
-      {name: '创意', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-11-05T11:20:00.000Z',
-    views: 965,
-    likes: 387,
-    comments: 45,
-    aspectRatio: '16/9',
-  },
-  {
-    id: '11',
-    src: 'https://cdn.pixabay.com/photo/2017/02/01/22/02/mountain-landscape-2031539_1280.jpg',
-    title: '极光自然景观',
-    author: {
-      name: '风光摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
-    },
-    category: '风景',
-    tags: [
-      {name: '极光', color: ''},
-      {name: '夜景', color: ''},
-      {name: '自然', color: ''},
-    ],
-    liked: true,
-    bookmarked: false,
-    createTime: '2023-08-12T21:40:00.000Z',
-    views: 7450,
-    likes: 2980,
-    comments: 347,
-    aspectRatio: '21/6',
-  },
-  {
-    id: '12',
-    src: 'https://cdn.pixabay.com/photo/2015/12/01/20/28/road-1072823_1280.jpg',
-    title: '美食摄影集',
-    author: {
-      name: '美食摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
-    },
-    category: '美食',
-    tags: [
-      {name: '料理', color: ''},
-      {name: '摄影', color: ''},
-      {name: '创意', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-09-30T12:15:00.000Z',
-    views: 4180,
-    likes: 1672,
-    comments: 198,
-    aspectRatio: '3/4',
-  },
-  {
-    id: '13',
-    src: 'https://cdn.pixabay.com/photo/2015/07/09/22/45/tree-838667_1280.jpg',
-    title: '城市建筑夜景',
-    author: {
-      name: '城市摄影大师',
-      avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
-    },
-    category: '建筑',
-    tags: [
-      {name: '城市', color: ''},
-      {name: '夜景', color: ''},
-      {name: '高楼', color: ''},
-    ],
-    liked: true,
-    bookmarked: true,
-    createTime: '2023-10-05T19:25:00.000Z',
-    views: 5670,
-    likes: 2268,
-    comments: 264,
-    aspectRatio: '2/1',
-  },
-  {
-    id: '14',
-    src: 'https://cdn.pixabay.com/photo/2018/01/14/23/12/nature-3082832_1280.jpg',
-    title: '登山探险风光',
-    author: {
-      name: '户外摄影师',
-      avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
-    },
-    category: '户外',
-    tags: [
-      {name: '山脉', color: ''},
-      {name: '登山', color: ''},
-      {name: '自然', color: ''},
-    ],
-    liked: false,
-    bookmarked: false,
-    createTime: '2023-07-12T08:40:00.000Z',
-    views: 3890,
-    likes: 1556,
-    comments: 168,
-    aspectRatio: '3/4',
-  },
-]);
-
-// 加载更多
-const loadMore = () => {
-  console.log('加载更多图片');
-  // 这里添加加载更多图片的逻辑
-  message.info('正在加载更多内容...');
-
-  // 模拟加载更多图片（示例）
-  setTimeout(() => {
-    const moreImages = [
-      {
-        id: '15',
-        src: 'https://cdn.pixabay.com/photo/2016/11/19/18/06/feet-1840619_1280.jpg',
-        title: '日常生活摄影',
-        author: {
-          name: '生活摄影师',
-          avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
-        },
-        category: '生活',
-        tags: [
-          {name: '日常', color: ''},
-          {name: '写实', color: ''},
-        ],
-        liked: false,
-        bookmarked: false,
-        createTime: '2023-12-05T10:20:00.000Z',
-        views: 1230,
-        likes: 492,
-        comments: 58,
-        aspectRatio: '3/2',
-      },
-      {
-        id: '16',
-        src: 'https://cdn.pixabay.com/photo/2021/08/25/20/42/field-6574455_1280.jpg',
-        title: '乡村田园风光',
-        author: {
-          name: '乡村摄影师',
-          avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
-        },
-        category: '风景',
-        tags: [
-          {name: '乡村', color: ''},
-          {name: '田园', color: ''},
-          {name: '自然', color: ''},
-        ],
-        liked: false,
-        bookmarked: false,
-        createTime: '2023-10-18T14:30:00.000Z',
-        views: 2860,
-        likes: 1144,
-        comments: 135,
-        aspectRatio: '16/9',
-      },
-    ];
-
-    // 为新图片添加评论数和点赞数
-    moreImages.forEach(image => {
-      if (!image.likes) {
-        image.likes = Math.floor(image.views * (0.3 + Math.random() * 0.2));
-      }
-      if (!image.comments) {
-        image.comments = Math.floor(image.views * (0.05 + Math.random() * 0.1));
-      }
-    });
-
-    // 添加到图库
-    galleryImages.push(...moreImages);
-    message.success('已加载更多内容');
-  }, 1000);
-};
-
-// 筛选器相关
-const filterModalVisible = ref(false);
-const savedFilters = ref([]);
-
-// 显示创建筛选器弹窗
-const showCreateFilterModal = () => {
-  filterModalVisible.value = true;
-};
-
-// 保存筛选器
-const saveFilter = (filter: any) => {
-  // 检查是否已有相同名称的筛选器
-  const exists = savedFilters.value.some(f => f.name === filter.name);
-  if (exists) {
-    message.warning(`已存在名为"${filter.name}"的筛选器`);
-    return;
-  }
-
-  // 添加到保存的筛选器中
-  savedFilters.value.push(filter);
-
-  // 保存到本地存储
-  localStorage.setItem('userFilters', JSON.stringify(savedFilters.value));
-
-  message.success(`筛选器"${filter.name}"已创建`);
-};
-
-// 处理删除筛选器
-const handleDeleteFilter = (filterId: any) => {
-  const result = filterStore.deleteFilter(filterId);
-  if (result.success) {
-    message.success(result.message);
-  }
-};
-
-// 处理清除筛选器
-const handleClearFilter = () => {
-  const result = filterStore.clearFilter();
-  if (result.success) {
-    message.info(result.message);
-    fetchGalleryImages();
-  }
-};
-
-// 原始图库数据（完整数据）
-const originalGalleryImages = [...galleryImages];
-
-// 获取图片数据
-const fetchGalleryImages = () => {
-  // 获取当前筛选条件
-  const filters = filterStore.getCurrentFilters();
-  console.log('应用筛选条件获取图片:', filters);
-
-  // 确保 originalGalleryImages 有内容
-  if (originalGalleryImages.length === 0) {
-    console.warn('原始图片数据为空，正在重新初始化...');
-    originalGalleryImages.push(...JSON.parse(JSON.stringify(galleryImages)));
-  }
-
-  // 模拟根据筛选条件过滤图片
-  let filteredImages = [...originalGalleryImages]; // 默认使用所有图片
-
-  // 如果有筛选条件，再应用筛选逻辑
-  if ((filters.categories.length > 0 && !filters.categories.includes('全部')) || filters.tags.length > 0) {
-    filteredImages = originalGalleryImages.filter(image => {
-      // 筛选分类
-      if (filters.categories.length > 0 && !filters.categories.includes('全部')) {
-        // 检查图片的category属性
-        if (image.category) {
-          // 如果图片有category属性，直接使用它进行筛选
-          if (!filters.categories.includes(image.category)) return false;
-        } else {
-          // 兼容旧数据结构，使用tags中的名称作为分类筛选
-          const imageCategoryMatch = image.tags.some(tag =>
-              filters.categories.includes(tag.name)
-          );
-          if (!imageCategoryMatch) return false;
-        }
-      }
-
-      // 筛选标签
-      if (filters.tags.length > 0) {
-        const tagMatch = image.tags.some(tag =>
-            filters.tags.includes(tag.name)
-        );
-        if (!tagMatch) return false;
-      }
-
-      return true;
-    });
-  }
-
-  // 根据排序条件排序
-  const sortedImages = [...filteredImages].sort((a, b) => {
-    switch (filters.sort) {
-      case 'newest':
-        // 按创建时间降序排序
-        if (a.createTime && b.createTime) {
-          return new Date(b.createTime).getTime() - new Date(a.createTime).getTime();
-        }
-        return 0;
-      case 'popular':
-        // 按照是否喜欢排序
-        return (b.liked ? 1 : 0) - (a.liked ? 1 : 0);
-      case 'look':
-        // 按照浏览量排序
-        return (b.views || 0) - (a.views || 0);
-      case 'oldest':
-        // 按创建时间升序排序
-        if (a.createTime && b.createTime) {
-          return new Date(a.createTime).getTime() - new Date(b.createTime).getTime();
-        }
-        return 0;
-      default:
-        return 0;
+    // 添加搜索关键词
+    if (searchText.value.trim()) {
+      requestBody.keyword = searchText.value.trim();
     }
-  });
 
-  console.log('筛选后的图片数量:', sortedImages.length);
+    // 添加分类筛选
+    if (selectedCategory.value !== 'all') {
+      requestBody.category = selectedCategory.value;
+    }
 
-  // 确保即使筛选结果为空，也至少显示所有图片
-  if (sortedImages.length === 0 && !filters.categories.length && !filters.tags.length) {
-    console.warn('筛选结果为空且无筛选条件，显示所有图片');
-    galleryImages.splice(0, galleryImages.length, ...originalGalleryImages);
-  } else {
-    // 更新图库数据
-    galleryImages.splice(0, galleryImages.length, ...sortedImages);
-  }
-};
+    // 添加标签筛选
+    if (selectedTags.value.length > 0) {
+      requestBody.tags = selectedTags.value;
+    }
 
-// 添加点击涟漪效果函数
-const addRippleEffect = (event) => {
-  const button = event.currentTarget;
-  const ripple = document.createElement('span');
-  const rect = button.getBoundingClientRect();
+    // 添加排序
+    requestBody.sortBy = sortOption.value;
 
-  const size = Math.max(rect.width, rect.height);
-  const x = event.clientX - rect.left - size / 2;
-  const y = event.clientY - rect.top - size / 2;
+    console.log('加载更多图片请求参数:', params, requestBody);
 
-  ripple.style.width = ripple.style.height = `${size}px`;
-  ripple.style.left = `${x}px`;
-  ripple.style.top = `${y}px`;
-  ripple.classList.add('ripple');
+    // 调用加载更多API
+    const response = await loadMoreWaterfallPicturesUsingPost(
+        params,
+        requestBody
+    );
 
-  const existingRipple = button.querySelector('.ripple');
-  if (existingRipple) {
-    existingRipple.remove();
-  }
+    console.log('加载更多图片接口返回:', response);
 
-  button.appendChild(ripple);
+    // 处理响应数据
+    if (response && response.data && response.data.code === 200) {
+      const responseData = response.data.data;
 
-  setTimeout(() => {
-    ripple.remove();
-  }, 600);
-};
+      if (responseData && responseData.records && Array.isArray(responseData.records)) {
+        const pictures = responseData.records;
 
-// 监听Store中的数据变化，触发图片重新获取
-watch(
-    () => [
-      filterStore.currentSort,
-      filterStore.categories.map(c => c.active),
-      filterStore.tags.map(t => t.hot)
-    ],
-    () => {
-      if (!filterStore.activeFilter) {
-        // 只有在没有激活的筛选器时才自动刷新
-        // 避免重复刷新，因为应用筛选器会单独触发刷新
-        fetchGalleryImages();
+        // 更新lastId和lastValue用于下次加载
+        if (responseData.lastId) {
+          lastId.value = responseData.lastId;
+        }
+
+        if (responseData.lastValue) {
+          lastValue.value = responseData.lastValue;
+        }
+
+        // 添加新加载的图片
+        if (pictures.length > 0) {
+          pictures.forEach(pic => {
+            galleryImages.push(transformPictureData(pic));
+          });
+
+          // 更新偏移量
+          currentOffset.value += pictures.length;
+        }
+
+        // 更新是否有更多数据标志
+        hasMore.value = responseData.hasMore === true;
+
+        if (pictures.length === 0) {
+          message.info('没有更多图片了');
+          hasMore.value = false;
+        }
+      } else {
+        console.error('加载更多返回的数据结构不正确', responseData);
+        message.warning('加载更多图片失败：数据格式不正确');
       }
+    } else {
+      message.error(response?.data?.message || '加载更多图片失败');
+    }
+  } catch (error) {
+    console.error('加载更多图片出错:', error);
+    message.error('加载更多图片时发生错误');
+  } finally {
+    loadingMore.value = false;
+  }
+};
+
+// 将API返回的图片数据转换为组件使用的格式
+const transformPictureData = (apiPicture) => {
+  // 确保apiPicture是一个对象
+  if (!apiPicture || typeof apiPicture !== 'object') {
+    console.warn('无效的图片数据:', apiPicture);
+    return {
+      id: `default-${Date.now()}-${Math.random()}`,
+      src: 'https://cdn.pixabay.com/photo/2018/01/14/23/12/nature-3082832_1280.jpg', // 默认图片
+      title: '未命名图片',
+      author: {
+        name: '未知作者',
+        avatar: 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
+      },
+      category: '未分类',
+      tags: [],
+      createTime: new Date().toISOString(),
+      views: 0,
+      likes: 0,
+      comments: 0,
+      aspectRatio: '1/1'
+    };
+  }
+
+  // 根据后端实际返回的字段结构转换
+  return {
+    id: apiPicture.id,
+    src: apiPicture.url,
+    url: apiPicture.url,
+    title: apiPicture.name || '未命名图片',
+    author: {
+      name: apiPicture.user?.username || '未知作者',
+      avatar: apiPicture.user?.avatar || 'https://cdn.pixabay.com/photo/2016/08/31/11/54/icon-1633249_1280.png',
     },
-    {deep: true}
-);
+    category: apiPicture.category || '未分类',
+    tags: Array.isArray(apiPicture.tags)
+        ? apiPicture.tags.map(tag => ({name: tag, color: ''}))
+        : [],
+    liked: false, // API没有提供liked状态
+    bookmarked: false, // API没有提供bookmarked状态
+    createTime: apiPicture.createTime,
+    updateTime: apiPicture.updateTime,
+    views: apiPicture.viewCount || 0,
+    likes: apiPicture.likeCount || 0,
+    comments: 0, // API没有提供评论数
+    aspectRatio: apiPicture.picWidth && apiPicture.picHeight
+        ? `${apiPicture.picWidth}/${apiPicture.picHeight}`
+        : (apiPicture.picScale ? `${apiPicture.picScale}` : '1/1'),
+    // 保留原始数据，以便后续需要时使用
+    raw: {...apiPicture}
+  };
+};
+
+// 默认获取瀑布流图片数据（不带参数）
+const fetchGalleryImages = async () => {
+  try {
+    loading.value = true;
+
+    // 清空已有数据和偏移量
+    galleryImages.length = 0;
+    currentOffset.value = 0;
+    lastId.value = null;
+    lastValue.value = null;
+
+    console.log('请求默认瀑布流图片数据（无参数）');
+
+    // 调用API获取瀑布流图片 - 不传递任何筛选参数
+    const response = await getWaterfallPicturesUsingPost();
+
+    console.log('瀑布流图片接口返回:', response);
+
+    // 处理响应数据 - 基于实际的JSON结构
+    if (response && response.data && response.data.code === 200) {
+      const responseData = response.data.data;
+
+      if (responseData && responseData.records && Array.isArray(responseData.records)) {
+        const pictures = responseData.records;
+
+        // 保存lastId和lastValue用于加载更多
+        if (responseData.lastId) {
+          lastId.value = responseData.lastId;
+        }
+
+        if (responseData.lastValue) {
+          lastValue.value = responseData.lastValue;
+        }
+
+        // 更新图片数据
+        if (pictures.length > 0) {
+          pictures.forEach(pic => {
+            galleryImages.push(transformPictureData(pic));
+          });
+
+          // 更新偏移量
+          currentOffset.value = pictures.length;
+        }
+
+        // 更新是否有更多数据标志
+        hasMore.value = responseData.hasMore === true;
+      } else {
+        console.error('返回的数据结构不正确', responseData);
+        message.warning('获取图片数据失败：数据格式不正确');
+      }
+    } else {
+      message.error(response?.data?.message || '获取图片数据失败');
+    }
+  } catch (error) {
+    console.error('获取瀑布流图片出错:', error);
+    message.error('获取图片数据时发生错误');
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 带参数获取瀑布流图片数据（用于搜索和筛选）
+const fetchGalleryImagesWithParams = async (params) => {
+  try {
+    loading.value = true;
+
+    // 清空已有数据和偏移量
+    galleryImages.length = 0;
+    currentOffset.value = 0;
+    lastId.value = null;
+    lastValue.value = null;
+
+    console.log('请求瀑布流图片数据，带参数:', params);
+
+    // 调用API获取瀑布流图片 - 传递搜索参数
+    const response = await getWaterfallPicturesUsingPost(params);
+
+    console.log('瀑布流图片接口返回:', response);
+
+    // 处理响应数据 - 基于实际的JSON结构
+    if (response && response.data && response.data.code === 200) {
+      const responseData = response.data.data;
+
+      if (responseData && responseData.records && Array.isArray(responseData.records)) {
+        const pictures = responseData.records;
+
+        // 保存lastId和lastValue用于加载更多
+        if (responseData.lastId) {
+          lastId.value = responseData.lastId;
+        }
+
+        if (responseData.lastValue) {
+          lastValue.value = responseData.lastValue;
+        }
+
+        // 更新图片数据
+        if (pictures.length > 0) {
+          pictures.forEach(pic => {
+            galleryImages.push(transformPictureData(pic));
+          });
+
+          // 更新偏移量
+          currentOffset.value = pictures.length;
+        }
+
+        // 更新是否有更多数据标志
+        hasMore.value = responseData.hasMore === true;
+
+        if (pictures.length === 0) {
+          if (hasActiveFilters.value) {
+            message.info('没有找到符合筛选条件的图片');
+          } else if (searchText.value) {
+            message.info('没有找到相关图片');
+          }
+        }
+      } else {
+        console.error('返回的数据结构不正确', responseData);
+        message.warning('获取图片数据失败：数据格式不正确');
+      }
+    } else {
+      message.error(response?.data?.message || '获取图片数据失败');
+    }
+  } catch (error) {
+    console.error('获取瀑布流图片出错:', error);
+    message.error('获取图片数据时发生错误');
+  } finally {
+    loading.value = false;
+  }
+};
 
 // 组件挂载时初始化
 onMounted(() => {
-  // 首先清空原始图片数组，避免重复
-  originalGalleryImages.length = 0;
-
-  // 使用深拷贝创建图片副本
-  const deepCopiedImages = JSON.parse(JSON.stringify(galleryImages));
-
-  // 将图片存入原始数据数组
-  originalGalleryImages.push(...deepCopiedImages);
-
-  // 初始化筛选Store，传入初始分类和标签数据
-  const initialCategories = [
-    {name: '全部', active: true},
-    {name: '个人', active: false},
-    {name: '星球', active: false},
-    {name: '面试题', active: false},
-    {name: '表情包', active: false},
-    {name: '素材', active: false},
-    {name: '学习', active: false},
-    {name: 'Bugs', active: false},
-    {name: '海报', active: false},
-    {name: '壁纸', active: false},
-    {name: '动漫', active: false},
-  ];
-
-  const initialTags = [
-    {name: '热门', hot: true, count: '120+'},
-    {name: '头像', hot: false},
-    {name: '高清', hot: false},
-    {name: '艺术', hot: false},
-    {name: '校园', hot: false},
-    {name: '风景', hot: false},
-    {name: '简历', hot: false},
-    {name: '创意', hot: false},
-    {name: 'Spring', hot: false},
-    {name: 'SpringBoot', hot: false},
-    {name: '美女', hot: false},
-    {name: '海边', hot: false},
-    {name: 'Mac壁纸', hot: false},
-  ];
-
-  filterStore.initialize(initialCategories, initialTags);
-
-  // 获取任何已保存的筛选器
-  const savedFiltersStr = localStorage.getItem('userFilters');
-  if (savedFiltersStr) {
-    try {
-      savedFilters.value = JSON.parse(savedFiltersStr);
-    } catch (e) {
-      console.error('解析保存的筛选器时出错:', e);
-      localStorage.removeItem('userFilters');
-    }
-  }
-
-  // 为图片添加额外属性
-  deepCopiedImages.forEach(image => {
-    // 根据浏览量按比例生成点赞数
-    if (!image.likes) {
-      image.likes = Math.floor(image.views * (0.3 + Math.random() * 0.2));
-    }
-
-    // 添加评论数
-    if (!image.comments) {
-      image.comments = Math.floor(image.views * (0.05 + Math.random() * 0.1));
-    }
-
-    // 初始化收藏状态
-    image.bookmarked = false;
-  });
-
-  // 加载图片
-  setTimeout(() => {
-    console.log('加载所有图片，数量:', deepCopiedImages.length);
-    galleryImages.splice(0, galleryImages.length, ...deepCopiedImages);
-  }, 10);
+  // 初始化时获取图片数据（不带参数）
+  fetchGalleryImages();
 });
 </script>
 
@@ -958,28 +787,6 @@ onMounted(() => {
 /* 搜索区域顶部间距 */
 .home-page {
   padding-top: 16px;
-}
-
-/* 移除标签的默认内边距和边框 */
-.category-tag:deep(.ant-tag),
-.custom-tag:deep(.ant-tag) {
-  margin: 0;
-  padding: 0;
-}
-
-/* 修复排序下拉按钮 */
-.sort-dropdown {
-  display: flex;
-  align-items: center;
-  height: 36px;
-  border-radius: 6px;
-  padding: 0 12px;
-  color: rgba(0, 0, 0, 0.65);
-  font-size: 14px;
-}
-
-.sort-dropdown .anticon {
-  margin-left: 6px;
 }
 
 .search-container {
@@ -1055,12 +862,6 @@ onMounted(() => {
   background: #5258e9; /* 稍微深一点的紫色 */
 }
 
-/* 确保搜索按钮的高度和输入框完全一致 */
-.search-input :deep(.ant-input-affix-wrapper) {
-  height: 44px;
-  padding: 0 11px;
-}
-
 .search-input {
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
@@ -1084,96 +885,405 @@ onMounted(() => {
   background: var(--primary-color);
 }
 
-/* 分类浏览区域样式优化 */
-.category-section {
+/* 筛选区域样式 */
+.filter-container {
+  padding: 16px 24px 20px;
   margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f0f0f0;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f0f0f2;
 }
 
-.section-title {
-  margin-bottom: 12px;
+.filter-section {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
 }
 
-.section-title h3 {
-  font-size: 15px;
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+.filter-title {
+  font-size: 14px;
   font-weight: 600;
-  color: #333;
-  margin: 0;
+  color: #374151;
+  margin-right: 20px;
+  min-width: 42px;
+  position: relative;
+  padding-left: 2px;
 }
 
-/* 分类标签优化 */
-.category-tags {
+.filter-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 20px;
+  height: 2px;
+  background-color: #6366f1;
+  border-radius: 2px;
+}
+
+.filter-options {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 8px;
+  flex: 1;
 }
 
+/* 分类标签容器 */
+.category-tags-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 0;
+}
+
+/* 分类标签样式 */
 .category-tag {
   cursor: pointer;
-  padding: 6px 16px;
+  padding: 6px 14px 6px 12px;
   border-radius: 20px;
-  font-size: 14px;
-  background-color: #f5f5f5;
+  font-size: 13px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: #f5f7fa;
+  color: #4b5563;
   border: none;
-  transition: all 0.2s ease;
-  color: rgba(0, 0, 0, 0.65);
-  margin: 0;
+  margin-right: 0;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   height: auto;
-  line-height: 1.5;
-  user-select: none;
+}
+
+.category-tag:hover {
+  background-color: #e9ecf5;
+  color: #6366f1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.15);
 }
 
 .category-tag-active {
+  background-color: #6366f1;
   color: white;
-  background: #6366f1; /* 更纯正的紫色，更接近原型图 */
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.25);
+  font-weight: 500;
 }
 
-/* 热门标签 */
-.tag-section {
-  padding-top: 16px;
+.category-tag-active:hover {
+  background-color: #5258e9;
+  color: white;
 }
 
-.tag-list {
+/* 分类图标 */
+.category-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  position: relative;
+  top: -1px;
+}
+
+.all-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1ncmlkIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiByeT0iMiIvPjxsaW5lIHgxPSIzIiB5MT0iOSIgeDI9IjIxIiB5Mj0iOSIvPjxsaW5lIHgxPSIzIiB5MT0iMTUiIHgyPSIyMSIgeTI9IjE1Ii8+PGxpbmUgeDE9IjkiIHkxPSIzIiB4Mj0iOSIgeTI9IjIxIi8+PGxpbmUgeDE9IjE1IiB5MT0iMyIgeDI9IjE1IiB5Mj0iMjEiLz48L3N2Zz4=');
+}
+
+.nature-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tb3VudGFpbi1zbm93Ij48cGF0aCBkPSJtOCAzIDQgOCA1LTUgNSAxNUgyTDggMyIvPjxwYXRoIGQ9Ik00LjE0IDE1LjVjMi45Ni0yLjk2IDQuMjQtMi45NiA3LjIgMGwxLjMzLTEuMzRjLTMuOS0zLjktNi00LTkuOTcgMGwtMS4zLTEuMzJjNC45Ny00Ljk3IDcuNDUtNC45NyAxMi40MSAwIi8+PC9zdmc+');
+}
+
+.city-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1idWlsZGluZy0yIj48cGF0aCBkPSJNNiAyMlY1YTIgMiAwIDAgMSAyLTJoOGEyIDIgMCAwIDEgMiAydjE3SC02WiIvPjxwYXRoIGQ9Ik02IDEySDRhMiAyIDAgMCAwLTIgMnY2aDR2LThaIi8+PHBhdGggZD0iTTE4IDEyaDJhMiAyIDAgMCAxIDIgMnY2aC00di04WiIvPjxwYXRoIGQ9Ik0xMCA4aDRNMTAgMTJoNE0xMCAxNmg0Ii8+PC9zdmc+');
+}
+
+.people-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS11c2VycyI+PHBhdGggZD0iTTEyIDIwdi0yYzAtMS42OTYtMS0zLTMtM3MtMy43MDgtMS4zMDQtMy0zYzAuNi0xLjQgMi41LTIgNC0yIDEuNDIyIDAgMi41IDEgMi41IDIuNWE0IDQgMCAxIDAgOCAwYzAgMS4zNjEtMS4xNy0xLjYzOS0yLjUgMC0xLjMxMyAxLjYyNi0yLjUgNS41LTIuNSA3LjVNMTcgMTRjLTEuMjI0LTEuNDgyLTIgLTMtMiAtNGE0IDQgMCAwIDEgNCAtNCAyIDIgMCAwIDEgMiAyIi8+PHBhdGggZD0iTTcgNy41YTIuNSAyLjUgMCAxIDEgMCAtNSAyLjUgMi41IDAgMCAxIDAgNSIvPjwvc3ZnPg==');
+}
+
+.animals-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1wYXciPjxjaXJjbGUgY3g9IjExIiBjeT0iNiIgcj0iMiIvPjxjaXJjbGUgY3g9IjE4IiBjeT0iOCIgcj0iMiIvPjxjaXJjbGUgY3g9IjUiIGN5PSI4IiByPSIyIi8+PGNpcmNsZSBjeD0iNyIgY3k9IjEzIiByPSIyIi8+PHBhdGggZD0iTTE0LjY4IDE2Ljk1QzEzLjM3IDE0LjgyIDEyLjM1IDE0IDE0IDEyLjJjMi45OS0zLjM1IDMuODUtNi4yIDIuNC03LjY2LTEuNDYtMS40Ni00LjMtLjYtNy42NCAyLjRsLTIuOTMgMi45M2MtMS4yOCAxLjI3LS43NSAyLjQuOSA0LjE1IDEuNSwxLjU4IDIuNzYgMi44NiA0LjE1IDQuMTQgMS4zNCAxLjI3IDIuNjMgMi4wNiA0LjE0IDEuNzguNDIgMCAxLjg3LjIxIDEuODctLjZzLTEuOC0uNzYtMi4yMS0xLjNaIi8+PC9zdmc+');
+}
+
+.food-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS11dGVuc2lscyI+PHBhdGggZD0iTTMgMnYxMWMwIDIuNyAyLjEgNSA1IDVoMGMyLjcgMCA1LTIuMyA1LTVWMk0zIDEzaDEwTTMgOWgxME0zIDVoMTBNMTYgOFY1YzAtMi01LTIuNC01LTRNMTYgNXYzYzAtMiA1LTIuNCA1LTRIOE0yMSAzdjRNMjEgMTJ2OCIvPjwvc3ZnPg==');
+}
+
+.travel-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1wbGFuZSI+PHBhdGggZD0iTTE3LjggNC44SDIzTDxwYXRoIGQ9Ik0xNy44IDQuOGg1LjJsLTQuOCA0LjhoLTUuMnpNMTEuMTkgNEE5IDE5IDAgMCAwIDEwLjQgOWwtMS45IDE5QTEwIDEwIDAgMCAwIDE2IDIxLjZMMTcuOCA0LjhIMTEuMXpNMi40IDEwLjRoNS4yTDcuNiAxNS4yaC01LjJ6TTE0IDE1LjJ2NGg0eiIvPjwvc3ZnPg==');
+}
+
+.art-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1wYWxldHRlIj48Y2lyY2xlIGN4PSIxMi41IiBjeT0iOC41IiByPSIxIi8+PGNpcmNsZSBjeD0iJiM5OTksMjIwOzciIGN5PSIxMiIgcj0iMSIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjEiLz48cGF0aCBkPSJNMTIgMmE5Ljk2NSA5Ljk2NSAwIDAgMCAtNi43MSAxNy4zYy4zLjIuNjEuMy45Mi4zMC45Ni4wNCAxLjg0LS41NCAyLjE2LTEuNDYuNTgtMS43Mi0uNzgtMy4zMy0yLjQ0LTMuMzNhMS4wNiAxLjA2IDAgMCAxLS44MS0uMzlBOCg4IDAgMSAwIDEyIDQuaCA4IiAvPjwvLvs4PjwvcGF0aD48L3N2Zz4=');
+}
+
+.tech-icon {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1sYXB0b3AiPjxwYXRoIGQ9Ik0yMCAxM1Y2YTIgMiAwIDAgMC0yLTJINmEyIDIgMCAwIDAtMiAydjdNMiAxOGg3bTEzIDBoPG00IDBIN20tNSAwaDEwIi8+PC9zdmc+');
+}
+
+/* 标签区域样式 */
+.tags-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 8px;
 }
 
-.custom-tag {
+.tag-item {
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  background-color: #f5f7fa;
+  color: #4b5563;
+  border: none;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  height: auto;
+}
+
+.tag-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #6366f1; /* 默认点的颜色 */
+  margin-right: 6px;
+}
+
+.tag-item:hover {
+  background-color: #e9ecf5;
+  color: #6366f1;
+  transform: translateY(-1px);
+}
+
+.tag-active {
+  background-color: #6366f1;
+  color: white;
+  font-weight: 500;
+}
+
+.tag-active:hover {
+  background-color: #5258e9;
+  color: white;
+}
+
+.tag-active .tag-dot {
+  background-color: white;
+}
+
+.more-tags-btn {
+  font-size: 12px;
+  padding: 0 8px;
+  height: 26px;
+  color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.1);
+  border-radius: 4px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.more-tags-btn:hover {
+  background-color: rgba(99, 102, 241, 0.2);
+  color: #4f46e5;
+}
+
+/* 排序区域样式 */
+.sort-section {
+  margin-left: auto;
+  margin-right: 0;
+  align-items: center;
+}
+
+.sort-select {
+  width: 160px;
+  border-radius: 8px;
+}
+
+/* 下拉选择框样式 */
+.sort-select :deep(.ant-select-selector) {
+  border-radius: 8px !important;
+  height: 36px !important;
+  display: flex;
+  align-items: center;
+  padding: 0 12px !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.sort-select :deep(.ant-select-selector:hover) {
+  border-color: #6366f1 !important;
+}
+
+.sort-select :deep(.ant-select-arrow) {
+  color: #6366f1;
+}
+
+/* 活跃筛选标签展示区域样式 */
+.active-filters {
+  display: flex;
+  align-items: center;
+  padding: 0 24px 16px;
+  margin-bottom: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.active-filters-title {
+  font-size: 13px;
+  color: #6b7280;
+  margin-right: 10px;
+  font-weight: 500;
+}
+
+.active-filters-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.active-filters-tags :deep(.ant-tag) {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  border: none;
+  border-radius: 16px;
+  padding: 3px 10px;
+  margin-right: 0;
+}
+
+.active-filters-tags :deep(.ant-tag .anticon-close) {
+  color: #4f46e5;
+  font-size: 10px;
+}
+
+.active-filters-tags :deep(.ant-tag .anticon-close:hover) {
+  color: #312e81;
+  background-color: transparent;
+}
+
+.active-filters-tags :deep(.ant-btn-link) {
+  color: #6366f1;
+  font-size: 13px;
+  padding: 0 4px;
+  height: 26px;
+}
+
+/* 标签模态框样式 */
+.tags-modal-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f9fafb;
+}
+
+.modal-tag-item {
   cursor: pointer;
   margin: 0;
-  padding: 4px 12px;
-  transition: all 0.2s;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  border-radius: 16px; /* 更圆润的标签 */
-  border: 1px solid #e8e8e8;
-  background-color: white;
-  font-size: 13px;
-  height: auto;
-  line-height: 1.5;
-  user-select: none;
+  justify-content: center;
+  padding: 6px 12px;
 }
 
-.tag-hot {
-  color: white;
-  background: #6366f1; /* 与激活的分类标签一致 */
-  border-color: transparent;
+.tags-modal-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.tag-count {
-  margin-left: 4px;
-  background: rgba(255, 255, 255, 0.85);
-  color: #6366f1;
-  border-radius: 10px;
-  padding: 0 6px;
-  font-size: 12px;
-  font-weight: bold;
-  line-height: normal;
+/* 添加一些过渡动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 添加响应式调整 */
+@media (max-width: 768px) {
+  .filter-container {
+    padding: 12px 16px;
+  }
+
+  .filter-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-title {
+    margin-bottom: 8px;
+    min-width: auto;
+  }
+
+  .sort-section {
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .sort-select {
+    width: 100%;
+  }
+}
+
+/* 增强选中状态的视觉反馈 */
+.category-tag-active, .tag-active {
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+/* 添加点击时的动画效果 */
+.category-tag:active, .tag-item:active {
+  transform: scale(0.95);
+}
+
+/* 提供可见的焦点状态 */
+.category-tag:focus, .tag-item:focus {
+  outline: 2px solid rgba(99, 102, 241, 0.4);
+  outline-offset: 1px;
+}
+
+/* 自定义滚动条样式 */
+.tags-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tags-modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.tags-modal-content::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 4px;
+}
+
+.tags-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
 }
 
 /* 加载更多按钮 */
@@ -1183,98 +1293,11 @@ onMounted(() => {
   margin-bottom: 40px;
 }
 
-.filter-card {
-  margin-bottom: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  background-color: white;
-}
-
-.filter-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-/* 添加的新样式 */
-.filter-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.active-filter {
-  margin-bottom: 20px;
-}
-
-.active-filter-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.category-filter-applied {
-  border: 1px dashed #6366f1;
-}
-
-.tag-filter-applied {
-  border: 1px dashed #6366f1;
-}
-
-/* 标签和按钮悬停动画 */
-.category-tag, .custom-tag {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.category-tag:hover, .custom-tag:hover {
-  transform: translateY(-2px);
-}
-
-/* 添加涟漪效果 */
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.4);
-  transform: scale(0);
-  animation: ripple 0.6s linear;
-  pointer-events: none;
-}
-
-@keyframes ripple {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
-
-/* 暗模式兼容 */
-@media (prefers-color-scheme: dark) {
-  .filter-card {
-    background-color: #1f1f1f;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-
-  .filter-header {
-    border-bottom-color: #2a2a2a;
-  }
-
-  .category-tag {
-    background-color: #2a2a2a;
-    color: #ccc;
-  }
-
-  .custom-tag {
-    background-color: #2a2a2a;
-    color: #ccc;
-    border-color: #444;
-  }
-
-  .section-title h3 {
-    color: #e0e0e0;
-  }
+/* 无更多数据提示 */
+.no-more {
+  text-align: center;
+  margin-top: 16px;
+  margin-bottom: 40px;
+  color: #999;
 }
 </style>
