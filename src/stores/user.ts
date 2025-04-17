@@ -97,8 +97,23 @@ export const useUserStore = defineStore('user', () => {
 
     // 登录操作 - 使用简单对象，避免嵌套
     function login(user: UserInfo) {
-        // 直接赋值，不要创建新的包装
-        userInfo.value = {...user};
+        userInfo.value = {
+            id: user.id,
+            account: user.account,
+            username: user.username,
+            userProfile: user.username,
+            avatar: user.username,
+            role: user.role,
+            status: user.status,
+            lastLoginTime: user.lastLoginTime,
+            lastLoginIp: user.lastLoginIp,
+            token: user.token,
+            tokenName: user.tokenName,
+            tokenTimeout: user.tokenTimeout,
+        };
+
+        // // 直接赋值，不要创建新的包装
+        // userInfo.value = {...user};
 
         // 存储到localStorage，确保扁平化结构
         localStorage.setItem('cloudgallery_user', JSON.stringify(userInfo.value));

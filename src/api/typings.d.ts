@@ -77,6 +77,16 @@ declare namespace API {
     ids: number[];
   };
 
+  type batchGetReactionCountsUsingPOSTParams = {
+    /** targetType */
+    targetType: string;
+  };
+
+  type batchGetReactionStatusUsingPOSTParams = {
+    /** targetType */
+    targetType: string;
+  };
+
   type CategoryCreateRequest = {
     /** 分类描述 */
     description?: string;
@@ -397,6 +407,11 @@ declare namespace API {
     status?: number;
   };
 
+  type favoritePictureUsingGETParams = {
+    /** pictureId */
+    pictureId: number;
+  };
+
   type getCategoryByIdUsingGETParams = {
     /** 分类ID */
     id?: number;
@@ -430,6 +445,13 @@ declare namespace API {
     type?: string;
   };
 
+  type getHotPicturesUsingGETParams = {
+    /** limit */
+    limit?: number;
+    /** period */
+    period?: string;
+  };
+
   type getLoginLogDetailUsingGETParams = {
     /** id */
     id: number;
@@ -453,6 +475,20 @@ declare namespace API {
   type getPreviousPictureUsingGETParams = {
     /** id */
     id: number;
+  };
+
+  type getReactionCountsUsingGETParams = {
+    /** targetId */
+    targetId: number;
+    /** targetType */
+    targetType: string;
+  };
+
+  type getReactionStatusUsingGETParams = {
+    /** targetId */
+    targetId: number;
+    /** targetType */
+    targetType: string;
   };
 
   type getTagByIdUsingGETParams = {
@@ -495,6 +531,11 @@ declare namespace API {
   type getUserVOByIdUsingGETParams = {
     /** id */
     id: number;
+  };
+
+  type likePictureUsingGETParams = {
+    /** pictureId */
+    pictureId: number;
   };
 
   type listCategoriesByTypeUsingGETParams = {
@@ -698,6 +739,12 @@ declare namespace API {
     /** 用户昵称 */
     username?: string;
   };
+
+  type MapLongUserReactionCountVO_ = true;
+
+  type MapLongUserReactionStatusVO_ = true;
+
+  type MapStringLong_ = true;
 
   type ModelAndView = {
     empty?: boolean;
@@ -955,6 +1002,10 @@ declare namespace API {
     description?: string;
     /** 图片格式 */
     format?: string;
+    /** 当前用户是否已收藏 */
+    hasCollectioned?: boolean;
+    /** 当前用户是否已点赞 */
+    hasLiked?: boolean;
     /** id */
     id?: number;
     /** 图片点赞数 */
@@ -981,6 +1032,8 @@ declare namespace API {
     reviewerId?: number;
     /** 图片大小 */
     size?: number;
+    /** 标签颜色 */
+    tagColors?: string[];
     /** 标签Ids */
     tagIds?: string[];
     /** 标签名称 */
@@ -1093,6 +1146,12 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultListPictureVO_ = {
+    code?: number;
+    data?: PictureVO[];
+    message?: string;
+  };
+
   type ResultListTagUsageTrendVO_ = {
     code?: number;
     data?: TagUsageTrendVO[];
@@ -1126,6 +1185,24 @@ declare namespace API {
   type ResultLong_ = {
     code?: number;
     data?: number;
+    message?: string;
+  };
+
+  type ResultMapLongUserReactionCountVO_ = {
+    code?: number;
+    data?: Record<string, any>;
+    message?: string;
+  };
+
+  type ResultMapLongUserReactionStatusVO_ = {
+    code?: number;
+    data?: Record<string, any>;
+    message?: string;
+  };
+
+  type ResultMapStringLong_ = {
+    code?: number;
+    data?: Record<string, any>;
     message?: string;
   };
 
@@ -1210,6 +1287,18 @@ declare namespace API {
   type ResultTagVO_ = {
     code?: number;
     data?: TagVO;
+    message?: string;
+  };
+
+  type ResultUserReactionCountVO_ = {
+    code?: number;
+    data?: UserReactionCountVO;
+    message?: string;
+  };
+
+  type ResultUserReactionStatusVO_ = {
+    code?: number;
+    data?: UserReactionStatusVO;
     message?: string;
   };
 
@@ -1359,6 +1448,16 @@ declare namespace API {
     id: number;
   };
 
+  type unfavoritePictureUsingGETParams = {
+    /** pictureId */
+    pictureId: string;
+  };
+
+  type unlikePictureUsingGETParams = {
+    /** pictureId */
+    pictureId: number;
+  };
+
   type updateContentCategoriesUsingPUTParams = {
     /** 分类ID列表 */
     categoryIds?: number[];
@@ -1384,6 +1483,41 @@ declare namespace API {
     account: string;
     /** 密码 */
     password: string;
+  };
+
+  type UserReactionCountVO = {
+    /** 收藏数 */
+    favoriteCount?: number;
+    /** 点赞数 */
+    likeCount?: number;
+    /** 目标ID */
+    targetId?: number;
+    /** 目标类型 */
+    targetType?: string;
+    /** 浏览数 */
+    viewCount?: number;
+  };
+
+  type UserReactionRequest = {
+    /** 点赞/收藏类型(like-点赞,dislike-踩,favorite-收藏,view-查看) */
+    reactionType?: string;
+    /** 目标ID */
+    targetId?: number;
+    /** 目标类型(picture-图片,comment-评论,article-文章等) */
+    targetType?: string;
+  };
+
+  type UserReactionStatusVO = {
+    /** 是否已收藏 */
+    hasFavorited?: boolean;
+    /** 是否已点赞 */
+    hasLiked?: boolean;
+    /** 目标ID */
+    targetId?: number;
+    /** 目标类型 */
+    targetType?: string;
+    /** 用户ID */
+    userId?: number;
   };
 
   type UserRegisterRequest = {
