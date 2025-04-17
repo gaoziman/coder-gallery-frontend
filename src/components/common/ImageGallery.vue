@@ -8,7 +8,7 @@
       >
         <image-card
             :image="image"
-            @view="onImageView"
+            @viewCount="onImageView"
             @download="onImageDownload"
             @like="onImageLike"
             @bookmark="onImageBookmark"
@@ -44,7 +44,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
-  'view',
+  'viewCount',
   'download',
   'like',
   'bookmark',
@@ -56,7 +56,7 @@ const emit = defineEmits([
 
 // 处理图片浏览
 const onImageView = (image) => {
-  emit('view', image);
+  emit('viewCount', image);
 };
 
 // 处理图片下载
