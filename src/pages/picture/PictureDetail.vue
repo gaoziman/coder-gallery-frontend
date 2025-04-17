@@ -24,13 +24,6 @@
 
         <!-- 右侧功能区域 -->
         <div class="nav-right">
-
-          <!-- 浏览数据 -->
-          <div class="view-info">
-            <eye-outlined />
-            <span>{{ formatNumber(currentImage.viewCount || 16) }}</span>
-          </div>
-
           <!-- 作者信息 -->
             <div class="author-preview">
               <img :src="currentImage.user?.avatar || 'https://joeschmoe.io/api/v1/random'" class="avatar" />
@@ -65,9 +58,9 @@
           </a-dropdown>
 
           <!-- 收藏按钮 -->
-          <div class="collect-button" :class="{ 'active': isCollected }" @click="toggleCollect">
-            <star-filled v-if="isCollected" />
-            <star-outlined v-else />
+          <div class="collect-button" :class="{ 'active': userReactionStore.isFavorited(imageId) }" @click="toggleCollect">
+            <IconFont type="icon-wodeshoucang" v-if="!userReactionStore.isFavorited(imageId)"/>
+            <IconFont type="icon-a-shoucang-yishoucang" v-else/>
           </div>
 
           <!-- 更多操作 -->
@@ -152,26 +145,25 @@
                 <div class="action-buttons">
                   <a-button
                       type="text"
-                      :class="['like-button', {'action-active': currentImage.liked}]"
+                      :class="['like-button', {'action-active': userReactionStore.isLiked(imageId)}]"
                       @click="toggleLike"
                   >
                     <template #icon>
-                      <heart-filled v-if="currentImage.liked"/>
-                      <heart-outlined v-else/>
+                      <IconFont type="icon-xihuan2" v-if="!userReactionStore.isLiked(imageId)"/>
+                      <IconFont type="icon-xihuan4"  v-else/>
                     </template>
-                    {{ formatNumber(currentImage.likes || 0) }}
+                    {{ formatNumber(userReactionStore.getPictureLikeCount(imageId)) }}
                   </a-button>
 
                   <a-button
                       type="text"
-                      :class="['bookmark-button', {'action-active': currentImage.bookmarked}]"
+                      :class="['bookmark-button', {'action-active': userReactionStore.isFavorited(imageId)}]"
                       @click="toggleBookmark"
                   >
                     <template #icon>
-                      <star-filled v-if="currentImage.bookmarked"/>
-                      <star-outlined v-else/>
+                      <IconFont type="icon-wodeshoucang" v-if="!userReactionStore.isFavorited(imageId)"/>
+                      <IconFont type="icon-a-shoucang-yishoucang" v-else/>
                     </template>
-                    收藏
                   </a-button>
 
                   <a-dropdown :trigger="['click']">
@@ -274,13 +266,20 @@
                   <div class="tags-container">
                     <span class="category-tag">{{ currentImage.category || '未分类' }}</span>
 
-                    <span
-                        v-for="(tag, index) in currentImage.tags"
-                        :key="index"
-                        class="tag"
-                    >
-                    {{ typeof tag === 'string' ? tag : tag.name }}
-                  </span>
+                    <template v-if="currentImage.tags && currentImage.tags.length > 0">
+      <span
+          v-for="(tag, index) in visibleTags"
+          :key="index"
+          class="tag"
+      >
+        {{ typeof tag === 'string' ? tag : tag.name }}
+      </span>
+
+                      <!-- 如果有更多标签，显示+N更多 -->
+                      <span v-if="hasMoreTags" class="tag more-tag" @click="showAllTags">
+        +{{ currentImage.tags.length - 3 }} 更多
+      </span>
+                    </template>
                   </div>
                 </div>
 
@@ -329,17 +328,17 @@
                   <div class="stats-grid">
                     <div class="stat-item">
                       <eye-outlined class="stat-icon" />
-                      <div class="stat-value">{{ formatNumber(currentImage.viewCount || 16) }}</div>
+                      <div class="stat-value">{{ formatNumber(userReactionStore.getPictureViewCount(imageId)) }}</div>
                       <div class="stat-label">浏览量</div>
                     </div>
                     <div class="stat-item">
                       <heart-outlined class="stat-icon" />
-                      <div class="stat-value">{{ formatNumber(currentImage.likeCount || 0) }}</div>
+                      <div class="stat-value">{{ formatNumber(userReactionStore.getPictureLikeCount(imageId)) }}</div>
                       <div class="stat-label">点赞数</div>
                     </div>
                     <div class="stat-item">
                       <star-outlined class="stat-icon" />
-                      <div class="stat-value">{{ formatNumber(currentImage.collectionCount || 0) }}</div>
+                      <div class="stat-value">{{ formatNumber(userReactionStore.getPictureFavoriteCount(imageId)) }}</div>
                       <div class="stat-label">收藏数</div>
                     </div>
                     <div class="stat-item">
@@ -396,15 +395,14 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
+import { useUserStore } from "@/stores/user";
 import CommentSystem from '@/components/comment/CommentSystem.vue';
 import RelatedPictures from "@/components/picture/RelatedPictures.vue";
 import ImageStoryBackground from "@/components/picture/ImageStoryBackground.vue";
 import {
   ArrowLeftOutlined,
   HeartOutlined,
-  HeartFilled,
   StarOutlined,
-  StarFilled,
   ShareAltOutlined,
   EyeOutlined,
   DownloadOutlined,
@@ -427,12 +425,17 @@ import {
   QrcodeOutlined
 } from '@ant-design/icons-vue';
 import { getNextPictureUsingGet, getPictureByIdUsingGet, getPreviousPictureUsingGet } from "@/api/tupianxiangguanjiekou";
+import { useUserReactionStore } from '@/stores/userReaction';
+
+const userReactionStore = useUserReactionStore();
+
+const userStore = useUserStore();
 
 // 获取路由参数
 const route = useRoute();
 const router = useRouter();
-const imageId = ref(route.params.id as string);
 
+const imageId = ref(route.params.id as string);
 // 各种状态变量
 const imageLoaded = ref(false);
 const loading = ref(false);
@@ -440,9 +443,24 @@ const currentImage = ref<any>({});
 const hasPrevImage = ref(false);
 const hasNextImage = ref(true);
 const isScrolled = ref(false);
-const isCollected = ref(false);
 const isDarkMode = ref(false);
-const isAudioPlaying = ref(false);
+
+
+// 计算图片是否被收藏
+const isCollected = computed(() => {
+  return userReactionStore.isFavorited(imageId.value);
+});
+
+// 标签显示控制
+const visibleTags = computed(() => {
+  if (!currentImage.value.tags || !currentImage.value.tags.length) return [];
+  return currentImage.value.tags.slice(0, 3);
+});
+
+const hasMoreTags = computed(() => {
+  return currentImage.value.tags && currentImage.value.tags.length > 3;
+});
+
 
 // 返回上一页
 const goBack = () => {
@@ -610,11 +628,10 @@ const navigateToNext = async () => {
       imageLoaded.value = false;
 
       // 重新检查导航状态
-      checkHasPrevImage();
-      checkHasNextImage();
+      await checkHasPrevImage();
+      await checkHasNextImage();
     }
   } catch (error) {
-    console.error('获取下一张图片错误:', error);
     message.error('获取下一张图片失败');
   } finally {
     loading.value = false;
@@ -622,7 +639,7 @@ const navigateToNext = async () => {
 };
 
 // 获取图片详情数据
-const fetchPictureDetail = async (id: string) => {
+const fetchPictureDetail = async (id: number) => {
   try {
     loading.value = true;
     imageLoaded.value = false;
@@ -631,11 +648,14 @@ const fetchPictureDetail = async (id: string) => {
 
     if (response && response.data) {
       currentImage.value = response.data.data;
-      console.log(JSON.stringify(currentImage.value));
+
+      // 获取反应状态和计数
+      await userReactionStore.getStatus(id);
+      await userReactionStore.getCounts(id);
 
       // 检查是否有上一张/下一张图片
-      checkHasPrevImage();
-      checkHasNextImage();
+      await checkHasPrevImage();
+      await checkHasNextImage();
     } else {
       message.error('获取图片详情失败');
     }
@@ -649,39 +669,36 @@ const fetchPictureDetail = async (id: string) => {
 
 
 // 点赞操作
-const toggleLike = () => {
-  currentImage.value.liked = !currentImage.value.liked;
-  if (currentImage.value.liked) {
-    currentImage.value.likes = (currentImage.value.likes || 0) + 1;
-    message.success('已添加到喜欢');
-  } else {
-    currentImage.value.likes = Math.max((currentImage.value.likes || 0) - 1, 0);
-    message.success('已取消喜欢');
+const toggleLike = async () => {
+  if (!imageId.value) return;
+
+  try {
+    // 使用store的方法来切换点赞状态
+    await userReactionStore.toggleLike(imageId.value);
+
+  } catch (error) {
+    console.error('点赞操作失败', error);
+    message.error('操作失败，请稍后重试');
   }
 };
 
 // 收藏操作
-const toggleBookmark = () => {
-  currentImage.value.bookmarked = !currentImage.value.bookmarked;
-  if (currentImage.value.bookmarked) {
-    currentImage.value.collects = (currentImage.value.collects || 0) + 1;
-    message.success('已收藏');
-  } else {
-    currentImage.value.collects = Math.max((currentImage.value.collects || 0) - 1, 0);
-    message.success('已取消收藏');
+const toggleBookmark = async () => {
+  if (!imageId.value) return;
+
+  try {
+    // 使用store的方法来切换收藏状态
+    await userReactionStore.toggleFavorite(imageId.value);
+
+  } catch (error) {
+    console.error('收藏操作失败', error);
+    message.error('操作失败，请稍后重试');
   }
 };
 
 // 收藏/取消收藏
-const toggleCollect = () => {
-  isCollected.value = !isCollected.value;
-  message.success(isCollected.value ? '已收藏' : '已取消收藏');
-};
+const toggleCollect = toggleBookmark;
 
-// 关注作者
-const followAuthor = () => {
-  message.success('已关注作者');
-};
 
 // 复制链接
 const copyLink = () => {
@@ -709,13 +726,11 @@ const shareToWeibo = () => {
 // 显示二维码
 const showQrcode = () => {
   message.info('二维码功能开发中');
-  // 实际应用中会显示页面二维码
 };
 
 // 举报内容
 const reportContent = () => {
   message.info('举报功能开发中');
-  // 实际应用中会打开举报表单
 };
 
 // 全屏模式
@@ -737,14 +752,6 @@ const toggleTheme = () => {
   document.body.classList.toggle('dark-theme', isDarkMode.value);
   message.success(`已切换到${isDarkMode.value ? '暗色' : '亮色'}模式`);
 };
-
-// 切换音频讲解
-const toggleAudio = () => {
-  isAudioPlaying.value = !isAudioPlaying.value;
-  message.success(isAudioPlaying.value ? '音频讲解已开启' : '音频讲解已关闭');
-  // 实际应用中会调用音频播放API
-};
-
 
 
 // 下载图片
@@ -770,13 +777,12 @@ const downloadImage = () => {
 
 // 是否是图片所有者（用于控制编辑按钮显示）
 const isOwner = computed(() => {
-  // 实际应用中，应该比较当前登录用户ID和图片作者ID
-  // 如果后端返回了isOwner字段，直接使用
-  if (currentImage.value.hasOwnProperty('isOwner')) {
-    return currentImage.value.isOwner;
+  if (userStore.userInfo && currentImage.value.user) {
+    return userStore.userInfo.id === currentImage.value.user.id.toString();
   }
   return false;
 });
+
 
 // 编辑图片信息
 const editImage = () => {
@@ -913,7 +919,11 @@ const handleLikeComment = (commentId, liked) => {
 };
 
 // 生命周期钩子
-onMounted(() => {
+onMounted(async () => {
+
+  // 初始化userReactionStore
+  await userReactionStore.initialize();
+
   // 获取图片详情
   fetchPictureDetail(imageId.value);
 
@@ -946,18 +956,18 @@ watch(() => route.params.id, (newId) => {
 <style scoped>
 /* 整体页面布局 */
 .detail-page {
-  padding: 24px 0 40px; /* 移除左右内边距，使用容器控制 */
+  padding: 24px 0 40px;
   background-color: #f5f7fa;
   min-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
-  align-items: center; /* 居中所有子元素 */
+  align-items: center;
 }
 
 /* 主容器样式 */
 .detail-container {
-  max-width: 1800px; /* 增加最大宽度 */
-  width: 99.5%; /* 使用百分比宽度以减少边距 */
+  max-width: 1800px;
+  width: 99.5%;
   margin: 0 auto;
 }
 
@@ -984,13 +994,10 @@ watch(() => route.params.id, (newId) => {
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   margin-bottom: 24px;
-
-  /* 以下是关键修改 */
-  width: 99.5%; /* 与detail-container保持一致 */
-  max-width: 1800px; /* 与detail-container保持一致 */
+  width: 99.5%;
+  max-width: 1800px;
   margin-left: auto;
   margin-right: auto;
-  /* 移除display: flex和justify-content: center */
 }
 
 .with-blur {
@@ -1001,7 +1008,7 @@ watch(() => route.params.id, (newId) => {
 
 .nav-container {
   max-width: 1800px;
-  width: 99.5%; /* 使用与detail-container相同的宽度 */
+  width: 99.5%;
   display: flex;
   justify-content: space-between;
   align-items: center;

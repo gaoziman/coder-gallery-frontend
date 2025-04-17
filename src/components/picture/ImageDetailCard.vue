@@ -8,7 +8,7 @@
       </div>
       <a-tooltip title="查看大图">
         <div class="thumbnail-preview" @click="$emit('preview')">
-          <img :src="imageData.imageUrl" alt="图片预览" />
+          <img :src="imageData.url" alt="图片预览" />
           <div class="preview-overlay">
             <eye-outlined />
           </div>
@@ -37,7 +37,7 @@
             <div class="spec-icon"><column-width-outlined /></div>
             <div class="spec-detail">
               <div class="spec-label">尺寸</div>
-              <div class="spec-value">{{ imageData.dimensions || '1920 x 1080' }}</div>
+              <div class="spec-value">{{ imageData.picWidth}} * {{ imageData.picHeight }}</div>
             </div>
           </div>
 
@@ -45,7 +45,7 @@
             <div class="spec-icon"><border-outlined /></div>
             <div class="spec-detail">
               <div class="spec-label">宽高比</div>
-              <div class="spec-value">{{ getAspectRatio(imageData.dimensions) }}</div>
+              <div class="spec-value">{{ imageData.picScale }}</div>
             </div>
           </div>
 
@@ -53,7 +53,7 @@
             <div class="spec-icon"><file-outlined /></div>
             <div class="spec-detail">
               <div class="spec-label">文件大小</div>
-              <div class="spec-value">{{ imageData.fileSize || '2.4 MB' }}</div>
+              <div class="spec-value">{{ imageData.size || '2.4 MB' }}</div>
             </div>
           </div>
 
@@ -61,7 +61,7 @@
             <div class="spec-icon"><calendar-outlined /></div>
             <div class="spec-detail">
               <div class="spec-label">上传时间</div>
-              <div class="spec-value">{{ formatDate(imageData.uploadDate) }}</div>
+              <div class="spec-value">{{ formatDate(imageData.createTime) }}</div>
             </div>
           </div>
         </div>
@@ -79,7 +79,7 @@
             <div class="stat-icon-container">
               <eye-outlined class="stat-icon" />
             </div>
-            <div class="stat-value">{{ formatNumber(imageStats.views) }}</div>
+            <div class="stat-value">{{ formatNumber(imageData.viewCount) }}</div>
             <div class="stat-label">浏览量</div>
             <div class="stat-trend" :class="{ 'up': true }">
               <rise-outlined v-if="true" />
@@ -92,7 +92,7 @@
             <div class="stat-icon-container">
               <heart-outlined class="stat-icon" />
             </div>
-            <div class="stat-value">{{ formatNumber(imageStats.likes) }}</div>
+            <div class="stat-value">{{ formatNumber(imageData.likeCount) }}</div>
             <div class="stat-label">点赞数</div>
             <div class="stat-trend" :class="{ 'up': true }">
               <rise-outlined v-if="true" />
@@ -105,7 +105,7 @@
             <div class="stat-icon-container">
               <star-outlined class="stat-icon" />
             </div>
-            <div class="stat-value">{{ formatNumber(imageStats.collects) }}</div>
+            <div class="stat-value">{{ formatNumber(imageData.collectionCount) }}</div>
             <div class="stat-label">收藏数</div>
             <div class="stat-trend" :class="{ 'up': true }">
               <rise-outlined v-if="true" />
@@ -118,7 +118,7 @@
             <div class="stat-icon-container">
               <comment-outlined class="stat-icon" />
             </div>
-            <div class="stat-value">{{ formatNumber(imageStats.comments) }}</div>
+            <div class="stat-value">{{ formatNumber(imageData.commentCount) }}</div>
             <div class="stat-label">评论数</div>
             <div class="stat-trend" :class="{ 'down': true }">
               <rise-outlined v-if="false" />
@@ -155,10 +155,6 @@ const props = defineProps({
   imageData: {
     type: Object,
     required: true
-  },
-  imageStats: {
-    type: Object,
-    required: true
   }
 });
 
@@ -181,34 +177,6 @@ const formatNumber = (num) => {
 const formatDate = (dateString) => {
   if (!dateString) return '--';
   return dayjs(dateString).format('YYYY-MM-DD HH:mm');
-};
-
-// 计算宽高比
-const getAspectRatio = (dimensions) => {
-  if (!dimensions) return '16:9';
-
-  const parts = dimensions.split(' x ');
-  if (parts.length !== 2) return '16:9';
-
-  const width = parseInt(parts[0], 10);
-  const height = parseInt(parts[1], 10);
-
-  if (isNaN(width) || isNaN(height) || height === 0) return '16:9';
-
-  // 尝试计算常见的宽高比
-  const ratio = width / height;
-
-  if (Math.abs(ratio - 16/9) < 0.1) return '16:9';
-  if (Math.abs(ratio - 4/3) < 0.1) return '4:3';
-  if (Math.abs(ratio - 3/2) < 0.1) return '3:2';
-  if (Math.abs(ratio - 1) < 0.1) return '1:1';
-  if (Math.abs(ratio - 21/9) < 0.1) return '21:9';
-
-  // 如果不是常见比例，计算最大公约数并简化
-  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-  const divisor = gcd(width, height);
-
-  return `${width/divisor}:${height/divisor}`;
 };
 </script>
 

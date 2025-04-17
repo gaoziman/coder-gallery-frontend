@@ -7,23 +7,23 @@
         <div class="header-left">
           <div class="title-container">
             <h1 class="main-title">
-              <edit-outlined />
+              <edit-outlined/>
               编辑图片
             </h1>
             <p class="page-desc">您可以在这里修改图片信息，更新您的创作细节</p>
           </div>
           <div class="picture-info-container">
             <div class="info-item">
-              <eye-outlined />
-              <span>已获浏览: <strong>{{ pictureStats.views }}</strong></span>
+              <eye-outlined/>
+              <span>已获浏览: <strong>{{ pictureData.viewCount }}</strong></span>
             </div>
             <div class="info-item">
-              <like-outlined />
-              <span>获得点赞: <strong>{{ pictureStats.likes }}</strong></span>
+              <like-outlined/>
+              <span>获得点赞: <strong>{{ pictureData.likeCount }}</strong></span>
             </div>
             <div class="info-item">
-              <calendar-outlined />
-              <span>发布于: <strong>{{ formatDate(pictureData.publishDate) }}</strong></span>
+              <calendar-outlined/>
+              <span>发布于: <strong>{{ formatDate(pictureData.createTime) }}</strong></span>
             </div>
           </div>
         </div>
@@ -31,7 +31,7 @@
           <div class="preview-container">
             <div class="preview-label">当前图片</div>
             <div class="thumbnail-wrapper">
-              <img :src="pictureData.imageUrl" alt="当前图片预览" class="thumbnail-image" />
+              <img :src="pictureData.url" alt="当前图片预览" class="thumbnail-image"/>
               <div class="image-actions">
                 <a-button type="primary" size="small" @click="showImagePreview">查看大图</a-button>
               </div>
@@ -45,14 +45,14 @@
         <div class="progress-steps">
           <div class="step active">
             <div class="step-icon">
-              <form-outlined />
+              <form-outlined/>
             </div>
             <div class="step-text">编辑信息</div>
           </div>
           <div class="step-divider"></div>
           <div class="step">
             <div class="step-icon">
-              <check-circle-outlined />
+              <check-circle-outlined/>
             </div>
             <div class="step-text">保存更新</div>
           </div>
@@ -71,293 +71,192 @@
 
 
     <div class="content-cards-container">
-    <!-- 图片详细信息卡片 -->
-    <image-detail-card
-        :imageData="pictureData"
-        :imageStats="pictureStats"
-        @preview="showImagePreview"
-    />
+      <!-- 图片详细信息卡片 -->
+      <image-detail-card
+          :imageData="pictureData"
+          @preview="showImagePreview"
+      />
 
 
-    <!-- 表单区域 -->
-    <a-card
-        class="form-card"
-        :bordered="false"
-    >
-      <template #title>
-        <div class="form-card-title">
-          <form-outlined />
-          编辑图片信息
-        </div>
-      </template>
-
-      <a-form
-          :model="pictureForm"
-          layout="vertical"
-          :rules="formRules"
-          ref="pictureFormRef"
+      <!-- 表单区域 -->
+      <a-card
+          class="form-card"
+          :bordered="false"
       >
-        <!-- 基础信息区 -->
-        <div class="form-section">
-          <h3 class="section-title">基础信息</h3>
-
-          <!-- 图片名称 -->
-          <a-form-item label="图片名称" name="title" required>
-            <a-input
-                v-model:value="pictureForm.title"
-                placeholder="为您的图片起个名称"
-                :maxLength="50"
-                show-count
-                allow-clear
-            />
-          </a-form-item>
-
-          <!-- 图片简介 -->
-          <a-form-item label="图片简介" name="description">
-            <a-textarea
-                v-model:value="pictureForm.description"
-                placeholder="描述一下您的图片内容、创作灵感或想法..."
-                :rows="4"
-                :maxLength="500"
-                show-count
-                allow-clear
-            />
-          </a-form-item>
-
-          <!-- 一行两列布局 -->
-          <a-row :gutter="16">
-            <a-col :span="12">
-              <!-- 图片分类 -->
-              <a-form-item label="图片分类" name="category" required>
-                <a-select
-                    v-model:value="pictureForm.category"
-                    placeholder="选择分类"
-                    :options="categoryOptions"
-                    :show-search="true"
-                    allow-clear
-                >
-                  <template #suffixIcon><appstore-outlined /></template>
-                </a-select>
-              </a-form-item>
-            </a-col>
-            <a-col :span="12">
-              <!-- 图片标签 -->
-              <a-form-item label="图片标签" name="tags">
-                <a-select
-                    v-model:value="pictureForm.tags"
-                    mode="multiple"
-                    placeholder="选择或输入标签"
-                    :options="tagOptions"
-                    :max-tag-count="3"
-                    :max-tag-text-length="10"
-                    allow-clear
-                    :tokenSeparators="[',']"
-                >
-                  <template #suffixIcon><tags-outlined /></template>
-                </a-select>
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </div>
-
-        <!-- 高级选项区域 -->
-        <div class="form-section">
-          <div class="section-header">
-            <h3 class="section-title">高级选项</h3>
-            <a-switch v-model:checked="showAdvanced" />
+        <template #title>
+          <div class="form-card-title">
+            <form-outlined/>
+            编辑图片信息
           </div>
+        </template>
 
-          <div v-show="showAdvanced" class="advanced-options">
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <!-- 拍摄设备 -->
-                <a-form-item label="拍摄设备" name="device">
-                  <a-input
-                      v-model:value="pictureForm.device"
-                      placeholder="相机型号或手机型号等"
-                      allow-clear
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <!-- 拍摄地点 -->
-                <a-form-item label="拍摄地点" name="location">
-                  <a-input
-                      v-model:value="pictureForm.location"
-                      placeholder="拍摄的位置或地点"
-                      allow-clear
-                  >
-                    <template #prefix>
-                      <environment-outlined />
-                    </template>
-                  </a-input>
-                </a-form-item>
-              </a-col>
-            </a-row>
+        <a-form
+            :model="pictureForm"
+            layout="vertical"
+            :rules="formRules"
+            ref="pictureFormRef"
+        >
+          <!-- 基础信息区 -->
+          <div class="form-section">
+            <h3 class="section-title">基础信息</h3>
 
-            <a-row :gutter="16">
-              <a-col :span="12">
-                <!-- 拍摄日期 -->
-                <a-form-item label="拍摄日期" name="shootDate">
-                  <a-date-picker
-                      v-model:value="pictureForm.shootDate"
-                      style="width: 100%"
-                      placeholder="选择拍摄日期"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <!-- 色彩模式 -->
-                <a-form-item label="色彩模式" name="colorMode">
-                  <a-select
-                      v-model:value="pictureForm.colorMode"
-                      placeholder="选择色彩模式"
-                      :options="colorModeOptions"
-                      allow-clear
-                  />
-                </a-form-item>
-              </a-col>
-            </a-row>
-
-            <!-- 故事背景 -->
-            <a-form-item label="故事背景" name="story">
-              <a-textarea
-                  v-model:value="pictureForm.story"
-                  placeholder="分享这张图片背后的故事、拍摄过程或创作灵感..."
-                  :rows="4"
-                  :maxLength="1000"
+            <!-- 图片名称 -->
+            <a-form-item label="图片名称" name="name" required>
+              <a-input
+                  v-model:value="pictureForm.name"
+                  placeholder="为您的图片起个名称"
+                  :maxLength="50"
                   show-count
                   allow-clear
               />
             </a-form-item>
-          </div>
-        </div>
 
-        <!-- 隐私与权限区域 -->
-        <div class="form-section">
-          <h3 class="section-title">隐私与权限</h3>
-
-          <!-- 可见性设置 -->
-          <a-form-item label="可见性" name="visibility">
-            <a-radio-group v-model:value="pictureForm.visibility" button-style="solid">
-              <a-radio-button value="public">
-                <template #icon><global-outlined /></template>
-                公开
-              </a-radio-button>
-              <a-radio-button value="friends">
-                <template #icon><team-outlined /></template>
-                好友可见
-              </a-radio-button>
-              <a-radio-button value="private">
-                <template #icon><lock-outlined /></template>
-                仅自己可见
-              </a-radio-button>
-            </a-radio-group>
-          </a-form-item>
-
-          <!-- 版权设置 -->
-          <a-form-item label="版权设置" name="copyright">
-            <a-select
-                v-model:value="pictureForm.copyright"
-                placeholder="选择版权类型"
-                :options="copyrightOptions"
-                style="max-width: 500px"
-            >
-              <template #suffixIcon><copyright-outlined /></template>
-            </a-select>
-          </a-form-item>
-
-          <!-- 水印设置 -->
-          <a-form-item label="水印设置" name="watermark">
-            <div class="watermark-option">
-              <a-switch v-model:checked="pictureForm.enableWatermark" />
-              <span class="option-label">添加水印</span>
-            </div>
-            <div v-if="pictureForm.enableWatermark" class="watermark-settings">
-              <a-input
-                  v-model:value="pictureForm.watermarkText"
-                  placeholder="水印文字内容（如：您的用户名或网站名）"
+            <!-- 图片简介 -->
+            <a-form-item label="图片简介" name="description">
+              <a-textarea
+                  v-model:value="pictureForm.description"
+                  placeholder="描述一下您的图片内容、创作灵感或想法..."
+                  :rows="4"
+                  :maxLength="500"
+                  show-count
                   allow-clear
               />
-            </div>
-          </a-form-item>
-        </div>
+            </a-form-item>
 
-        <!-- 修改记录 -->
-        <div class="form-section">
-          <h3 class="section-title">修改记录</h3>
-          <div class="edit-history">
-            <a-timeline>
-              <a-timeline-item v-for="(record, index) in editHistory" :key="index">
-                <template #dot>
-                  <history-outlined style="fontSize: 16px" />
-                </template>
-                <div class="history-item">
-                  <div class="history-time">{{ formatDate(record.date) }}</div>
-                  <div class="history-content">{{ record.description }}</div>
-                </div>
-              </a-timeline-item>
-            </a-timeline>
+            <!-- 一行两列布局 -->
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <!-- 图片分类 - 使用树形选择器 -->
+                <a-form-item label="图片分类" name="category" required>
+                  <a-tree-select
+                      v-model:value="pictureForm.category"
+                      class="enhanced-tree-select"
+                      style="width: 100%"
+                      :dropdown-style="{ maxHeight: '400px', overflow: 'auto', padding: '8px' }"
+                      placeholder="选择图片分类"
+                      :tree-data="formattedCategoryTree"
+                      :show-search="true"
+                      :filter-tree-node="(input, treeNode) => treeNode.title.toLowerCase().indexOf(input.toLowerCase()) > -1"
+                      tree-default-expand-all
+                      allow-clear
+                  >
+                    <template #suffixIcon><appstore-outlined /></template>
+
+                    <!-- 自定义树节点的渲染 -->
+                    <template #treeTitle="{ value, title, dataRef }">
+                          <span :class="dataRef.isLeaf ? 'child-category' : 'parent-category'">
+                            <!-- 根据分类类型显示不同的图标 -->
+                            <component
+                                :is="getCategoryIcon(dataRef.type)"
+                                class="category-icon"
+                            />
+                            {{ title }}
+
+                            <!-- 为一级分类添加计数信息 -->
+                            <a-badge
+                                v-if="dataRef.contentCount && dataRef.level === 1"
+                                :count="dataRef.contentCount"
+                                :number-style="{ backgroundColor: '#52c41a', fontSize: '12px', padding: '0 6px', boxShadow: 'none' }"
+                            />
+                          </span>
+                    </template>
+                  </a-tree-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <!-- 图片标签 - 使用动态数据 -->
+                <a-form-item label="图片标签" name="tags">
+                  <a-select
+                      :value="pictureForm.tagIds"
+                      @change="handleTagChange"
+                      mode="multiple"
+                      :options="filteredTagOptions"
+                      :getPopupContainer="triggerNode => triggerNode.parentNode"
+                      placeholder="选择或输入标签"
+                      :max-tag-text-length="10"
+                      allow-clear
+                      :token-separators="[',']"
+                      option-label-prop="label"
+                      :field-names="{ label: 'label', value: 'value' }"
+                      @dropdownVisibleChange="handleDropdownVisibleChange"
+                      :label-in-value="true"
+                  >
+                    <template #suffixIcon><tags-outlined /></template>
+                    <template #option="option">
+                      <div :class="{ 'tag-option-disabled': option.disabled }">
+                        {{ option.label }}
+                      </div>
+                    </template>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+            </a-row>
           </div>
-        </div>
 
-        <!-- 提交按钮区域 -->
-        <div class="form-actions">
-          <a-popconfirm
-              title="确定要取消编辑吗？"
-              ok-text="确定"
-              cancel-text="取消"
-              @confirm="cancelEdit"
-          >
-            <a-button>取消</a-button>
-          </a-popconfirm>
-          <a-button type="primary" @click="submitForm" :loading="submitting">
-            保存更新
-          </a-button>
-        </div>
-      </a-form>
-    </a-card>
+          <!-- 修改记录 -->
+          <div class="form-section">
+            <h3 class="section-title">修改记录</h3>
+            <div class="edit-history">
+              <a-timeline>
+                <a-timeline-item v-for="(record, index) in editHistory" :key="index">
+                  <template #dot>
+                    <history-outlined style="fontSize: 16px"/>
+                  </template>
+                  <div class="history-item">
+                    <div class="history-time">{{ formatDate(record.date) }}</div>
+                    <div class="history-content">{{ record.description }}</div>
+                  </div>
+                </a-timeline-item>
+              </a-timeline>
+            </div>
+          </div>
+
+          <!-- 提交按钮区域 -->
+          <div class="form-actions">
+            <a-popconfirm
+                title="确定要取消编辑吗？"
+                ok-text="确定"
+                cancel-text="取消"
+                @confirm="cancelEdit"
+            >
+              <a-button>取消</a-button>
+            </a-popconfirm>
+            <a-button type="primary" @click="submitForm" :loading="submitting">
+              保存更新
+            </a-button>
+          </div>
+        </a-form>
+      </a-card>
 
     </div>
 
     <!-- 大图预览模态框 -->
     <a-modal v-model:visible="previewVisible" :footer="null" width="800px" centered>
-      <img :src="pictureData.imageUrl" alt="图片预览" style="width: 100%;" />
+      <img :src="pictureData.url" alt="图片预览" style="width: 100%;"/>
     </a-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { message, Modal } from 'ant-design-vue';
-import { useRouter, useRoute } from 'vue-router';
+import {ref, reactive, onMounted, computed} from 'vue';
+import {message, Modal} from 'ant-design-vue';
+import {useRouter, useRoute} from 'vue-router';
 import dayjs from 'dayjs';
 import {
-  PictureOutlined,
-  UploadOutlined,
   FormOutlined,
   AppstoreOutlined,
   TagsOutlined,
-  LockOutlined,
-  GlobalOutlined,
-  TeamOutlined,
-  CopyrightOutlined,
-  EnvironmentOutlined,
   EyeOutlined,
   LikeOutlined,
-  StarOutlined,
-  CommentOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
-  FileImageOutlined,
-  ColumnWidthOutlined,
-  FileOutlined,
-  ClockCircleOutlined,
   EditOutlined,
   HistoryOutlined,
-  InfoCircleOutlined
 } from '@ant-design/icons-vue';
 import ImageDetailCard from "@/components/picture/ImageDetailCard.vue";
+import {editPictureUsingPost, getPictureByIdUsingGet} from "@/api/tupianxiangguanjiekou.js";
+import {getCategoryTreeForFrontendUsingGet} from "@/api/fenleiguanli.js";
+import {getTagListUsingGet} from "@/api/biaoqianguanli.js";
 
 const router = useRouter();
 const route = useRoute();
@@ -368,41 +267,41 @@ const pictureId = ref(route.params.id || '123');
 // 图片信息预览模态框
 const previewVisible = ref(false);
 
-// 显示高级选项
-const showAdvanced = ref(false);
 
 // 提交状态
 const submitting = ref(false);
 
+// 分类数据
+const categoryData = ref([]);
+// 标签数据
+const tagOptions = ref([]);
+
 // 表单验证规则
 const formRules = {
-  title: [
-    { required: true, message: '请输入图片名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '图片名称长度为2-50个字符', trigger: 'blur' }
+  name: [
+    {required: true, message: '请输入图片名称', trigger: 'blur'},
+    {min: 2, max: 50, message: '图片名称长度为2-50个字符', trigger: 'blur'}
   ],
   category: [
-    { required: true, message: '请选择图片分类', trigger: 'change' }
+    {required: true, message: '请选择图片分类', trigger: 'change'}
   ]
 };
 
 // 模拟从API获取的图片数据
-const pictureData = reactive({
+const pictureData = ref({
   id: pictureId.value,
-  imageUrl: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699',
-  fileName: 'mountain_landscape.jpg',
-  dimensions: '1920 x 1080',
-  fileSize: '2.4 MB',
+  url: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699',
+  name: 'mountain_landscape.jpg',
+  picWidth: '1920',
+  picHeight: '1080',
+  picScale: '',
+  size: '2.4 KB',
   format: 'JPG',
-  uploadDate: '2023-12-10T10:30:00',
-  publishDate: '2023-12-15T14:20:00'
-});
-
-// 图片统计数据
-const pictureStats = reactive({
-  views: 2345,
-  likes: 128,
-  collects: 89,
-  comments: 45
+  createTime: '',
+  likeCount: '',
+  collectionCount: '',
+  viewCount: '',
+  commentCount: '',
 });
 
 // 图片编辑历史记录
@@ -419,81 +318,14 @@ const editHistory = reactive([
 
 // 图片表单
 const pictureFormRef = ref(null);
-const pictureForm = reactive({
-  title: '壮丽山景',
+const pictureForm = ref({
+  name: '壮丽山景',
   description: '在清晨的阳光下拍摄的山脉风景，远处的云海给画面增添了神秘感。',
   category: 'landscape',
   tags: ['nature', 'mountains', 'sunrise'],
-  device: 'Canon EOS 5D Mark IV',
-  location: '阿尔卑斯山脉',
   shootDate: dayjs('2023-10-05'),
-  colorMode: 'color',
-  story: '这张照片是我在徒步旅行的第三天早晨拍摄的。前一晚下了雨，清晨的阳光穿过云层，形成了这种壮观的光线效果。',
-  visibility: 'public',
-  copyright: 'cc-by',
-  enableWatermark: true,
-  watermarkText: 'Photography by Me'
 });
 
-// 分类选项
-const categoryOptions = [
-  { value: 'portrait', label: '人像' },
-  { value: 'landscape', label: '风景' },
-  { value: 'architecture', label: '建筑' },
-  { value: 'animals', label: '动物' },
-  { value: 'food', label: '美食' },
-  { value: 'sports', label: '运动' },
-  { value: 'street', label: '街拍' },
-  { value: 'still_life', label: '静物' },
-  { value: 'abstract', label: '抽象' },
-  { value: 'documentary', label: '纪实' },
-  { value: 'other', label: '其他' }
-];
-
-// 标签选项
-const tagOptions = [
-  { value: 'macro', label: '微距' },
-  { value: 'bw', label: '黑白' },
-  { value: 'nature', label: '自然' },
-  { value: 'city', label: '城市' },
-  { value: 'creative', label: '创意' },
-  { value: 'portrait', label: '人像' },
-  { value: 'wallpaper', label: '壁纸' },
-  { value: 'night', label: '夜景' },
-  { value: 'vintage', label: '复古' },
-  { value: 'water', label: '水景' },
-  { value: 'art', label: '艺术' },
-  { value: 'minimalism', label: '极简' },
-  { value: 'mountains', label: '山脉' },
-  { value: 'sunrise', label: '日出' }
-];
-
-// 色彩模式选项
-const colorModeOptions = [
-  { value: 'color', label: '彩色' },
-  { value: 'bw', label: '黑白' },
-  { value: 'sepia', label: '棕褐色' },
-  { value: 'vintage', label: '复古' }
-];
-
-// 版权选项
-const copyrightOptions = [
-  { value: 'cc-by', label: 'CC BY - 署名' },
-  { value: 'cc-by-sa', label: 'CC BY-SA - 署名-相同方式共享' },
-  { value: 'cc-by-nd', label: 'CC BY-ND - 署名-禁止演绎' },
-  { value: 'cc-by-nc', label: 'CC BY-NC - 署名-非商业性使用' },
-  { value: 'cc-by-nc-sa', label: 'CC BY-NC-SA - 署名-非商业性使用-相同方式共享' },
-  { value: 'cc-by-nc-nd', label: 'CC BY-NC-ND - 署名-非商业性使用-禁止演绎' },
-  { value: 'all-rights-reserved', label: '保留所有权利' }
-];
-
-// 组件挂载时获取图片数据
-onMounted(() => {
-  // 模拟API获取图片数据
-  // 在实际应用中，这里应该是一个API调用
-  console.log('获取图片ID:', pictureId.value);
-  message.success('图片数据加载成功');
-});
 
 // 日期格式化函数
 const formatDate = (dateString) => {
@@ -501,55 +333,209 @@ const formatDate = (dateString) => {
   return dayjs(dateString).format('YYYY-MM-DD HH:mm');
 };
 
-// 格式化数字显示
-const formatNumber = (num) => {
-  if (!num && num !== 0) return '0';
 
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + 'w';
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'k';
-  }
-  return num.toString();
-};
+// 为不同分类类型返回不同的图标组件
+const getCategoryIcon = (type) => {
+  const iconMap = {
+    'learning': BookOutlined,
+    'figure': UserOutlined,
+    'wallpaper': PictureOutlined,
+    'theme': FolderOutlined,
+    'picture': PictureOutlined
+  };
 
-// 计算宽高比
-const getAspectRatio = (dimensions) => {
-  if (!dimensions) return '16:9';
-
-  const parts = dimensions.split(' x ');
-  if (parts.length !== 2) return '16:9';
-
-  const width = parseInt(parts[0], 10);
-  const height = parseInt(parts[1], 10);
-
-  if (isNaN(width) || isNaN(height) || height === 0) return '16:9';
-
-  // 尝试计算常见的宽高比
-  const ratio = width / height;
-
-  if (Math.abs(ratio - 16/9) < 0.1) return '16:9';
-  if (Math.abs(ratio - 4/3) < 0.1) return '4:3';
-  if (Math.abs(ratio - 3/2) < 0.1) return '3:2';
-  if (Math.abs(ratio - 1) < 0.1) return '1:1';
-  if (Math.abs(ratio - 21/9) < 0.1) return '21:9';
-
-  // 如果不是常见比例，计算最大公约数并简化
-  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-  const divisor = gcd(width, height);
-
-  return `${width/divisor}:${height/divisor}`;
+  // 返回匹配的图标,如果没有匹配则返回默认图标
+  return iconMap[type] || AppstoreOutlined;
 };
 
 // 查看大图
 const showImagePreview = () => {
   previewVisible.value = true;
 };
+// 1. 创建计算属性，过滤掉已选择的标签
+const filteredTagOptions = computed(() => {
+  if (!pictureForm.value.tagIds || pictureForm.value.tagIds.length === 0) {
+    return tagOptions.value;
+  }
+
+  // 获取已选择的标签ID列表
+  const selectedIds = pictureForm.value.tagIds.map(tag =>
+      typeof tag === 'object' ? tag.value : tag
+  );
+
+  // 过滤掉已选择的标签
+  return tagOptions.value.filter(option => !selectedIds.includes(option.value));
+});
+
+// 2. 创建自定义的选择处理函数
+// 自定义的选择处理函数
+const handleTagChange = (selectedValues) => {
+  // 获取当前已选择的标签
+  const currentSelectedTags = pictureForm.value.tagIds || [];
+  const currentSelectedIds = currentSelectedTags.map(tag =>
+      typeof tag === 'object' ? tag.value : tag
+  );
+
+  // 如果是添加操作
+  if (selectedValues.length > currentSelectedIds.length) {
+    // 找出新添加的值
+    const newValue = selectedValues.find(value => {
+      const valueId = typeof value === 'object' ? value.value : value;
+      return !currentSelectedIds.includes(valueId);
+    });
+
+    if (newValue) {
+      // 查找完整的标签对象（包含label）
+      let newTagObject = newValue;
+      if (typeof newValue !== 'object') {
+        // 如果只有ID，查找对应的完整标签对象
+        newTagObject = tagOptions.value.find(tag => tag.value === newValue);
+      }
+
+      // 安全添加不重复的完整标签对象
+      pictureForm.value.tagIds = [...currentSelectedTags, newTagObject];
+    }
+  } else {
+    // 如果是删除操作
+    const deletedValue = currentSelectedIds.find(id =>
+        !selectedValues.includes(id) &&
+        !selectedValues.some(v => typeof v === 'object' && v.value === id)
+    );
+
+    if (deletedValue !== undefined) {
+      // 从标签列表中删除
+      pictureForm.value.tagIds = currentSelectedTags.filter(tag => {
+        const tagId = typeof tag === 'object' ? tag.value : tag;
+        return tagId !== deletedValue;
+      });
+    } else {
+      // 直接使用新值（可能是完整删除或其他情况）
+      pictureForm.value.tagIds = selectedValues;
+    }
+  }
+};
+// 3. 创建标签选项渲染函数
+const renderTagOption = (option) => {
+  // 检查选项是否已选择
+  const isSelected = pictureForm.value.tagIds?.some(tag => {
+    const tagValue = typeof tag === 'object' ? tag.value : tag;
+    return tagValue === option.value;
+  });
+
+  return {
+    ...option,
+    disabled: isSelected // 禁用已选择的选项
+  };
+};
 
 // 取消编辑
 const cancelEdit = () => {
   message.info('已取消编辑');
   router.push(`/picture/detail/${pictureId.value}`);
+};
+
+
+// 将原始分类数据转换为TreeSelect组件可用的格式
+const formattedCategoryTree = computed(() => {
+  return formatCategoryTree(categoryData.value);
+});
+
+// 获取分类数据（树形结构）
+const fetchCategoryTree = async () => {
+  try {
+    const result = await getCategoryTreeForFrontendUsingGet({
+
+    });
+
+    if (result && result.data) {
+      categoryData.value = result.data.data;
+      console.log('分类数据获取成功:', categoryData.value);
+    } else {
+      console.error('分类数据获取失败');
+      message.error('分类数据获取失败');
+    }
+  } catch (error) {
+    console.error('获取分类数据出错:', error);
+    message.error('获取分类数据出错: ' + (error.message || '未知错误'));
+  }
+};
+
+// 获取标签数据
+const fetchTags = async () => {
+  try {
+    const result = await getTagListUsingGet();
+
+    if (result && result.data) {
+      // 转换标签数据为select需要的格式
+      tagOptions.value = result.data.data.map(tag => ({
+        value: tag.id,
+        label: tag.name
+      }));
+    } else {
+      console.error('标签数据获取失败');
+      message.error('标签数据获取失败');
+    }
+  } catch (error) {
+    console.error('获取标签数据出错:', error);
+    message.error('获取标签数据出错: ' + (error.message || '未知错误'));
+  }
+};
+
+
+
+// 递归格式化分类树，用于TreeSelect组件
+const formatCategoryTree = (categories) => {
+  if (!categories || !Array.isArray(categories)) return [];
+
+  return categories.map(category => ({
+    value: category.id,
+    title: category.name,
+    key: category.id,
+    isLeaf: !category.children || category.children.length === 0,
+    selectable: true,
+    // 添加原始数据中的其他有用字段
+    type: category.type,
+    level: category.level,
+    contentCount: category.contentCount,
+    icon: category.icon,
+    children: category.children ? formatCategoryTree(category.children) : []
+  }));
+};
+
+// 获取图片详情数据
+const fetchPictureDetail = async (id) => {
+  try {
+    const response = await getPictureByIdUsingGet({id});
+
+
+    if (response && response.data) {
+      pictureData.value = response.data.data;
+
+      console.log(JSON.stringify(pictureData.value));
+
+      const tagsData = [];
+      if (response.data.data.tagIds && response.data.data.tags) {
+        const minLength = Math.min(response.data.data.tagIds.length, response.data.data.tags.length);
+        for (let i = 0; i < minLength; i++) {
+          tagsData.push({
+            value: response.data.data.tagIds[i],
+            label: response.data.data.tags[i]
+          });
+        }
+      }
+
+      pictureForm.value = {
+        ...response.data.data,
+        category: response.data.data.categoryId,
+        tagIds: tagsData
+      };
+    } else {
+      message.error('获取图片详情失败');
+    }
+  } catch (error) {
+    console.error('获取图片详情错误:', error);
+    message.error('获取图片详情出错');
+  }
 };
 
 // 提交表单
@@ -563,40 +549,62 @@ const submitForm = async () => {
 
     // 构建提交数据
     const formData = {
-      ...pictureForm,
-      id: pictureId.value
+      id: pictureId.value,
+      name: pictureForm.value.name,
+      description: pictureForm.value.description,
+      categoryId: pictureForm.value.category,
+      tagIds: Array.isArray(pictureForm.value.tagIds) && pictureForm.value.tagIds.length > 0
+          ? pictureForm.value.tagIds.map(tag => {
+            // 处理三种可能的情况：
+            // 1. 标签是对象，有value属性
+            // 2. 标签是对象，没有value属性但直接是id
+            // 3. 标签直接是id值
+            if (typeof tag === 'object') {
+              return tag.value !== undefined ? tag.value : tag.id;
+            }
+            return tag; // 直接是id值的情况
+          })
+          : []
     };
 
-    // 模拟API提交
-    console.log('提交的更新数据:', formData);
+    // 调用编辑接口
+    const result = await editPictureUsingPost(formData);
+    console.log(JSON.stringify(formData));
 
-    // 模拟提交延迟
-    setTimeout(() => {
-      // 提交完成
-      submitting.value = false;
+    if (result && result.data) {
+      // 提交成功的处理逻辑
+      message.success('图片信息更新成功');
 
       // 更新编辑历史记录
       editHistory.unshift({
         date: new Date().toISOString(),
-        description: '更新了图片信息和设置'
+        description: '更新了图片信息'
       });
 
-      // 提示成功
-      Modal.success({
-        title: '更新成功',
-        content: '您的图片信息已成功更新',
-        okText: '返回图片详情',
-        onOk: () => {
-          router.push(`/picture/detail/${pictureId.value}`);
-        }
-      });
-    }, 1500);
+      // 重新获取图片详情,以更新页面数据
+      await fetchPictureDetail(pictureId.value);
+
+    } else {
+      // 提交失败的处理逻辑
+      message.error('图片信息更新失败');
+    }
 
   } catch (error) {
-    console.error('表单验证失败:', error);
-    message.error('请检查表单是否填写正确');
+    console.error('表单验证失败或提交出错:', error);
+    message.error('请检查表单填写是否正确');
+  } finally {
+    submitting.value = false;
   }
 };
+
+onMounted(async () => {
+  // 获取图片详情
+  await fetchPictureDetail(pictureId.value);
+
+  // 获取分类和标签数据
+  await fetchCategoryTree();
+  await fetchTags();
+});
 </script>
 
 <style scoped>
@@ -607,7 +615,6 @@ const submitForm = async () => {
 }
 
 /* 卡片通用样式 */
-.info-card,
 .form-card {
   margin-bottom: 24px;
   border-radius: 12px;
@@ -616,7 +623,7 @@ const submitForm = async () => {
   overflow: hidden;
 }
 
-.card-title,
+
 .form-card-title {
   display: flex;
   align-items: center;
@@ -625,74 +632,12 @@ const submitForm = async () => {
   font-weight: 500;
 }
 
-/* 图片详细信息样式 */
-.picture-details {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.technical-info {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  padding: 0 8px;
-}
 
 .technical-info .info-item {
   display: flex;
   align-items: center;
 }
 
-.info-label {
-  color: #8c8c8c;
-  font-size: 14px;
-  width: 70px;
-  margin-right: 8px;
-}
-
-.info-value {
-  color: #262626;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-/* 统计数据样式 */
-.stats-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  background-color: #f9f9fa;
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 8px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.stat-icon {
-  font-size: 18px;
-  color: #6366f1;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: #262626;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #8c8c8c;
-}
 
 /* 表单区域样式 */
 .form-section {
@@ -700,12 +645,6 @@ const submitForm = async () => {
   padding: 0 24px;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
 
 .section-title {
   font-size: 16px;
@@ -714,29 +653,6 @@ const submitForm = async () => {
   font-weight: 500;
 }
 
-.advanced-options {
-  background-color: #f9f9fa;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  border: 1px solid #f0f0f0;
-}
-
-/* 水印选项 */
-.watermark-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.option-label {
-  color: #262626;
-}
-
-.watermark-settings {
-  margin-top: 12px;
-}
 
 /* 编辑历史样式 */
 .edit-history {
@@ -977,7 +893,7 @@ const submitForm = async () => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
 .circle-1 {
@@ -1029,28 +945,6 @@ const submitForm = async () => {
   display: flex;
   flex-direction: column;
   gap: 36px; /* 增加卡片之间的间距 */
-}
-
-/* 调整图片详细信息卡片的样式 */
-.detail-card {
-  margin-bottom: 0; /* 移除原有的底部边距 */
-}
-
-/* 调整页面内边距，增加视觉呼吸感 */
-.edit-picture-page {
-  padding: 28px; /* 增加页面内边距 */
-  background-color: #f5f7fa;
-  min-height: calc(100vh - 64px);
-}
-
-/* 修改卡片底部边距，避免多重边距效果 */
-.info-card,
-.form-card {
-  margin-bottom: 0; /* 移除原有的底部边距 */
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  background-color: white;
-  overflow: hidden;
 }
 
 /* 增强页面头部与内容之间的间距 */
@@ -1130,18 +1024,7 @@ const submitForm = async () => {
     width: 30px;
   }
 
-  .technical-info {
-    grid-template-columns: 1fr;
-  }
 
-  .stats-info {
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .stat-item {
-    flex: 1 0 40%;
-  }
 }
 
 /* 暗黑模式适配 */
@@ -1153,51 +1036,6 @@ const submitForm = async () => {
   .enhanced-page-header {
     background: linear-gradient(135deg, #3a59c7 0%, #5d3eae 100%);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  }
-
-  .info-card,
-  .form-card {
-    background-color: #1f1f1f;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .card-title,
-  .form-card-title,
-  .section-title {
-    color: #e0e0e0;
-  }
-
-  .info-label {
-    color: #a6a6a6;
-  }
-
-  .info-value {
-    color: #e0e0e0;
-  }
-
-  .stats-info {
-    background-color: #2a2a2a;
-  }
-
-  .stat-icon {
-    color: #a5a8ff;
-  }
-
-  .stat-value {
-    color: #e0e0e0;
-  }
-
-  .stat-label {
-    color: #a6a6a6;
-  }
-
-  .advanced-options {
-    background-color: #2a2a2a;
-    border-color: #333;
-  }
-
-  .option-label {
-    color: #e0e0e0;
   }
 
   .edit-history {
