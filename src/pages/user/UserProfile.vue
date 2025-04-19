@@ -1,53 +1,113 @@
-<!-- UserCenterPage.vue -->
 <template>
-  <div class="user-center-page">
-    <!-- 顶部信息卡片 -->
-    <a-card class="user-profile-card" :bordered="false">
-      <div class="user-profile-header">
-        <div class="user-avatar-container">
-          <a-avatar :size="100" :src="userInfo.avatar"/>
-          <div class="edit-avatar">
-            <camera-outlined/>
-          </div>
+  <div class="profile-card">
+    <!-- 顶部渐变背景 -->
+    <div class="profile-header">
+      <!-- 用户头像和基本信息 -->
+      <div class="user-profile">
+        <div class="avatar-wrapper">
+          <a-avatar :src="userInfo.avatar" :size="85" />
+          <div class="status-indicator" v-if="userInfo.online"></div>
         </div>
+
         <div class="user-info">
-          <h1 class="user-name">{{ userInfo.name }}</h1>
-          <p class="user-bio">{{ userInfo.userProfile }}</p>
-          <div class="user-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ userInfo.imageCount }}</span>
-              <span class="stat-label">图片</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ userInfo.filterCount }}</span>
-              <span class="stat-label">筛选器</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ userInfo.favoriteCount }}</span>
-              <span class="stat-label">收藏</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ userInfo.viewCount }}</span>
-              <span class="stat-label">被浏览</span>
-            </div>
+          <div class="name-row">
+            <h2 class="user-name">{{ userInfo.name }}</h2>
+            <verified-outlined v-if="userInfo.verified" class="verified-icon" />
+            <a-tag v-if="userInfo.level" class="level-tag" color="#faad14">
+              Lv.{{ userInfo.level }}
+            </a-tag>
           </div>
-          <div class="user-actions">
-            <a-button type="primary" @click="showEditProfileDialog">
-              <template #icon>
-                <edit-outlined/>
-              </template>
-              编辑资料
-            </a-button>
-            <a-button @click="showAccountSettingsDialog">
-              <template #icon>
-                <setting-outlined/>
-              </template>
-              账号设置
-            </a-button>
+
+          <p class="user-bio">{{ userInfo.userProfile }}</p>
+
+          <div class="meta-info">
+            <span class="location"><environment-outlined /> {{ userInfo.location }}</span>
+            <span class="join-date"><calendar-outlined /> {{ formatJoinDate(userInfo.createTime) }}</span>
           </div>
         </div>
       </div>
-    </a-card>
+    </div>
+
+    <!-- 统计数据与活跃度 -->
+    <div class="stats-container">
+      <!-- 左侧统计信息 -->
+      <div class="stats-grid">
+        <div class="stat-block">
+          <picture-outlined class="stat-icon" />
+          <div class="stat-content">
+            <span class="stat-value">{{ userInfo.imageCount }}</span>
+            <span class="stat-label">图片</span>
+            <div class="stat-indicator" :style="getProgressStyle(userInfo.imageCount, 200)"></div>
+          </div>
+        </div>
+
+        <div class="stat-block">
+          <filter-outlined class="stat-icon" />
+          <div class="stat-content">
+            <span class="stat-value">{{ userInfo.filterCount }}</span>
+            <span class="stat-label">筛选器</span>
+            <div class="stat-indicator" :style="getProgressStyle(userInfo.filterCount, 20)"></div>
+          </div>
+        </div>
+
+        <div class="stat-block">
+          <heart-outlined class="stat-icon" />
+          <div class="stat-content">
+            <span class="stat-value">{{ userInfo.favoriteCount }}</span>
+            <span class="stat-label">收藏</span>
+            <div class="stat-indicator" :style="getProgressStyle(userInfo.favoriteCount, 300)"></div>
+          </div>
+        </div>
+
+        <div class="stat-block">
+          <eye-outlined class="stat-icon" />
+          <div class="stat-content">
+            <span class="stat-value">{{ formatNumber(userInfo.viewCount) }}</span>
+            <span class="stat-label">被浏览</span>
+            <div class="stat-indicator" :style="getProgressStyle(userInfo.viewCount, 15000)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧活跃度与操作按钮 -->
+      <div class="activity-section">
+        <div class="activity-header">
+          <span class="section-title">活跃度</span>
+          <span class="active-days" v-if="userInfo.activeDays > 30">
+            <fire-outlined /> {{ userInfo.activeDays }}天活跃
+          </span>
+        </div>
+
+        <div class="activity-chart">
+          <div class="activity-cell"
+               v-for="(value, index) in activityData"
+               :key="index"
+               :class="getActivityClass(value)">
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <a-button type="primary" @click="showEditProfileDialog">
+            <edit-outlined />编辑资料
+          </a-button>
+          <a-button @click="showAccountSettingsDialog">
+            <setting-outlined />设置
+          </a-button>
+          <a-dropdown>
+            <a-button>
+              <more-outlined />
+            </a-button>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item key="share"><share-alt-outlined />分享主页</a-menu-item>
+                <a-menu-item key="theme"><bg-colors-outlined />更换主题</a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+        </div>
+      </div>
+    </div>
+  </div>
 
     <!-- 主要内容区 -->
     <div class="content-container">
@@ -449,7 +509,6 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
 
   <edit-profile-dialog
@@ -484,7 +543,6 @@ import {
   TeamOutlined,
   DownloadOutlined,
   EyeOutlined,
-  ShareAltOutlined,
   DeleteOutlined,
   UploadOutlined,
   PlusOutlined,
@@ -497,10 +555,17 @@ import {
   CameraOutlined,
   MessageOutlined,
   FireOutlined,
-  ClockCircleOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
-  StarOutlined
+  TrophyOutlined,
+  CrownOutlined,
+  VerifiedOutlined,
+  FilterOutlined,
+  ShareAltOutlined,
+  QrcodeOutlined,
+  BgColorsOutlined,
+  ExportOutlined,
+  EllipsisOutlined
 } from '@ant-design/icons-vue';
 
 // 导入自定义图片卡片组件
@@ -516,30 +581,27 @@ const userStore = useUserStore();
 
 // 用户信息
 const userInfo = computed(() => {
-  // 如果用户已登录，返回store中的用户信息
+  //返回store中的用户信息
   if (userStore.isLoggedIn && userStore.userInfo) {
     return {
-      name: userStore.userInfo.username || userStore.userInfo.account,
+      name: userStore.userInfo.username || userStore.userInfo.username,
+      account: userStore.userInfo.account || userStore.userInfo.account,
       avatar: userStore.userInfo.avatar || defaultAvatar.value,
       userProfile: userStore.userInfo.userProfile || '热爱技术与设计的前端开发者，Vue.js爱好者，喜欢分享高质量的编程资源和UI设计灵感。',
       // 保留其他统计数据
       imageCount: 128,
       filterCount: 12,
       favoriteCount: 256,
-      viewCount: 10520
+      viewCount: 10520,
+      level: 5,
+      verified: true,
+      premium: true,
+      online: true,
+      createTime: userStore.userInfo.createTime || '2023-01-15T08:30:00.000Z',
+      location: '中国',
+      activeDays: 45
     };
   }
-
-  // 若用户未登录，返回默认值
-  return {
-    name: '游客',
-    avatar: 'https://cdn.pixabay.com/photo/2016/11/18/23/38/child-1837375_1280.png',
-    userProfile: '您当前未登录，请登录后查看个人资料。',
-    imageCount: 0,
-    filterCount: 0,
-    favoriteCount: 0,
-    viewCount: 0
-  };
 })
 
 
@@ -602,6 +664,44 @@ const userImages = reactive([
     isHot: true
   },
 ]);
+
+// 模拟用户活跃度数据 (用于活跃度图表)
+const activityData = reactive([
+  3, 5, 0, 2, 7, 4, 1, 3, 5, 6, 0, 2, 4, 7, 5, 3, 2, 0, 4, 6, 5, 7, 3, 1, 2, 6, 4
+]);
+
+// 获取活跃度单元格的样式类
+const getActivityClass = (value) => {
+  if (value === 0) return 'activity-none';
+  if (value < 3) return 'activity-low';
+  if (value < 5) return 'activity-medium';
+  return 'activity-high';
+};
+
+// 获取进度条样式
+const getProgressStyle = (value, max) => {
+  const percentage = Math.min((value / max) * 100, 100);
+  return {
+    background: `linear-gradient(90deg, #6554C0 0%, #9F94E8 ${percentage}%, #f0f0f0 ${percentage}%)`,
+  };
+};
+
+
+// 格式化数字（超过1000显示为1k）
+const formatNumber = (num) => {
+  if (num >= 10000) {
+    return (num / 10000).toFixed(1) + 'w';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k';
+  }
+  return num;
+};
+
+// 格式化加入日期
+const formatJoinDate = (dateString) => {
+  if (!dateString) return '加入时间未知';
+  return '加入于 ' + dayjs(dateString).format('YYYY年MM月');
+};
 
 
 // 添加默认头像计算属性
@@ -836,7 +936,7 @@ const userAccount = reactive({
 const showEditProfileDialog = () => {
   // 确保userInfo中的信息是最新的
   if (userStore.isLoggedIn) {
-    // 可以在这里触发刷新用户信息的操作
+    // 触发刷新用户信息的操作
     userStore.validateToken();
   }
 
@@ -913,14 +1013,6 @@ const leaveTeam = (team) => {
   message.warning(`确定要退出团队 "${team.name}" 吗?`);
 };
 
-// 个人资料相关函数
-const handleEditProfile = () => {
-  message.info('编辑个人资料');
-};
-
-const handleSettings = () => {
-  message.info('打开账号设置');
-};
 
 // 添加更多图片用于分页展示
 const addMoreImages = () => {
@@ -977,95 +1069,267 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 基础样式 */
-.user-center-page {
-  padding: 24px;
-  background-color: var(--bg-color, #f9fafb);
-  min-height: calc(100vh - 64px);
-}
-
-/* 用户资料卡片 */
-.user-profile-card {
-  margin-bottom: 24px;
+/* 主卡片样式 */
+.profile-card {
+  background-color: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
 }
 
-.user-profile-header {
-  display: flex;
-  gap: 24px;
-}
-
-.user-avatar-container {
+/* 顶部渐变背景 */
+.profile-header {
+  background: linear-gradient(120deg, #6554C0, #9F94E8);
+  padding: 24px;
   position: relative;
-  width: 100px;
-  height: 100px;
 }
 
-.edit-avatar {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: var(--primary-color, #6554C0);
-  color: white;
+/* 用户资料展示 */
+.user-profile {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease;
+  gap: 20px;
 }
 
-.edit-avatar:hover {
-  transform: scale(1.1);
+.avatar-wrapper {
+  position: relative;
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #52c41a;
+  border: 2px solid white;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
 .user-info {
-  flex: 1;
+  color: white;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
 }
 
 .user-name {
-  font-size: 24px;
+  margin: 0;
+  font-size: 20px;
   font-weight: 600;
-  color: var(--text-primary, #111827);
-  margin: 0 0 4px 0;
+}
+
+.verified-icon {
+  color: #1890ff;
+  font-size: 16px;
+  background-color: white;
+  border-radius: 50%;
+  padding: 2px;
+}
+
+.level-tag {
+  margin: 0;
+  font-size: 12px;
 }
 
 .user-bio {
-  color: var(--text-secondary, #6b7280);
-  margin: 0 0 16px 0;
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  max-width: 500px;
+  opacity: 0.9;
+  line-height: 1.5;
 }
 
-.user-stats {
+.meta-info {
   display: flex;
-  gap: 24px;
-  margin-bottom: 16px;
+  gap: 16px;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
-.stat-item {
+.meta-info span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 统计数据与活跃度 */
+.stats-container {
+  display: flex;
+  padding: 20px;
+  gap: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  flex: 3;
+}
+
+.stat-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.stat-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+}
+
+.stat-icon {
+  color: #6554C0;
+  font-size: 24px;
+}
+
+.stat-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  flex: 1;
 }
 
 .stat-value {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary, #111827);
+  color: #262626;
+  line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 5px;
 }
 
-.user-actions {
+.stat-indicator {
+  height: 3px;
+  border-radius: 1.5px;
+  width: 100%;
+}
+
+/* 活跃度与按钮区域 */
+.activity-section {
+  flex: 2;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+}
+
+.active-days {
+  font-size: 12px;
+  color: #ff7a45;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.activity-chart {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16px, 1fr));
+  gap: 3px;
+  margin-bottom: 15px;
+}
+
+.activity-cell {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background-color: #f0f0f0;
+  transition: transform 0.2s ease;
+}
+
+.activity-cell:hover {
+  transform: scale(1.2);
+}
+
+.activity-none {
+  background-color: #f0f0f0;
+}
+
+.activity-low {
+  background-color: #d9f7be;
+}
+
+.activity-medium {
+  background-color: #95de64;
+}
+
+.activity-high {
+  background-color: #52c41a;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.action-buttons :deep(.ant-btn) {
+  border-radius: 6px;
+}
+
+.action-buttons :deep(.ant-btn-primary) {
+  background-color: #6554C0;
+  border-color: #6554C0;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .stats-container {
+    flex-direction: column;
+  }
+
+  .activity-chart {
+    grid-template-columns: repeat(auto-fill, minmax(14px, 1fr));
+  }
+
+  .activity-cell {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  .user-profile {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .meta-info {
+    justify-content: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    justify-content: center;
+  }
 }
 
 /* 内容区布局 */
