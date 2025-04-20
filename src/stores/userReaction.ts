@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { message } from 'ant-design-vue';
+import {defineStore} from 'pinia';
+import {ref, computed} from 'vue';
+import {message} from 'ant-design-vue';
 import {
     addReactionUsingPost,
     getReactionStatusUsingGet,
@@ -11,8 +11,11 @@ import {
     unlikePictureUsingGet,
     favoritePictureUsingGet,
     unfavoritePictureUsingGet,
-    getUserInteractionStatsUsingGet
-} from '@/api/yonghudianzancaishoucangchakandengcaozuoxiangguanjiekou';
+    getUserInteractionStatsUsingGet,
+    likeCommentUsingGet,
+    unlikeCommentUsingGet
+} from '@/api/yonghudianzancaishoucangdengcaozuoxiangguanjiekou';
+import { useUserStore } from './user';
 
 // 确保ID格式正确
 const ensureIdFormat = (id: number | string): number => {
@@ -41,7 +44,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
     const favoriteCount = computed(() => userStats.value?.favoritesCreated || 0);
     const viewCount = computed(() => userStats.value?.viewCount || 0);
 
-    // 获取用户交互统计 - 修复这个函数，确保它能正常工作
+    // 获取用户交互统计
     const fetchUserStats = async () => {
         try {
             const response = await getUserInteractionStatsUsingGet();
@@ -57,7 +60,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
         }
     };
 
-    // 获取指定图片的反应状态 - 添加强制刷新选项
+    // 获取指定目标的反应状态 - 添加强制刷新选项
     const getStatus = async (targetId: number | string, targetType = 'picture', forceRefresh = false) => {
         const key = getReactionKey(targetType, targetId);
 
@@ -85,7 +88,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
         }
     };
 
-    // 批量获取多个图片的反应状态
+    // 批量获取多个目标的反应状态
     const batchGetStatus = async (targetIds: (number | string)[], targetType = 'picture') => {
         if (!targetIds.length) return {};
 
@@ -93,7 +96,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
             const numericIds = targetIds.map(id => ensureIdFormat(id)).filter(id => id !== 0);
 
             const response = await batchGetReactionStatusUsingPost(
-                { targetType },
+                {targetType},
                 numericIds
             );
 
@@ -113,7 +116,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
         }
     };
 
-    // 获取指定图片的反应计数
+    // 获取指定目标的反应计数
     const getCounts = async (targetId: number | string, targetType = 'picture', forceRefresh = false) => {
         const key = getReactionKey(targetType, targetId);
 
@@ -142,7 +145,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
         }
     };
 
-    // 批量获取多个图片的反应计数
+    // 批量获取多个目标的反应计数
     const batchGetCounts = async (targetIds: (number | string)[], targetType = 'picture') => {
         if (!targetIds.length) return {};
 
@@ -150,7 +153,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
             const numericIds = targetIds.map(id => ensureIdFormat(id)).filter(id => id !== 0);
 
             const response = await batchGetReactionCountsUsingPost(
-                { targetType },
+                {targetType},
                 numericIds
             );
 
@@ -175,7 +178,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
             const numericId = ensureIdFormat(pictureId);
 
             // 调用API - 确保参数是数字类型
-            const response = await likePictureUsingGet({ pictureId: numericId });
+            const response = await likePictureUsingGet({pictureId: numericId});
 
             if (response?.data?.code === 200 && response.data.data === true) {
                 // 强制刷新状态和计数
@@ -211,7 +214,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
             const numericId = ensureIdFormat(pictureId);
 
             // 调用API - 确保参数是数字类型
-            const response = await unlikePictureUsingGet({ pictureId: numericId });
+            const response = await unlikePictureUsingGet({pictureId: numericId});
 
             if (response?.data?.code === 200 && response.data.data === true) {
                 // 更新本地状态
@@ -247,7 +250,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
             const numericId = ensureIdFormat(pictureId);
 
             // 调用API - 确保参数是数字类型
-            const response = await favoritePictureUsingGet({ pictureId: numericId });
+            const response = await favoritePictureUsingGet({pictureId: numericId});
 
             if (response?.data?.code === 200 && response.data.data === true) {
                 // 更新本地状态
@@ -283,7 +286,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
             const numericId = ensureIdFormat(pictureId);
 
             // 调用API - 确保参数是数字类型
-            const response = await unfavoritePictureUsingGet({ pictureId: numericId });
+            const response = await unfavoritePictureUsingGet({pictureId: numericId});
 
             if (response?.data?.code === 200 && response.data.data === true) {
                 // 更新本地状态
@@ -320,6 +323,13 @@ export const useUserReactionStore = defineStore('userReaction', () => {
     // 切换图片点赞状态
     const toggleLike = async (pictureId: number | string) => {
         try {
+            // 检查用户登录状态
+            const userStore = useUserStore();
+            if (!userStore.isLoggedIn) {
+                message.warning('请先登录后再操作');
+                return false;
+            }
+
             // 获取当前状态
             let status = reactionStatusMap.value[getReactionKey('picture', pictureId)];
 
@@ -344,6 +354,13 @@ export const useUserReactionStore = defineStore('userReaction', () => {
     // 切换图片收藏状态
     const toggleFavorite = async (pictureId: number | string) => {
         try {
+            // 检查用户登录状态
+            const userStore = useUserStore();
+            if (!userStore.isLoggedIn) {
+                message.warning('请先登录后再操作');
+                return false;
+            }
+
             // 获取当前状态
             const key = getReactionKey('picture', pictureId);
             let status = reactionStatusMap.value[key];
@@ -383,6 +400,132 @@ export const useUserReactionStore = defineStore('userReaction', () => {
             message.error('操作失败，请稍后重试');
             throw error;
         }
+    };
+
+    // 点赞评论
+    const likeComment = async (commentId: number | string) => {
+        try {
+            const numericId = ensureIdFormat(commentId);
+
+            // 调用API执行点赞操作
+            const response = await likeCommentUsingGet({commentId: numericId});
+
+            if (response?.data?.code === 200 && response.data.data === true) {
+                console.log(JSON.stringify(response.data.data));
+                // 立即更新本地状态
+                const key = getReactionKey('comment', commentId);
+
+                // 更新或创建状态对象
+                reactionStatusMap.value[key] = {
+                    ...(reactionStatusMap.value[key] || {}),
+                    hasLiked: true
+                };
+
+                // 更新点赞计数
+                if (reactionCountsMap.value[key]) {
+                    const currentCount = reactionCountsMap.value[key].likeCount || 0;
+                    reactionCountsMap.value[key] = {
+                        ...reactionCountsMap.value[key],
+                        likeCount: currentCount + 1
+                    };
+                }
+
+                return true;
+            } else {
+                message.error(response?.data?.message || '点赞失败，请稍后重试');
+                return false;
+            }
+        } catch (error) {
+            console.error(`点赞评论异常，ID: ${commentId}，错误:`, error);
+            message.error('点赞失败，请稍后重试');
+            return false;
+        }
+    };
+
+    // 取消点赞评论
+    const unlikeComment = async (commentId: number | string) => {
+        try {
+            const numericId = ensureIdFormat(commentId);
+
+            // 调用API执行取消点赞操作
+            const response = await unlikeCommentUsingGet({commentId: numericId});
+
+            if (response?.data?.code === 200 && response.data.data === true) {
+                // 更新本地状态
+                const key = getReactionKey('comment', commentId);
+
+                // 更新或创建状态对象
+                reactionStatusMap.value[key] = {
+                    ...(reactionStatusMap.value[key] || {}),
+                    hasLiked: false
+                };
+
+                // 更新点赞计数
+                if (reactionCountsMap.value[key]) {
+                    const currentCount = reactionCountsMap.value[key].likeCount || 0;
+                    if (currentCount > 0) {
+                        reactionCountsMap.value[key] = {
+                            ...reactionCountsMap.value[key],
+                            likeCount: currentCount - 1
+                        };
+                    }
+                }
+
+                return true;
+            } else {
+                message.error(response?.data?.message || '操作失败，请稍后重试');
+                return false;
+            }
+        } catch (error) {
+            console.error(`取消点赞评论异常，ID: ${commentId}，错误:`, error);
+            message.error('操作失败，请稍后重试');
+            return false;
+        }
+    };
+
+
+
+    const toggleLikeComment = async (commentId: number | string) => {
+        try {
+            // 检查用户登录状态
+            const userStore = useUserStore();
+            if (!userStore.isLoggedIn) {
+                message.warning('请先登录后再操作');
+                return false;
+            }
+
+            // 获取当前状态 - 这里修改为正确的 targetType 'comment'
+            const key = getReactionKey('comment', commentId);
+            let status = reactionStatusMap.value[key];
+
+            // 如果没有本地状态，则从服务器获取
+            if (!status) {
+                status = await getStatus(commentId, 'comment', true);
+            }
+
+            // 根据当前状态执行操作
+            const result = status?.hasLiked
+                ? await unlikeComment(commentId)
+                : await likeComment(commentId);
+
+            return result;
+        } catch (error) {
+            console.error('点赞操作失败', error);
+            message.error('操作失败，请稍后重试');
+            throw error;
+        }
+    };
+
+    // 检查指定评论是否已点赞
+    const isCommentLiked = (commentId: number | string) => {
+        const key = getReactionKey('comment', commentId);
+        return !!reactionStatusMap.value[key]?.hasLiked;
+    };
+
+    // 获取指定评论的点赞数
+    const getCommentLikeCount = (commentId: number | string) => {
+        const key = getReactionKey('comment', commentId);
+        return reactionCountsMap.value[key]?.likeCount || 0;
     };
 
     // 检查指定图片是否已点赞 - 直接使用本地状态
@@ -460,7 +603,7 @@ export const useUserReactionStore = defineStore('userReaction', () => {
         favoriteCount,
         viewCount,
 
-        // 方法
+        // 图片点赞方法
         getStatus,
         batchGetStatus,
         getCounts,
@@ -478,6 +621,13 @@ export const useUserReactionStore = defineStore('userReaction', () => {
         getPictureViewCount,
         addViewRecord,
         initialize,
-        fetchUserStats  // 确保这个方法被导出
+        fetchUserStats,
+
+        // 评论相关方法
+        likeComment,
+        unlikeComment,
+        toggleLikeComment,
+        isCommentLiked,
+        getCommentLikeCount
     };
 });

@@ -100,6 +100,21 @@ export async function likePictureUsingGet(
   });
 }
 
+/** 快捷接口：点赞评论 GET /api/reaction/likeComment */
+export async function likeCommentUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.likeCommentUsingGETParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.ResultBoolean_>("/api/reaction/likeComment", {
+    method: "GET",
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
 /** 取消用户点赞/收藏 POST /api/reaction/remove */
 export async function removeReactionUsingPost(
   body: API.UserReactionRequest,
@@ -175,6 +190,21 @@ export async function unlikePictureUsingGet(
   options?: { [key: string]: any }
 ) {
   return request<API.ResultBoolean_>("/api/reaction/unlike", {
+    method: "GET",
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
+/** 快捷接口：取消点赞评论 GET /api/reaction/unlikeComment */
+export async function unlikeCommentUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.unlikeCommentUsingGETParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.ResultBoolean_>("/api/reaction/unlikeComment", {
     method: "GET",
     params: {
       ...params,
