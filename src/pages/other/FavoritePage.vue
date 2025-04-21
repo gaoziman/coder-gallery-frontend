@@ -1945,24 +1945,32 @@ onMounted(() => {
 <style scoped>
 /* 基础页面样式 */
 .favorite-page {
-  padding: 16px 2vw; /* 使用相对单位减少两侧空白 */
-  max-width: 1600px; /* 增加最大宽度适应大屏 */
+  padding: 16px 8px; /* 改用固定内边距减少两侧空白 */
+  max-width: 98%; /* 增加页面占比，减少边距 */
   margin: 0 auto;
   width: 100%;
 }
 
-/* 优化卡片网格布局 - 瀑布流列数调整 */
+/* 修改瀑布流布局，使其在大屏幕上显示更多列 */
 @media (min-width: 1400px) {
   .favorite-page .masonry-gallery {
-    column-count: 5; /* 大屏增加列数 */
-    column-gap: 20px;
+    column-count: 5; /* 原来是5列 */
+    column-gap: 16px; /* 减小间距，原来是20px */
   }
 }
 
 @media (min-width: 1800px) {
   .favorite-page .masonry-gallery {
-    column-count: 6; /* 超宽屏幕显示更多列 */
-    column-gap: 24px;
+    column-count: 6; /* 原来也是6列 */
+    column-gap: 20px; /* 减小间距，原来是24px */
+  }
+}
+
+/* 增加超宽屏幕支持 */
+@media (min-width: 2200px) {
+  .favorite-page .masonry-gallery {
+    column-count: 7; /* 超宽屏幕显示7列 */
+    column-gap: 20px;
   }
 }
 

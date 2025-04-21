@@ -1889,8 +1889,8 @@ onMounted(() => {
 <style scoped>
 /* 基础页面样式 */
 .recent-view-page {
-  padding: 16px;
-  max-width: 1400px;
+  padding: 16px 8px; /* 减少两侧内边距 */
+  max-width: 98%; /* 增加页面占比，减少边距 */
   margin: 0 auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -2597,25 +2597,47 @@ onMounted(() => {
   width: 100%;
 }
 
+/* 修复瀑布流布局 - 增加列数，减小间距 */
 @media (min-width: 576px) {
-  .favorite-page .masonry-gallery {
+  .recent-view-page .masonry-gallery {
     column-count: 2;
-    column-gap: 16px;
+    column-gap: 14px; /* 减小间距，原来是16px */
   }
 }
 
 @media (min-width: 992px) {
-  .favorite-page .masonry-gallery {
+  .recent-view-page .masonry-gallery {
     column-count: 3;
-    column-gap: 20px;
+    column-gap: 16px; /* 减小间距，原来是20px */
   }
 }
 
 @media (min-width: 1200px) {
-  .favorite-page .masonry-gallery {
+  .recent-view-page .masonry-gallery {
     column-count: 4;
-    column-gap: 24px;
+    column-gap: 18px; /* 减小间距，原来是24px */
   }
+}
+
+@media (min-width: 1600px) {
+  .recent-view-page .masonry-gallery {
+    column-count: 5;
+    column-gap: 18px;
+  }
+}
+
+@media (min-width: 2000px) {
+  .recent-view-page .masonry-gallery {
+    column-count: 6;
+    column-gap: 18px;
+  }
+}
+
+/* 优化时间轴视图布局 */
+.timeline-view {
+  padding: 20px 0;
+  max-width: 98%;
+  margin: 0 auto;
 }
 
 .favorite-page .masonry-item {
