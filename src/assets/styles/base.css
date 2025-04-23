@@ -56,11 +56,6 @@ body {
     transition: all var(--transition-normal);
 }
 
-.ant-btn:hover,
-.ant-btn:focus {
-    color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-}
 
 /* 主要按钮 */
 .ant-btn-primary {
@@ -99,11 +94,19 @@ body {
     background-color: transparent !important;
 }
 
-/* 文本按钮 */
+/* 覆盖文本按钮的默认行为 */
 .ant-btn-text:hover,
-.ant-btn-text:focus {
+.ant-btn-text:focus,
+.ant-btn-text:active {
     color: var(--primary-color) !important;
-    background-color: var(--primary-color-bg) !important;
+    background-color: transparent !important; /* 改为透明 */
+}
+
+/* 确保评论区等地方的操作按钮也保持透明 */
+.comment-actions .action-btn:hover,
+.comment-actions .action-btn:focus,
+.comment-actions .action-btn:active {
+    background-color: transparent !important;
 }
 
 /* 危险按钮 */
@@ -3731,4 +3734,22 @@ html body .ant-tabs-top > div > .ant-tabs-nav::before {
     .stat-item:not(:last-child) {
         border-bottom: 1px solid #f0f0f0;
     }
+}
+
+
+
+/* 增强所有普通按钮的悬停样式，但不包括primary类型按钮 */
+.ant-btn:not(.ant-btn-primary):hover,
+.ant-btn:not(.ant-btn-primary):focus {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    background-color: white !important;
+}
+
+/* 确保primary按钮在悬停时保持正确的颜色 */
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+    color: white !important;
 }

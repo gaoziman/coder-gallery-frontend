@@ -67,6 +67,11 @@ declare namespace API {
     contentType?: string;
   };
 
+  type BatchDeleteCommentRequest = {
+    /** 评论ID列表 */
+    ids: number[];
+  };
+
   type BatchDeleteRequest = {
     /** ID列表 */
     ids: number[];
@@ -279,6 +284,59 @@ declare namespace API {
     tagId: number;
   };
 
+  type CommentAddRequest = {
+    /** 评论内容 */
+    content: string;
+    /** 评论对象ID */
+    contentId: number;
+    /** 评论对象类型(article-文章评论,picture-图片评论,product-产品评论等) */
+    contentType: string;
+  };
+
+  type CommentReplyAddRequest = {
+    /** 评论内容 */
+    content: string;
+    /** 父评论ID */
+    parentId: number;
+    /** 被回复用户ID */
+    replyUserId?: number;
+  };
+
+  type CommentVO = {
+    /** 子评论列表 */
+    children?: CommentVO[];
+    /** 评论内容 */
+    content?: string;
+    /** 评论对象ID */
+    contentId?: number;
+    /** 评论对象类型 */
+    contentType?: string;
+    /** 创建时间 */
+    createTime?: string;
+    /** 当前用户是否已点赞 */
+    hasLiked?: boolean;
+    /** 评论ID */
+    id?: number;
+    /** 是否热门(0-否,1-是) */
+    isHot?: boolean;
+    /** 是否置顶(0-否,1-是) */
+    isTop?: boolean;
+    /** 点赞数量 */
+    likeCount?: number;
+    /** 父评论ID(一级评论为NULL) */
+    parentId?: number;
+    /** 回复列表 */
+    replies?: CommentVO[];
+    /** 回复数量 */
+    replyCount?: number;
+    replyUser?: UserVO;
+    /** 根评论ID(一级评论为NULL) */
+    rootId?: number;
+    /** 状态(pending-待审核,approved-已通过,rejected-已拒绝,reported-被举报) */
+    status?: string;
+    user?: UserVO;
+  };
+
   type countContentsByCategoryUsingGETParams = {
     /** 分类ID */
     categoryId?: number;
@@ -330,6 +388,16 @@ declare namespace API {
   type deleteCategoryUsingDELETEParams = {
     /** 分类ID */
     id?: number;
+  };
+
+  type deleteCommentUsingDELETE1Params = {
+    /** commentId */
+    commentId: number;
+  };
+
+  type deleteCommentUsingDELETEParams = {
+    /** commentId */
+    commentId: number;
   };
 
   type deleteLoginLogUsingDELETEParams = {
@@ -445,6 +513,13 @@ declare namespace API {
     type?: string;
   };
 
+  type getContentCommentsTreeUsingGETParams = {
+    /** contentId */
+    contentId: number;
+    /** contentType */
+    contentType: string;
+  };
+
   type getHotPicturesUsingGETParams = {
     /** limit */
     limit?: number;
@@ -533,6 +608,11 @@ declare namespace API {
     id: number;
   };
 
+  type likeCommentUsingGETParams = {
+    /** commentId */
+    commentId: number;
+  };
+
   type likePictureUsingGETParams = {
     /** pictureId */
     pictureId: number;
@@ -562,6 +642,33 @@ declare namespace API {
     status?: string;
     /** 分类类型 */
     type?: string;
+  };
+
+  type listCommentByPageUsingGETParams = {
+    /** 评论内容(模糊匹配) */
+    content?: string;
+    /** 评论对象ID */
+    contentId?: number;
+    /** 评论对象类型(article-文章评论,picture-图片评论,product-产品评论等) */
+    contentType?: string;
+    /** 创建时间截止 */
+    createTimeEnd?: string;
+    /** 创建时间起始 */
+    createTimeStart?: string;
+    /** 是否热门(0-否,1-是) */
+    isHot?: boolean;
+    /** 是否置顶(0-否,1-是) */
+    isTop?: boolean;
+    /** 仅查看一级评论 */
+    onlyRoot?: boolean;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 状态(pending-待审核,approved-已通过,rejected-已拒绝,reported-被举报) */
+    status?: string;
+    /** 评论用户ID */
+    userId?: number;
   };
 
   type listLoginLogsUsingGETParams = {
@@ -892,6 +999,16 @@ declare namespace API {
     total?: number;
   };
 
+  type PageResultCommentVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: CommentVO[];
+    total?: number;
+  };
+
   type PageResultLoginLogVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
@@ -1140,6 +1257,12 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultListCommentVO_ = {
+    code?: number;
+    data?: CommentVO[];
+    message?: string;
+  };
+
   type ResultListLong_ = {
     code?: number;
     data?: number[];
@@ -1221,6 +1344,12 @@ declare namespace API {
   type ResultPageResultCategoryVO_ = {
     code?: number;
     data?: PageResultCategoryVO_;
+    message?: string;
+  };
+
+  type ResultPageResultCommentVO_ = {
+    code?: number;
+    data?: PageResultCommentVO_;
     message?: string;
   };
 
@@ -1312,6 +1441,20 @@ declare namespace API {
     code?: number;
     data?: UserVO;
     message?: string;
+  };
+
+  type setCommentHotStatusUsingPOSTParams = {
+    /** commentId */
+    commentId: number;
+    /** isHot */
+    isHot: boolean;
+  };
+
+  type setCommentTopStatusUsingPOSTParams = {
+    /** commentId */
+    commentId: number;
+    /** isTop */
+    isTop: boolean;
   };
 
   type TagBatchDeleteRequest = {
@@ -1453,9 +1596,32 @@ declare namespace API {
     pictureId: string;
   };
 
+  type unlikeCommentUsingGETParams = {
+    /** commentId */
+    commentId: number;
+  };
+
   type unlikePictureUsingGETParams = {
     /** pictureId */
     pictureId: number;
+  };
+
+  type updateCommentStatusUsingPOST1Params = {
+    /** commentId */
+    commentId: number;
+    /** reviewRemark */
+    reviewRemark?: string;
+    /** status */
+    status: string;
+  };
+
+  type updateCommentStatusUsingPOSTParams = {
+    /** commentId */
+    commentId: number;
+    /** reviewRemark */
+    reviewRemark?: string;
+    /** status */
+    status: string;
   };
 
   type updateContentCategoriesUsingPUTParams = {
