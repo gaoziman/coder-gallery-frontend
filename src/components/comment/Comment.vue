@@ -114,7 +114,7 @@
         <div class="emotion-selector">
           <a-button type="text" @click="toggleReplyEmojiPicker">
             <template #icon>
-              <IconFont type="icon-wode"/>
+              <IconFont type="icon-biaoqingbao" />
             </template>
           </a-button>
           <!-- 表情选择器 -->
@@ -378,7 +378,7 @@ export default defineComponent({
     watch(() => props.autoExpandChildren, (shouldExpand) => {
       if (shouldExpand) {
         expanded.value = true;
-      }
+      }23
     });
 
     // 计算属性 - 当前评论的点赞状态
