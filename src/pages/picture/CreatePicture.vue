@@ -300,77 +300,47 @@
               />
             </a-form-item>
 
-            <!-- 图片简介 -->
-            <a-form-item label="图片简介" name="description">
-              <a-textarea
-                  v-model:value="pictureForm.description"
-                  placeholder="描述一下您的图片内容、创作灵感或想法..."
-                  :rows="4"
-                  :maxLength="500"
-                  show-count
-                  allow-clear
-              />
-            </a-form-item>
-
             <!-- 一行两列布局 -->
             <a-row :gutter="16">
               <a-col :span="12">
-                <!-- 图片分类 - 使用树形选择器 -->
+                <!-- 图片分类 - 使用自定义分类选择器 -->
                 <a-form-item label="图片分类" name="category" required>
-                  <a-tree-select
-                      v-model:value="pictureForm.category"
-                      class="enhanced-tree-select"
-                      style="width: 100%"
-                      :dropdown-style="{ maxHeight: '400px', overflow: 'auto', padding: '8px' }"
-                      placeholder="选择图片分类"
-                      :tree-data="formattedCategoryTree"
-                      :show-search="true"
-                      :filter-tree-node="(input, treeNode) => treeNode.title.toLowerCase().indexOf(input.toLowerCase()) > -1"
-                      tree-default-expand-all
-                      allow-clear
-                  >
-                    <template #suffixIcon><appstore-outlined /></template>
-
-                    <!-- 自定义树节点的渲染 -->
-                    <template #treeTitle="{ value, title, dataRef }">
-      <span :class="dataRef.isLeaf ? 'child-category' : 'parent-category'">
-        <!-- 根据分类类型显示不同的图标 -->
-        <component
-            :is="getCategoryIcon(dataRef.type)"
-            class="category-icon"
-        />
-        {{ title }}
-
-        <!-- 为一级分类添加计数信息 -->
-        <a-badge
-            v-if="dataRef.contentCount && dataRef.level === 1"
-            :count="dataRef.contentCount"
-            :number-style="{ backgroundColor: '#52c41a', fontSize: '12px', padding: '0 6px', boxShadow: 'none' }"
-        />
-      </span>
-                    </template>
-                  </a-tree-select>
+                  <category-select
+                      v-model:modelValue="pictureForm.category"
+                      :treeData="categoryData"
+                      :loading="loadingCategories"
+                      @change="handleCategoryChange"
+                  />
                 </a-form-item>
               </a-col>
               <a-col :span="12">
-                <!-- 图片标签 - 使用动态数据 -->
+                <!-- 图片标签 - 使用自定义标签选择器 -->
                 <a-form-item label="图片标签" name="tags">
-                  <a-select
-                      v-model:value="pictureForm.tags"
-                      mode="multiple"
-                      placeholder="选择或输入标签"
+                  <tag-select
+                      v-model:modelValue="pictureForm.tagIds"
                       :options="tagOptions"
-                      :max-tag-count="3"
-                      :max-tag-text-length="10"
-                      allow-clear
-                      :tokenSeparators="[',']"
-                  >
-                    <template #suffixIcon><tags-outlined /></template>
-                  </a-select>
+                      :loading="loadingTags"
+                      :allowCreate="true"
+                      @change="handleTagChange"
+                      @create="handleTagCreate"
+                  />
                 </a-form-item>
               </a-col>
             </a-row>
           </div>
+
+
+          <!-- 图片简介 -->
+          <a-form-item label="图片简介" name="description">
+            <a-textarea
+                v-model:value="pictureForm.description"
+                placeholder="描述一下您的图片内容、创作灵感或想法..."
+                :rows="4"
+                :maxLength="500"
+                show-count
+                allow-clear
+            />
+          </a-form-item>
 
           <!-- 提交按钮区域 -->
           <div class="form-actions">
@@ -391,6 +361,8 @@ import { message, TreeSelect } from 'ant-design-vue';
 import { useRouter } from 'vue-router';
 import LocalUploadComponent from '@/components/picture/LocalUploadComponent.vue';
 import UrlUploadComponent from '@/components/picture/UrlUploadComponent.vue';
+import CategorySelect from "@/components/common/CategorySelect.vue";
+import TagSelect from "@/components/common/TagSelect.vue";
 import { editPictureUsingPost } from '@/api/tupianxiangguanjiekou';
 import {
   PictureOutlined,
@@ -437,11 +409,16 @@ const pictureForm = reactive({
   title: '',
   description: '',
   category: undefined, // 这里存储的是分类ID (categoryId)
-  tags: []  // 这里存储的是标签ID数组 (tagIds)
+  tags: [], // 保留兼容性
+  tagIds: [] // 新增，用于TagSelect组件
 });
 
 // 提交状态
 const submitting = ref(false);
+
+// 加载状态
+const loadingCategories = ref(false);
+const loadingTags = ref(false);
 
 // 分类数据
 const categoryData = ref([]);
@@ -459,8 +436,6 @@ const formRules = {
   ]
 };
 
-
-
 // 获取图片格式对应的颜色
 const getFormatColor = (format) => {
   const formatColors = {
@@ -475,43 +450,87 @@ const getFormatColor = (format) => {
   return formatColors[format?.toUpperCase()] || 'default';
 };
 
-// 将原始分类数据转换为TreeSelect组件可用的格式
-const formattedCategoryTree = computed(() => {
-  return formatCategoryTree(categoryData.value);
-});
+// 分类变更处理函数
+const handleCategoryChange = (value) => {
+  pictureForm.category = value;
+};
+
+// 标签变更处理函数
+const handleTagChange = (value) => {
+  pictureForm.tagIds = value;
+  // 为了兼容性，同时更新tags字段
+  pictureForm.tags = value;
+};
+
+// 处理标签创建
+const handleTagCreate = (newTag) => {
+  // 将新标签添加到标签选项列表中
+  tagOptions.value = [...tagOptions.value, newTag];
+};
+
 
 // 获取分类数据（树形结构）
 const fetchCategoryTree = async () => {
   try {
-    const result = await getCategoryTreeForFrontendUsingGet({
-
-    });
+    loadingCategories.value = true;
+    const result = await getCategoryTreeForFrontendUsingGet({});
 
     if (result && result.data) {
-      categoryData.value = result.data.data;
-      console.log('分类数据获取成功:', categoryData.value);
+      // 为分类数据添加图标信息
+      const processCategories = (categories) => {
+        return categories.map(category => {
+          // 确定图标类型和图标名称
+          let iconType = 'antd'; // 默认为ant-design图标
+          let icon = '';
+
+          // 判断图标类型和图标名称
+          if (category.icon) {
+            // 如果icon以'icon-'开头，则视为iconfont图标
+            if (category.icon.startsWith('icon-')) {
+              iconType = 'iconfont';
+              icon = category.icon;
+            } else {
+              // 否则视为antd图标
+              icon = category.icon;
+            }
+          } else {
+            // 没有指定图标时，根据分类类型选择默认图标
+            icon = category.type || 'folder';
+          }
+
+          return {
+            ...category,
+            iconType,
+            icon,
+            children: category.children ? processCategories(category.children) : []
+          };
+        });
+      };
+
+      categoryData.value = processCategories(result.data.data);
     } else {
-      console.error('分类数据获取失败');
       message.error('分类数据获取失败');
     }
   } catch (error) {
-    console.error('获取分类数据出错:', error);
     message.error('获取分类数据出错: ' + (error.message || '未知错误'));
+  } finally {
+    loadingCategories.value = false;
   }
 };
 
 // 获取标签数据
 const fetchTags = async () => {
   try {
+    loadingTags.value = true;
     const result = await getTagListUsingGet();
 
     if (result && result.data) {
       // 转换标签数据为select需要的格式
       tagOptions.value = result.data.data.map(tag => ({
         value: tag.id,
-        label: tag.name
+        label: tag.name,
+        status: tag.status
       }));
-      console.log('标签数据获取成功:', tagOptions.value);
     } else {
       console.error('标签数据获取失败');
       message.error('标签数据获取失败');
@@ -519,42 +538,11 @@ const fetchTags = async () => {
   } catch (error) {
     console.error('获取标签数据出错:', error);
     message.error('获取标签数据出错: ' + (error.message || '未知错误'));
+  } finally {
+    loadingTags.value = false;
   }
 };
 
-
-// 为不同分类类型返回不同的图标组件
-const getCategoryIcon = (type) => {
-  const iconMap = {
-    'learning': BookOutlined,
-    'figure': UserOutlined,
-    'wallpaper': PictureOutlined,
-    'theme': FolderOutlined,
-    'picture': PictureOutlined
-  };
-
-  // 返回匹配的图标，如果没有匹配则返回默认图标
-  return iconMap[type] || AppstoreOutlined;
-};
-
-// 递归格式化分类树，用于TreeSelect组件
-const formatCategoryTree = (categories) => {
-  if (!categories || !Array.isArray(categories)) return [];
-
-  return categories.map(category => ({
-    value: category.id,
-    title: category.name,
-    key: category.id,
-    isLeaf: !category.children || category.children.length === 0,
-    selectable: true,
-    // 添加原始数据中的其他有用字段
-    type: category.type,
-    level: category.level,
-    contentCount: category.contentCount,
-    icon: category.icon,
-    children: category.children ? formatCategoryTree(category.children) : []
-  }));
-};
 
 // 添加复制到剪贴板功能
 const copyToClipboard = (text) => {
@@ -620,9 +608,12 @@ const handleUploadSuccess = (pictureVO) => {
 
   // 设置标签 - 优先使用tagIds
   if (pictureVO.tagIds) {
-    pictureForm.tags = pictureVO.tagIds;
+    pictureForm.tagIds = pictureVO.tagIds;
+    pictureForm.tags = pictureVO.tagIds; // 兼容性处理
   } else if (pictureVO.tags) {
-    pictureForm.tags = Array.isArray(pictureVO.tags) ? pictureVO.tags : [pictureVO.tags];
+    const tagsValue = Array.isArray(pictureVO.tags) ? pictureVO.tags : [pictureVO.tags];
+    pictureForm.tagIds = tagsValue;
+    pictureForm.tags = tagsValue; // 兼容性处理
   }
 };
 
@@ -671,7 +662,8 @@ const resetForm = () => {
     title: '',
     description: '',
     category: undefined,
-    tags: []
+    tags: [],
+    tagIds: []
   });
 
   message.info('表单已重置');
@@ -692,16 +684,30 @@ const submitForm = async () => {
     // 设置提交中状态
     submitting.value = true;
 
+    // 处理标签数据 - 转换标签对象为ID数组
+    let processedTagIds = [];
+    if (Array.isArray(pictureForm.tagIds) && pictureForm.tagIds.length > 0) {
+      processedTagIds = pictureForm.tagIds.map(tag => {
+        // 处理三种可能的情况：
+        // 1. 标签是对象，有value属性
+        // 2. 标签是对象，没有value属性但直接是id
+        // 3. 标签直接是id值
+        if (typeof tag === 'object') {
+          return tag.value !== undefined ? tag.value : tag.id;
+        }
+        return tag; // 直接是id值的情况
+      });
+    }
+
     // 构建提交数据 - 修改格式以符合后端要求
     const editRequest = {
       id: pictureForm.id,
       name: pictureForm.title,
       description: pictureForm.description,
       categoryId: pictureForm.category, // 使用categoryId作为键名
-      tagIds: pictureForm.tags // 使用tagIds作为键名
+      tagIds: processedTagIds // 使用处理后的标签ID数组
     };
 
-    console.log('提交的数据:', JSON.stringify(editRequest));
 
     // 调用编辑接口
     try {
@@ -1377,127 +1383,6 @@ onMounted(async () => {
   transform: scale(1.05);
 }
 
-/* 暗黑模式适配 */
-@media (prefers-color-scheme: dark) {
-  .image-frame {
-    background-color: #121212;
-    background-image:
-        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
-        linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
-  }
-
-  .image-wrapper {
-    background-color: #262626;
-  }
-
-  .dimension-line {
-    background-color: rgba(64, 169, 255, 0.4);
-  }
-
-  .dimension-value {
-    color: #fff;
-    background-color: rgba(64, 169, 255, 0.85);
-  }
-
-  .image-wrapper:hover .dimension-line {
-    background-color: rgba(64, 169, 255, 0.7);
-  }
-
-  .image-wrapper:hover .dimension-value {
-    background-color: rgba(64, 169, 255, 1);
-  }
-}
-
-/* 响应式适配 */
-@media (max-width: 768px) {
-  .image-frame {
-    padding: 20px;
-  }
-
-  .width-line {
-    width: 80%;
-  }
-
-  .height-line {
-    height: 80%;
-  }
-
-  .dimension-value {
-    font-size: 11px;
-    padding: 3px 6px;
-  }
-}
-
-/* 极小屏幕适配 */
-@media (max-width: 480px) {
-  .dimension-indicators {
-    opacity: 0.8;
-  }
-
-  .width-indicator {
-    bottom: 8px;
-  }
-
-  .height-indicator {
-    right: 8px;
-  }
-
-  .width-line, .height-line {
-    display: none; /* 在极小屏幕上隐藏线条，只保留数值标签 */
-  }
-}
-
-.width-indicator {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.height-indicator {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-}
-
-.indicator-line {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.width-indicator .indicator-line {
-  height: 2px;
-  width: 120px;
-}
-
-.height-indicator .indicator-line {
-  width: 2px;
-  height: 120px;
-  margin-right: 8px;
-}
-
-.indicator-value {
-  font-size: 12px;
-  color: #8c8c8c;
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-top: 4px;
-}
-
-.height-indicator .indicator-value {
-  margin-top: 0;
-  margin-left: 4px;
-  writing-mode: vertical-lr;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-}
-
 /* 表单内容卡片样式 */
 .form-content-card {
   background-color: white;
@@ -1717,212 +1602,6 @@ onMounted(async () => {
 
   .next-step-item {
     color: #a6a6a6;
-  }
-
-
-  /* 改进的分类树样式 - 可以添加到CreatePicture.vue的style部分 */
-  .enhanced-tree-select {
-    border-radius: 12px;
-    overflow: hidden;
-    transition: all 0.3s;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-
-  /* 自定义树节点样式 */
-  :deep(.ant-tree) {
-    background: transparent;
-    padding: 8px 0;
-  }
-
-  :deep(.ant-tree-treenode) {
-    padding: 4px 0;
-    transition: all 0.2s;
-    border-radius: 6px;
-    margin: 2px 0;
-  }
-
-  :deep(.ant-tree-treenode:hover) {
-    background-color: rgba(24, 144, 255, 0.05);
-  }
-
-  :deep(.ant-tree-node-content-wrapper) {
-    transition: all 0.3s;
-    padding: 6px 8px;
-    border-radius: 4px;
-  }
-
-  :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
-    background-color: rgba(24, 144, 255, 0.1);
-  }
-
-  :deep(.ant-tree-node-content-wrapper:hover) {
-    background-color: rgba(24, 144, 255, 0.1);
-  }
-
-  :deep(.ant-tree-indent-unit) {
-    width: 20px;
-  }
-
-  /* 自定义展开/折叠图标 */
-  :deep(.ant-tree-switcher) {
-    width: 24px;
-    height: 24px;
-    line-height: 24px;
-    text-align: center;
-    border-radius: 50%;
-    transition: all 0.3s;
-    background: transparent;
-    margin-right: 4px;
-  }
-
-  :deep(.ant-tree-switcher:hover) {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-
-  /* 自定义下拉样式 */
-  :deep(.ant-select-tree-dropdown) {
-    padding: 8px;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  }
-
-  /* 分类图标样式 */
-  .category-icon {
-    margin-right: 6px;
-    font-size: 14px;
-    color: #1890ff;
-    opacity: 0.8;
-  }
-
-  /* 父级分类样式 */
-  .parent-category {
-    font-weight: 500;
-  }
-
-  /* 子级分类样式 */
-  .child-category {
-    font-size: 14px;
-    color: #666;
-  }
-
-  /* 自定义搜索框样式 */
-  :deep(.ant-select-selector) {
-    border-radius: 8px !important;
-    padding: 0 12px !important;
-    height: 38px !important;
-    box-shadow: none !important;
-    border: 1px solid #e8e8e8 !important;
-    transition: all 0.3s !important;
-  }
-
-  :deep(.ant-select-selector:hover) {
-    border-color: #40a9ff !important;
-  }
-
-  :deep(.ant-select:focus .ant-select-selector),
-  :deep(.ant-select-focused .ant-select-selector) {
-    border-color: #1890ff !important;
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
-  }
-
-  :deep(.ant-select-arrow) {
-    color: #1890ff;
-  }
-
-  /* 增强悬停效果 */
-  :deep(.ant-tree-treenode) {
-    position: relative;
-    overflow: hidden;
-  }
-
-  :deep(.ant-tree-treenode)::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle, rgba(24, 144, 255, 0.1) 0%, rgba(24, 144, 255, 0) 70%);
-    opacity: 0;
-    transform: scale(0.5);
-    transition: all 0.3s;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  :deep(.ant-tree-treenode:hover)::before {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  /* 美化图标 */
-  :deep(.ant-tree-switcher-icon) {
-    transition: transform 0.3s;
-  }
-
-  :deep(.ant-tree-switcher_open .ant-tree-switcher-icon) {
-    transform: rotate(90deg);
-  }
-
-  /* 美化滚动条 */
-  :deep(.ant-select-tree-list-holder::-webkit-scrollbar) {
-    width: 6px;
-  }
-
-  :deep(.ant-select-tree-list-holder::-webkit-scrollbar-track) {
-    background: rgba(0, 0, 0, 0.02);
-    border-radius: 3px;
-  }
-
-  :deep(.ant-select-tree-list-holder::-webkit-scrollbar-thumb) {
-    background: rgba(0, 0, 0, 0.10);
-    border-radius: 3px;
-    transition: all 0.3s;
-  }
-
-  :deep(.ant-select-tree-list-holder::-webkit-scrollbar-thumb:hover) {
-    background: rgba(0, 0, 0, 0.15);
-  }
-
-  /* 暗黑模式适配 */
-  @media (prefers-color-scheme: dark) {
-    .enhanced-tree-select {
-      background: #1f1f1f;
-    }
-
-    :deep(.ant-tree-treenode:hover) {
-      background-color: rgba(64, 169, 255, 0.1);
-    }
-
-    :deep(.ant-tree-node-content-wrapper.ant-tree-node-selected) {
-      background-color: rgba(64, 169, 255, 0.2);
-    }
-
-    :deep(.ant-tree-node-content-wrapper:hover) {
-      background-color: rgba(64, 169, 255, 0.15);
-    }
-
-    :deep(.ant-tree-switcher:hover) {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .child-category {
-      color: #a6a6a6;
-    }
-
-    :deep(.ant-select-selector) {
-      background-color: #1f1f1f !important;
-      border-color: #303030 !important;
-    }
-
-    :deep(.ant-select-selector:hover) {
-      border-color: #177ddc !important;
-    }
-
-    :deep(.ant-tree-treenode)::before {
-      background: radial-gradient(circle, rgba(64, 169, 255, 0.1) 0%, rgba(64, 169, 255, 0) 70%);
-    }
   }
 
   /* 暗黑模式 - 新表单页面 */

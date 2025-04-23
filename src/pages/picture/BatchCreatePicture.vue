@@ -79,30 +79,36 @@
           <a-col :span="12">
             <!-- 关键词 -->
             <a-form-item label="搜索关键词" name="keyword" required>
-              <a-input
-                  v-model:value="searchForm.keyword"
-                  placeholder="输入图片搜索关键词，多个关键词用空格分隔"
-                  :maxLength="100"
-                  show-count
-                  allow-clear
-              >
-                <template #prefix>
-                  <search-outlined />
-                </template>
-              </a-input>
+              <div class="custom-input-wrapper">
+                <a-input
+                    v-model:value="searchForm.keyword"
+                    placeholder="输入图片搜索关键词，多个关键词用空格分隔"
+                    :maxLength="100"
+                    show-count
+                    allow-clear
+                    class="custom-input"
+                    :bordered="false"
+                >
+                  <template #prefix>
+                    <IconFont type="icon-piliangshenhe" />
+                  </template>
+                </a-input>
+              </div>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <!-- 抓取源 -->
             <a-form-item label="抓取源" name="source" required>
-              <a-select
-                  v-model:value="searchForm.source"
-                  placeholder="选择图片抓取来源"
-                  :options="sourceOptions"
-                  show-search
-              >
-                <template #suffixIcon><global-outlined /></template>
-              </a-select>
+              <div class="custom-input-wrapper">
+                <a-select
+                    v-model:value="searchForm.source"
+                    placeholder="选择图片抓取来源"
+                    :options="sourceOptions"
+                    class="custom-select"
+                    :bordered="false"
+                >
+                </a-select>
+              </div>
             </a-form-item>
           </a-col>
         </a-row>
@@ -111,44 +117,49 @@
           <a-col :span="8">
             <!-- 图片数量 -->
             <a-form-item label="抓取数量" name="count" required>
-              <a-input-number
-                  v-model:value="searchForm.count"
-                  :min="1"
-                  :max="100"
-                  style="width: 100%"
-                  placeholder="设置需要抓取的图片数量"
-              />
+              <div class="custom-input-wrapper">
+                <a-input-number
+                    v-model:value="searchForm.count"
+                    :min="1"
+                    :max="100"
+                    placeholder="设置需要抓取的图片数量"
+                    class="custom-input-number"
+                    :bordered="false"
+                >
+                  <template #prefix>
+                    <IconFont type="icon-piliangtongyi" />
+                  </template>
+                </a-input-number>
+              </div>
             </a-form-item>
           </a-col>
           <a-col :span="8">
-            <!-- 图片分类 -->
-            <a-form-item label="图片分类" name="category">
-              <a-tree-select
-                  v-model:value="searchForm.categoryId"
-                  placeholder="选择图片分类"
-                  :tree-data="categoryTree"
-                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
-                  tree-default-expand-all
-                  :show-search="true"
-                  allow-clear
+            <!-- 图片分类 - 使用自定义分类选择器 -->
+            <a-form-item label="图片分类" name="categoryId">
+              <category-select
+                  v-model:modelValue="searchForm.categoryId"
+                  :treeData="categoryData"
                   :loading="loadingCategories"
-              >
-                <template #suffixIcon><appstore-outlined /></template>
-              </a-tree-select>
+                  @change="handleCategoryChange"
+              />
             </a-form-item>
           </a-col>
           <a-col :span="8">
             <!-- 文件名前缀 -->
             <a-form-item label="文件名前缀" name="namePrefix">
-              <a-input
-                  v-model:value="searchForm.namePrefix"
-                  placeholder="设置文件名前缀，例如：风景_"
-                  allow-clear
-              >
-                <template #prefix>
-                  <font-size-outlined />
-                </template>
-              </a-input>
+              <div class="custom-input-wrapper">
+                <a-input
+                    v-model:value="searchForm.namePrefix"
+                    placeholder="设置文件名前缀，例如：风景_"
+                    allow-clear
+                    class="custom-input"
+                    :bordered="false"
+                >
+                  <template #prefix>
+                    <IconFont type="icon-wenjianmingcheng" />
+                  </template>
+                </a-input>
+              </div>
             </a-form-item>
           </a-col>
         </a-row>
@@ -156,8 +167,8 @@
 
         <!-- 搜索按钮区域 -->
         <div class="form-actions">
-          <a-button @click="resetForm">重置</a-button>
-          <a-button type="primary" @click="startSearch" :loading="isSearching">
+          <a-button @click="resetForm" class="custom-button reset-button">重置</a-button>
+          <a-button type="primary" @click="startSearch" :loading="isSearching" class="custom-button primary-button">
             开始抓取
           </a-button>
         </div>
@@ -185,14 +196,14 @@
           已选择 {{ selectedImages.length }} 张图片
         </div>
         <div class="toolbar-actions">
-          <a-button type="primary" :disabled="!selectedImages.length" @click="uploadSelected">
+          <a-button type="primary" :disabled="!selectedImages.length" @click="uploadSelected" class="custom-button primary-button">
             <upload-outlined />
             批量上传
           </a-button>
-          <a-button :disabled="!selectedImages.length" @click="deselectAll">
+          <a-button :disabled="!selectedImages.length" @click="deselectAll" class="custom-button">
             取消选择
           </a-button>
-          <a-button type="link" @click="selectAll">
+          <a-button type="link" @click="selectAll" class="custom-button link-button">
             全选
           </a-button>
         </div>
@@ -222,7 +233,7 @@
       </div>
 
       <div class="load-more-container" v-if="hasMoreResults">
-        <a-button @click="loadMoreResults" :loading="loadingMore">
+        <a-button @click="loadMoreResults" :loading="loadingMore" class="custom-button">
           加载更多
         </a-button>
       </div>
@@ -246,8 +257,8 @@
           <span>{{ countdownSeconds }} 秒后自动跳转到主页</span>
         </div>
         <div class="success-actions">
-          <a-button @click="cancelRedirect">取消跳转</a-button>
-          <a-button type="primary" @click="goToHomePage">立即跳转</a-button>
+          <a-button @click="cancelRedirect" class="custom-button">取消跳转</a-button>
+          <a-button type="primary" @click="goToHomePage" class="custom-button primary-button">立即跳转</a-button>
         </div>
       </div>
     </a-modal>
@@ -267,10 +278,13 @@ import {
   AppstoreOutlined,
   FontSizeOutlined,
   CloudDownloadOutlined,
-  FileSearchOutlined
+  FileSearchOutlined,
+  CheckCircleOutlined,
+  NumberOutlined
 } from '@ant-design/icons-vue';
 import {getCategoryTreeForFrontendUsingGet} from "@/api/fenleiguanli.js";
 import {uploadPictureByBatchUsingPost} from "@/api/tupianxiangguanjiekou.js";
+import CategorySelect from "@/components/common/CategorySelect.vue";
 
 const router = useRouter();
 
@@ -289,8 +303,8 @@ const countdownSeconds = ref(5);
 const fetchedImagesCount = ref(0);
 let countdownTimer = null;
 
-// 分类树数据
-const categoryTree = ref([]);
+// 分类数据
+const categoryData = ref([]);
 const loadingCategories = ref(false);
 
 // 搜索结果
@@ -299,7 +313,7 @@ const selectedImages = ref([]);
 
 // 搜索表单
 const searchForm = reactive({
-  searchText: '',
+  keyword: '',
   source: 'all',
   count: 10,
   categoryId: undefined,
@@ -331,6 +345,10 @@ const sourceOptions = [
   { value: 'wallhaven', label: 'Wallhaven' }
 ];
 
+// 分类变更处理函数
+const handleCategoryChange = (value) => {
+  searchForm.categoryId = value;
+};
 
 // 重置表单
 const resetForm = () => {
@@ -341,7 +359,7 @@ const resetForm = () => {
     keyword: '',
     source: 'all',
     count: 20,
-    category: undefined,
+    categoryId: undefined,
     namePrefix: '',
     imageSize: undefined,
     imageType: undefined,
@@ -354,33 +372,51 @@ const resetForm = () => {
   message.info('搜索参数已重置');
 };
 
-
-// 格式化分类树数据，适配Tree组件
-const formatCategoryTreeData = (data) => {
-  if (!data) return [];
-
-  return data.map(item => ({
-    title: item.name,
-    key: item.id,
-    value: item.id,
-    isLeaf: !item.children || item.children.length === 0,
-    children: item.children ? formatCategoryTreeData(item.children) : []
-  }));
-};
-
-// 加载分类树数据
-const loadCategoryTree = async () => {
-  loadingCategories.value = true;
+// 获取分类数据（树形结构）
+const fetchCategoryTree = async () => {
   try {
-    const response = await getCategoryTreeForFrontendUsingGet();
-    if (response.data.code === 200 && response.data.data) {
-      categoryTree.value = formatCategoryTreeData(response.data.data);
+    loadingCategories.value = true;
+    const result = await getCategoryTreeForFrontendUsingGet({});
+
+    if (result && result.data) {
+      // 为分类数据添加图标信息
+      const processCategories = (categories) => {
+        return categories.map(category => {
+          // 确定图标类型和图标名称
+          let iconType = 'antd'; // 默认为ant-design图标
+          let icon = '';
+
+          // 判断图标类型和图标名称
+          if (category.icon) {
+            // 如果icon以'icon-'开头，则视为iconfont图标
+            if (category.icon.startsWith('icon-')) {
+              iconType = 'iconfont';
+              icon = category.icon;
+            } else {
+              // 否则视为antd图标
+              icon = category.icon;
+            }
+          } else {
+            // 没有指定图标时，根据分类类型选择默认图标
+            icon = category.type || 'folder';
+          }
+
+          return {
+            ...category,
+            iconType,
+            icon,
+            children: category.children ? processCategories(category.children) : []
+          };
+        });
+      };
+
+      categoryData.value = processCategories(result.data.data);
     } else {
-      message.error('获取分类失败：' + (response.message || '未知错误'));
+      message.error('分类数据获取失败');
     }
   } catch (error) {
-    console.error('加载分类树出错:', error);
-    message.error('获取分类失败，请稍后重试');
+    console.error('获取分类数据出错:', error);
+    message.error('获取分类数据出错: ' + (error.message || '未知错误'));
   } finally {
     loadingCategories.value = false;
   }
@@ -440,7 +476,6 @@ const startSearch = async () => {
     message.error('请检查抓取参数是否填写正确');
   }
 };
-
 
 // 开始倒计时
 const startCountdown = () => {
@@ -572,10 +607,9 @@ onBeforeUnmount(() => {
   }
 });
 
-
 // 在组件挂载后加载分类树
 onMounted(() => {
-  loadCategoryTree();
+  fetchCategoryTree();
 });
 </script>
 
@@ -819,41 +853,179 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* 表单区域样式 */
-.form-section {
-  margin-bottom: 24px;
-}
-
-.section-header {
+/* ========== 自定义输入框样式 - 匹配CategorySelect ========== */
+.custom-input-wrapper {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-}
-
-.section-title {
-  font-size: 16px;
-  color: #262626;
-  margin: 0;
-  font-weight: 500;
-}
-
-.advanced-options {
-  background-color: #f9f9fa;
-  padding: 16px;
+  width: 100%;
+  height: 42px;
+  background: linear-gradient(to bottom, #ffffff, #fcfcfc);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  margin-bottom: 16px;
-  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  position: relative;
 }
 
-.switch-option {
+.custom-input-wrapper:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 3px 8px rgba(124, 58, 237, 0.12);
+  transform: translateY(-1px);
+}
+
+.custom-input-wrapper:focus-within {
+  border-color: #7c3aed;
+  background: linear-gradient(to bottom, #f9f7ff, #f3f0ff);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.custom-input {
+  flex: 1;
+}
+
+/* 覆盖Ant Design Input默认样式 */
+.custom-input :deep(.ant-input) {
+  background: transparent;
+  padding-left: 0;
+  height: 42px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.custom-input :deep(.ant-input:placeholder-shown) {
+  color: #94a3b8;
+}
+
+.custom-input :deep(.ant-input-suffix) {
+  margin-right: 10px;
+}
+
+/* 覆盖Select样式 */
+.custom-select {
+  flex: 1;
+}
+
+.custom-select :deep(.ant-select-selector) {
+  background: transparent !important;
+  padding-left: 0 !important;
+  height: 42px !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.custom-select :deep(.ant-select-selection-search),
+.custom-select :deep(.ant-select-selection-item) {
   display: flex;
   align-items: center;
-  gap: 8px;
+  height: 42px !important;
+  font-size: 14px;
+  color: #334155;
 }
 
-.option-label {
-  color: #262626;
+.custom-select :deep(.ant-select-selection-placeholder) {
+  display: flex;
+  align-items: center;
+  height: 42px !important;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.custom-select :deep(.ant-select-arrow) {
+  color: #94a3b8;
+  margin-right: 10px;
+}
+
+/* 覆盖InputNumber样式 */
+.custom-input-number {
+  flex: 1;
+}
+
+.custom-input-number :deep(.ant-input-number-input-wrap input) {
+  background: transparent;
+  height: 42px;
+  padding-left: 0;
+  font-size: 14px;
+  color: #334155;
+}
+
+.custom-input-number :deep(.ant-input-number-handler-wrap) {
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: white;
+  margin-right: 5px;
+}
+
+.custom-input-number:hover :deep(.ant-input-number-handler-wrap) {
+  opacity: 1;
+}
+
+/* 自定义按钮样式 */
+.custom-button {
+  height: 42px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
+  color: #334155;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.custom-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+.custom-button.primary-button {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  border-color: #6d28d9;
+  color: white;
+  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.2);
+}
+
+.custom-button.primary-button:hover {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 6px 12px rgba(124, 58, 237, 0.3);
+}
+
+.custom-button.reset-button {
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.custom-button.reset-button:hover {
+  background: linear-gradient(to bottom, #f1f5f9, #e2e8f0);
+  color: #475569;
+}
+
+.custom-button.link-button {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #7c3aed;
+}
+
+.custom-button.link-button:hover {
+  background: rgba(124, 58, 237, 0.05);
+  color: #6d28d9;
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.custom-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* 按钮区域 */
@@ -1006,6 +1178,59 @@ onMounted(() => {
   gap: 16px;
 }
 
+/* 修改输入框包装器，移除内边距，改用定位方式调整内容间距 */
+.custom-input-wrapper {
+  width: 100%;
+  height: 46px;
+  background: linear-gradient(to bottom, #ffffff, #fcfcfc);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  position: relative;
+  padding: 0; /* 移除之前添加的内边距 */
+}
+
+/* 为所有输入框内部元素添加左右内边距 */
+.custom-input :deep(.ant-input),
+.custom-select :deep(.ant-select-selector),
+.custom-input-number :deep(.ant-input-number-input) {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 明确指定所有可能的边框样式为none */
+.custom-input :deep(*),
+.custom-select :deep(*),
+.custom-input-number :deep(*) {
+  border-color: transparent !important;
+}
+
+/* 特别处理ant-select内部可能的边框 */
+.custom-select :deep(.ant-select-selector),
+.custom-select :deep(.ant-select-selection-search) {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 处理输入框的聚焦状态，确保没有框架默认边框 */
+.custom-input-wrapper:focus-within {
+  border-color: #7c3aed;
+  background: linear-gradient(to bottom, #f9f7ff, #f3f0ff);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.custom-input :deep(.ant-input:focus),
+.custom-select :deep(.ant-select-focused .ant-select-selector),
+.custom-input-number :deep(.ant-input-number-focused) {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
 /* 暗黑模式适配 */
 @media (prefers-color-scheme: dark) {
   .success-title {
@@ -1018,6 +1243,62 @@ onMounted(() => {
 
   .countdown-message {
     color: #a0a0a0;
+  }
+
+  .custom-input-wrapper {
+    background: linear-gradient(to bottom, #1f1f1f, #262626);
+    border-color: #333;
+  }
+
+  .custom-input-wrapper:hover {
+    border-color: #7c3aed;
+    box-shadow: 0 3px 8px rgba(124, 58, 237, 0.2);
+  }
+
+  .custom-input-wrapper:focus-within {
+    background: linear-gradient(to bottom, #2d2747, #281f44);
+  }
+
+  .custom-input :deep(.ant-input) {
+    color: #e0e0e0;
+  }
+
+  .custom-input :deep(.ant-input:placeholder-shown) {
+    color: #666;
+  }
+
+  .custom-select :deep(.ant-select-selection-item) {
+    color: #e0e0e0;
+  }
+
+  .custom-select :deep(.ant-select-selection-placeholder) {
+    color: #666;
+  }
+
+  .custom-input-number :deep(.ant-input-number-input-wrap input) {
+    color: #e0e0e0;
+  }
+
+  .custom-button {
+    background: linear-gradient(to bottom, #2a2a2a, #222);
+    border-color: #333;
+    color: #e0e0e0;
+  }
+
+  .custom-button:hover {
+    border-color: #444;
+    background: linear-gradient(to bottom, #333, #2a2a2a);
+  }
+
+  .custom-button.reset-button {
+    background: linear-gradient(to bottom, #222, #1a1a1a);
+    border-color: #333;
+    color: #999;
+  }
+
+  .custom-button.reset-button:hover {
+    background: linear-gradient(to bottom, #2a2a2a, #222);
+    color: #bbb;
   }
 }
 
@@ -1095,19 +1376,6 @@ onMounted(() => {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
-  .section-title {
-    color: #e0e0e0;
-  }
-
-  .advanced-options {
-    background-color: #2a2a2a;
-    border-color: #333;
-  }
-
-  .option-label {
-    color: #e0e0e0;
-  }
-
   .results-toolbar {
     border-bottom-color: #333;
   }
@@ -1127,10 +1395,6 @@ onMounted(() => {
 
   .image-title {
     color: #e0e0e0;
-  }
-
-  .upload-actions {
-    border-top-color: #333;
   }
 }
 </style>

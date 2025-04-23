@@ -1,61 +1,100 @@
 <!-- pages/picture/EditPicture.vue -->
 <template>
   <div class="edit-picture-page">
-    <!-- 页面标题区域 -->
+    <!-- 页面标题区域 - 减小高度 -->
     <div class="enhanced-page-header">
+      <!-- 装饰性背景图案 -->
+      <div class="decorative-background">
+        <div class="bg-pattern-grid"></div>
+        <div class="bg-glow glow-1"></div>
+        <div class="bg-glow glow-2"></div>
+        <div class="bg-glow glow-3"></div>
+      </div>
+
       <div class="header-content">
         <div class="header-left">
           <div class="title-container">
-            <h1 class="main-title">
-              <edit-outlined/>
-              编辑图片
-            </h1>
-            <p class="page-desc">您可以在这里修改图片信息，更新您的创作细节</p>
+            <div class="title-icon-wrapper">
+              <edit-outlined class="title-icon"/>
+            </div>
+            <div class="title-text">
+              <h1 class="main-title">编辑图片</h1>
+              <p class="page-desc">您可以在这里修改图片信息，更新您的创作细节</p>
+            </div>
           </div>
-          <div class="picture-info-container">
-            <div class="info-item">
-              <eye-outlined/>
-              <span>已获浏览: <strong>{{ pictureData.viewCount }}</strong></span>
+
+          <!-- 编辑信息统计卡片 - 横向排列更紧凑 -->
+          <div class="edit-stats">
+            <div class="edit-stat-card">
+              <calendar-outlined class="stat-card-icon" />
+              <div class="stat-card-content">
+                <div class="stat-card-value">{{ formatDate(pictureData.createTime).split(' ')[0] }}</div>
+                <div class="stat-card-label">上传日期</div>
+              </div>
             </div>
-            <div class="info-item">
-              <like-outlined/>
-              <span>获得点赞: <strong>{{ pictureData.likeCount }}</strong></span>
+            <div class="edit-stat-card">
+              <eye-outlined class="stat-card-icon" />
+              <div class="stat-card-content">
+                <div class="stat-card-value">{{ formatNumber(pictureData.viewCount) }}</div>
+                <div class="stat-card-label">浏览量</div>
+              </div>
             </div>
-            <div class="info-item">
-              <calendar-outlined/>
-              <span>发布于: <strong>{{ formatDate(pictureData.createTime) }}</strong></span>
+            <div class="edit-stat-card">
+              <like-outlined class="stat-card-icon" />
+              <div class="stat-card-content">
+                <div class="stat-card-value">{{ formatNumber(pictureData.likeCount) }}</div>
+                <div class="stat-card-label">点赞数</div>
+              </div>
             </div>
           </div>
         </div>
+
         <div class="header-right">
-          <div class="preview-container">
-            <div class="preview-label">当前图片</div>
-            <div class="thumbnail-wrapper">
-              <img :src="pictureData.url" alt="当前图片预览" class="thumbnail-image"/>
-              <div class="image-actions">
-                <a-button type="primary" size="small" @click="showImagePreview">查看大图</a-button>
+          <div class="header-preview-container">
+            <div class="preview-frame">
+              <img :src="pictureData.url" alt="预览图" class="header-preview-image" />
+              <div class="preview-overlay">
+                <a-button type="primary" icon-only class="preview-button" @click="showFullImage">
+                  <search-outlined />
+                </a-button>
+              </div>
+            </div>
+            <div class="preview-info">
+              <div class="preview-format">
+                <file-image-outlined />
+                <span>{{ pictureData.format || 'JPG' }}</span>
+              </div>
+              <div class="preview-dimensions">
+                <column-width-outlined />
+                <span>{{ pictureData.picWidth }} × {{ pictureData.picHeight }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 进度指示器，简化为只有编辑和保存两个步骤 -->
+      <!-- 进度指示器 - 减小高度并简化 -->
       <div class="edit-progress">
+        <div class="progress-line"></div>
         <div class="progress-steps">
-          <div class="step active">
+          <div class="step active completed">
             <div class="step-icon">
-              <form-outlined/>
+              <form-outlined />
             </div>
             <div class="step-text">编辑信息</div>
           </div>
-          <div class="step-divider"></div>
           <div class="step">
             <div class="step-icon">
-              <check-circle-outlined/>
+              <check-circle-outlined />
             </div>
             <div class="step-text">保存更新</div>
           </div>
+        </div>
+
+        <!-- 流程指引文本 -->
+        <div class="progress-guide">
+          <info-circle-outlined />
+          <span>编辑完成后点击"更新"按钮保存您的修改</span>
         </div>
       </div>
 
@@ -66,18 +105,171 @@
         <div class="circle circle-3"></div>
         <div class="square"></div>
         <div class="triangle"></div>
+
+        <!-- 新增装饰性元素 - 保留但减少数量 -->
+        <div class="floating-icon camera-icon">
+          <camera-outlined />
+        </div>
+        <div class="floating-icon picture-icon">
+          <picture-outlined />
+        </div>
+        <div class="floating-icon tag-icon">
+          <tags-outlined />
+        </div>
+
+        <!-- 装饰性线条 - 保留但减少数量 -->
+        <div class="decorative-line line-1"></div>
+        <div class="decorative-line line-2"></div>
       </div>
     </div>
 
+    <!-- 全新设计的图片预览区域 - 增强型互动预览框 -->
+    <div class="image-preview-container">
+      <div class="image-preview-left">
+        <div class="enhanced-preview-window" ref="imageContainer">
+          <div class="preview-image-wrapper" ref="imageWrapper">
+            <!-- 加载中状态显示骨架屏 -->
+            <a-skeleton-image v-if="imageLoading" active :width="480" :height="320" />
+
+            <img
+                :src="pictureData.url"
+                alt="图片预览"
+                class="enhanced-preview-image"
+                ref="previewImage"
+                @load="onImageLoad"
+                :style="{
+                transform: `scale(${zoomLevel}) rotate(${rotationDegree}deg)`,
+                transformOrigin: 'center center'
+              }"
+            />
+
+            <!-- 图片加载状态 -->
+            <div class="image-loading-overlay" v-if="imageLoading">
+              <a-spin tip="图片加载中..." />
+            </div>
+          </div>
+
+          <!-- 图片控制面板 -->
+          <div class="image-controls">
+            <div class="control-group">
+              <a-tooltip title="缩小">
+                <a-button type="text" shape="circle" @click="zoomOut" :disabled="zoomLevel <= 0.5">
+                  <zoom-out-outlined />
+                </a-button>
+              </a-tooltip>
+
+              <a-tooltip title="当前缩放比例">
+                <span class="zoom-indicator">{{ Math.round(zoomLevel * 100) }}%</span>
+              </a-tooltip>
+
+              <a-tooltip title="放大">
+                <a-button type="text" shape="circle" @click="zoomIn" :disabled="zoomLevel >= 3">
+                  <zoom-in-outlined />
+                </a-button>
+              </a-tooltip>
+            </div>
+
+            <div class="control-divider"></div>
+
+            <div class="control-group">
+              <a-tooltip title="向左旋转">
+                <a-button type="text" shape="circle" @click="rotateLeft">
+                  <undo-outlined />
+                </a-button>
+              </a-tooltip>
+
+              <a-tooltip title="向右旋转">
+                <a-button type="text" shape="circle" @click="rotateRight">
+                  <redo-outlined />
+                </a-button>
+              </a-tooltip>
+            </div>
+
+            <div class="control-divider"></div>
+
+            <div class="control-group">
+              <a-tooltip title="重置视图">
+                <a-button type="text" shape="circle" @click="resetView">
+                  <sync-outlined />
+                </a-button>
+              </a-tooltip>
+
+              <a-tooltip title="全屏查看">
+                <a-button type="text" shape="circle" @click="showFullImage">
+                  <fullscreen-outlined />
+                </a-button>
+              </a-tooltip>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="image-preview-right">
+        <div class="streamlined-info-panel">
+          <h3 class="preview-title">图片基本信息</h3>
+
+          <!-- 重新设计的信息行布局 -->
+          <div class="info-rows">
+            <div class="info-row">
+              <div class="info-label"><file-image-outlined /> 文件格式</div>
+              <div class="info-value">{{ pictureData.format || 'JPG' }}</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label"><file-outlined /> 文件大小</div>
+              <div class="info-value">{{ pictureData.size || '2.4 MB' }}</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label"><column-width-outlined /> 图片尺寸</div>
+              <div class="info-value">{{ pictureData.picWidth }} × {{ pictureData.picHeight }}</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label"><border-outlined /> 宽高比例</div>
+              <div class="info-value">{{ pictureData.picScale || '16:9' }}</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label"><calendar-outlined /> 上传时间</div>
+              <div class="info-value">{{ formatDate(pictureData.createTime) }}</div>
+            </div>
+          </div>
+
+          <!-- 重新设计的统计信息区域 -->
+          <div class="stats-section">
+            <h3 class="stats-title">图片数据统计</h3>
+            <div class="stats-cards">
+              <div class="stat-card">
+                <div class="stat-header">
+                  <eye-outlined />
+                  <span>浏览</span>
+                </div>
+                <div class="stat-value">{{ formatNumber(pictureData.viewCount) }}</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-header">
+                  <heart-outlined />
+                  <span>点赞</span>
+                </div>
+                <div class="stat-value">{{ formatNumber(pictureData.likeCount) }}</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-header">
+                  <star-outlined />
+                  <span>收藏</span>
+                </div>
+                <div class="stat-value">{{ formatNumber(pictureData.collectionCount) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="content-cards-container">
-      <!-- 图片详细信息卡片 -->
-      <image-detail-card
-          :imageData="pictureData"
-          @preview="showImagePreview"
-      />
-
-
       <!-- 表单区域 -->
       <a-card
           class="form-card"
@@ -126,68 +318,25 @@
             <!-- 一行两列布局 -->
             <a-row :gutter="16">
               <a-col :span="12">
-                <!-- 图片分类 - 使用树形选择器 -->
+                <!-- 替换树形选择器为我们的自定义下拉组件 -->
                 <a-form-item label="图片分类" name="category" required>
-                  <a-tree-select
-                      v-model:value="pictureForm.category"
-                      class="enhanced-tree-select"
-                      style="width: 100%"
-                      :dropdown-style="{ maxHeight: '400px', overflow: 'auto', padding: '8px' }"
-                      placeholder="选择图片分类"
-                      :tree-data="formattedCategoryTree"
-                      :show-search="true"
-                      :filter-tree-node="(input, treeNode) => treeNode.title.toLowerCase().indexOf(input.toLowerCase()) > -1"
-                      tree-default-expand-all
-                      allow-clear
-                  >
-                    <template #suffixIcon><appstore-outlined /></template>
-
-                    <!-- 自定义树节点的渲染 -->
-                    <template #treeTitle="{ value, title, dataRef }">
-                          <span :class="dataRef.isLeaf ? 'child-category' : 'parent-category'">
-                            <!-- 根据分类类型显示不同的图标 -->
-                            <component
-                                :is="getCategoryIcon(dataRef.type)"
-                                class="category-icon"
-                            />
-                            {{ title }}
-
-                            <!-- 为一级分类添加计数信息 -->
-                            <a-badge
-                                v-if="dataRef.contentCount && dataRef.level === 1"
-                                :count="dataRef.contentCount"
-                                :number-style="{ backgroundColor: '#52c41a', fontSize: '12px', padding: '0 6px', boxShadow: 'none' }"
-                            />
-                          </span>
-                    </template>
-                  </a-tree-select>
+                  <category-select
+                      v-model:modelValue="pictureForm.category"
+                      :treeData="categoryData"
+                      :loading="loadingCategories"
+                      @change="handleCategoryChange"
+                  />
                 </a-form-item>
               </a-col>
               <a-col :span="12">
                 <!-- 图片标签 - 使用动态数据 -->
                 <a-form-item label="图片标签" name="tags">
-                  <a-select
-                      :value="pictureForm.tagIds"
+                  <tag-select
+                      v-model:modelValue="pictureForm.tagIds"
+                      :options="tagOptions"
+                      :loading="loadingTags"
                       @change="handleTagChange"
-                      mode="multiple"
-                      :options="filteredTagOptions"
-                      :getPopupContainer="triggerNode => triggerNode.parentNode"
-                      placeholder="选择或输入标签"
-                      :max-tag-text-length="10"
-                      allow-clear
-                      :token-separators="[',']"
-                      option-label-prop="label"
-                      :field-names="{ label: 'label', value: 'value' }"
-                      @dropdownVisibleChange="handleDropdownVisibleChange"
-                      :label-in-value="true"
-                  >
-                    <template #suffixIcon><tags-outlined /></template>
-                    <template #option="option">
-                      <div :class="{ 'tag-option-disabled': option.disabled }">
-                        {{ option.label }}
-                      </div>
-                    </template>
-                  </a-select>
+                  />
                 </a-form-item>
               </a-col>
             </a-row>
@@ -222,25 +371,19 @@
               <a-button>取消</a-button>
             </a-popconfirm>
             <a-button type="primary" @click="submitForm" :loading="submitting">
-              保存更新
+              更新
             </a-button>
           </div>
         </a-form>
       </a-card>
-
     </div>
-
-    <!-- 大图预览模态框 -->
-    <a-modal v-model:visible="previewVisible" :footer="null" width="800px" centered>
-      <img :src="pictureData.url" alt="图片预览" style="width: 100%;"/>
-    </a-modal>
   </div>
 </template>
 
 <script setup>
-import {ref, reactive, onMounted, computed} from 'vue';
-import {message, Modal} from 'ant-design-vue';
-import {useRouter, useRoute} from 'vue-router';
+import {ref, reactive, onMounted, computed, watch, nextTick, onUnmounted, h} from 'vue';
+import { message, Modal } from 'ant-design-vue';
+import { useRouter, useRoute } from 'vue-router';
 import dayjs from 'dayjs';
 import {
   FormOutlined,
@@ -252,21 +395,36 @@ import {
   CheckCircleOutlined,
   EditOutlined,
   HistoryOutlined,
+  FileOutlined,
+  FileImageOutlined,
+  ColumnWidthOutlined,
+  BorderOutlined,
+  StarOutlined,
+  HeartOutlined,
+  SearchOutlined,
+  InfoCircleOutlined,
+  CameraOutlined,
+  PictureOutlined,
+  SettingOutlined,
+  FilterOutlined,
+  FullscreenOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+  UndoOutlined,
+  RedoOutlined,
+  SyncOutlined
 } from '@ant-design/icons-vue';
-import ImageDetailCard from "@/components/picture/ImageDetailCard.vue";
-import {editPictureUsingPost, getPictureByIdUsingGet} from "@/api/tupianxiangguanjiekou.js";
-import {getCategoryTreeForFrontendUsingGet} from "@/api/fenleiguanli.js";
-import {getTagListUsingGet} from "@/api/biaoqianguanli.js";
+import CategorySelect from "@/components/common/CategorySelect.vue";
+import TagSelect from "@/components/common/TagSelect.vue";
+import { editPictureUsingPost, getPictureByIdUsingGet } from "@/api/tupianxiangguanjiekou.js";
+import { getCategoryTreeForFrontendUsingGet } from "@/api/fenleiguanli.js";
+import { getTagListUsingGet } from "@/api/biaoqianguanli.js";
 
 const router = useRouter();
 const route = useRoute();
 
 // 图片ID从路由参数获取
 const pictureId = ref(route.params.id || '123');
-
-// 图片信息预览模态框
-const previewVisible = ref(false);
-
 
 // 提交状态
 const submitting = ref(false);
@@ -276,26 +434,36 @@ const categoryData = ref([]);
 // 标签数据
 const tagOptions = ref([]);
 
+const loadingCategories = ref(false);
+const loadingTags = ref(false);
+
+const imageContainer = ref(null);
+const previewImage = ref(null);
+
+// 图片状态
+const imageLoading = ref(true);
+const zoomLevel = ref(1);  // 缩放级别
+const rotationDegree = ref(0);  // 旋转角度
+
 // 表单验证规则
 const formRules = {
   name: [
-    {required: true, message: '请输入图片名称', trigger: 'blur'},
-    {min: 2, max: 50, message: '图片名称长度为2-50个字符', trigger: 'blur'}
+    { required: true, message: '请输入图片名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '图片名称长度为2-50个字符', trigger: 'blur' }
   ],
   category: [
-    {required: true, message: '请选择图片分类', trigger: 'change'}
+    { required: true, message: '请选择图片分类', trigger: 'change' }
   ]
 };
 
 // 模拟从API获取的图片数据
 const pictureData = ref({
   id: pictureId.value,
-  url: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699',
   name: 'mountain_landscape.jpg',
   picWidth: '1920',
   picHeight: '1080',
-  picScale: '',
-  size: '2.4 KB',
+  picScale: '16:9',
+  size: '2.4 MB',
   format: 'JPG',
   createTime: '',
   likeCount: '',
@@ -323,36 +491,34 @@ const pictureForm = ref({
   description: '在清晨的阳光下拍摄的山脉风景，远处的云海给画面增添了神秘感。',
   category: 'landscape',
   tags: ['nature', 'mountains', 'sunrise'],
+  tagIds: [],
   shootDate: dayjs('2023-10-05'),
 });
 
-
 // 日期格式化函数
 const formatDate = (dateString) => {
-  if (!dateString) return '';
+  if (!dateString) return '--';
   return dayjs(dateString).format('YYYY-MM-DD HH:mm');
 };
 
+// 格式化数字显示
+const formatNumber = (num) => {
+  if (!num && num !== 0) return '0';
 
-// 为不同分类类型返回不同的图标组件
-const getCategoryIcon = (type) => {
-  const iconMap = {
-    'learning': BookOutlined,
-    'figure': UserOutlined,
-    'wallpaper': PictureOutlined,
-    'theme': FolderOutlined,
-    'picture': PictureOutlined
-  };
-
-  // 返回匹配的图标,如果没有匹配则返回默认图标
-  return iconMap[type] || AppstoreOutlined;
+  if (num >= 10000) {
+    return (num / 10000).toFixed(1) + 'w';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k';
+  }
+  return num.toString();
 };
 
-// 查看大图
-const showImagePreview = () => {
-  previewVisible.value = true;
+// 分类变更处理函数
+const handleCategoryChange = (value) => {
+  pictureForm.value.category = value;
 };
-// 1. 创建计算属性，过滤掉已选择的标签
+
+// 创建计算属性，过滤掉已选择的标签
 const filteredTagOptions = computed(() => {
   if (!pictureForm.value.tagIds || pictureForm.value.tagIds.length === 0) {
     return tagOptions.value;
@@ -367,109 +533,77 @@ const filteredTagOptions = computed(() => {
   return tagOptions.value.filter(option => !selectedIds.includes(option.value));
 });
 
-// 2. 创建自定义的选择处理函数
-// 自定义的选择处理函数
-const handleTagChange = (selectedValues) => {
-  // 获取当前已选择的标签
-  const currentSelectedTags = pictureForm.value.tagIds || [];
-  const currentSelectedIds = currentSelectedTags.map(tag =>
-      typeof tag === 'object' ? tag.value : tag
-  );
-
-  // 如果是添加操作
-  if (selectedValues.length > currentSelectedIds.length) {
-    // 找出新添加的值
-    const newValue = selectedValues.find(value => {
-      const valueId = typeof value === 'object' ? value.value : value;
-      return !currentSelectedIds.includes(valueId);
-    });
-
-    if (newValue) {
-      // 查找完整的标签对象（包含label）
-      let newTagObject = newValue;
-      if (typeof newValue !== 'object') {
-        // 如果只有ID，查找对应的完整标签对象
-        newTagObject = tagOptions.value.find(tag => tag.value === newValue);
-      }
-
-      // 安全添加不重复的完整标签对象
-      pictureForm.value.tagIds = [...currentSelectedTags, newTagObject];
-    }
-  } else {
-    // 如果是删除操作
-    const deletedValue = currentSelectedIds.find(id =>
-        !selectedValues.includes(id) &&
-        !selectedValues.some(v => typeof v === 'object' && v.value === id)
-    );
-
-    if (deletedValue !== undefined) {
-      // 从标签列表中删除
-      pictureForm.value.tagIds = currentSelectedTags.filter(tag => {
-        const tagId = typeof tag === 'object' ? tag.value : tag;
-        return tagId !== deletedValue;
-      });
-    } else {
-      // 直接使用新值（可能是完整删除或其他情况）
-      pictureForm.value.tagIds = selectedValues;
-    }
-  }
-};
-// 3. 创建标签选项渲染函数
-const renderTagOption = (option) => {
-  // 检查选项是否已选择
-  const isSelected = pictureForm.value.tagIds?.some(tag => {
-    const tagValue = typeof tag === 'object' ? tag.value : tag;
-    return tagValue === option.value;
-  });
-
-  return {
-    ...option,
-    disabled: isSelected // 禁用已选择的选项
-  };
+const handleTagChange = (value) => {
+  pictureForm.value.tagIds = value;
 };
 
 // 取消编辑
 const cancelEdit = () => {
   message.info('已取消编辑');
-  router.push(`/picture/detail/${pictureId.value}`);
+  router.push(`/picture/${pictureId.value}`);
 };
-
-
-// 将原始分类数据转换为TreeSelect组件可用的格式
-const formattedCategoryTree = computed(() => {
-  return formatCategoryTree(categoryData.value);
-});
 
 // 获取分类数据（树形结构）
 const fetchCategoryTree = async () => {
   try {
-    const result = await getCategoryTreeForFrontendUsingGet({
-
-    });
+    loadingCategories.value = true;
+    const result = await getCategoryTreeForFrontendUsingGet({});
 
     if (result && result.data) {
-      categoryData.value = result.data.data;
-      console.log('分类数据获取成功:', categoryData.value);
+      // 为分类数据添加图标信息
+      const processCategories = (categories) => {
+        return categories.map(category => {
+          // 确定图标类型和图标名称
+          let iconType = 'antd'; // 默认为ant-design图标
+          let icon = '';
+
+          // 判断图标类型和图标名称
+          if (category.icon) {
+            // 如果icon以'icon-'开头，则视为iconfont图标
+            if (category.icon.startsWith('icon-')) {
+              iconType = 'iconfont';
+              icon = category.icon;
+            } else {
+              // 否则视为antd图标
+              icon = category.icon;
+            }
+          } else {
+            // 没有指定图标时，根据分类类型选择默认图标
+            icon = category.type || 'folder';
+          }
+
+          return {
+            ...category,
+            iconType,
+            icon,
+            children: category.children ? processCategories(category.children) : []
+          };
+        });
+      };
+
+      categoryData.value = processCategories(result.data.data);
     } else {
-      console.error('分类数据获取失败');
       message.error('分类数据获取失败');
     }
   } catch (error) {
-    console.error('获取分类数据出错:', error);
     message.error('获取分类数据出错: ' + (error.message || '未知错误'));
+  } finally {
+    loadingCategories.value = false;
   }
 };
 
 // 获取标签数据
 const fetchTags = async () => {
   try {
+    loadingTags.value = true;
     const result = await getTagListUsingGet();
 
     if (result && result.data) {
       // 转换标签数据为select需要的格式
       tagOptions.value = result.data.data.map(tag => ({
         value: tag.id,
-        label: tag.name
+        label: tag.name,
+        status: tag.status
       }));
     } else {
       console.error('标签数据获取失败');
@@ -478,40 +612,19 @@ const fetchTags = async () => {
   } catch (error) {
     console.error('获取标签数据出错:', error);
     message.error('获取标签数据出错: ' + (error.message || '未知错误'));
+  } finally {
+    loadingTags.value = false;
   }
-};
-
-
-
-// 递归格式化分类树，用于TreeSelect组件
-const formatCategoryTree = (categories) => {
-  if (!categories || !Array.isArray(categories)) return [];
-
-  return categories.map(category => ({
-    value: category.id,
-    title: category.name,
-    key: category.id,
-    isLeaf: !category.children || category.children.length === 0,
-    selectable: true,
-    // 添加原始数据中的其他有用字段
-    type: category.type,
-    level: category.level,
-    contentCount: category.contentCount,
-    icon: category.icon,
-    children: category.children ? formatCategoryTree(category.children) : []
-  }));
 };
 
 // 获取图片详情数据
 const fetchPictureDetail = async (id) => {
+  imageLoading.value = true;
   try {
     const response = await getPictureByIdUsingGet({id});
 
-
     if (response && response.data) {
       pictureData.value = response.data.data;
-
-      console.log(JSON.stringify(pictureData.value));
 
       const tagsData = [];
       if (response.data.data.tagIds && response.data.data.tags) {
@@ -524,11 +637,16 @@ const fetchPictureDetail = async (id) => {
         }
       }
 
+      // 确保分类ID是正确的数据类型(String或Number)
+      const categoryId = response.data.data.categoryId;
+
       pictureForm.value = {
         ...response.data.data,
-        category: response.data.data.categoryId,
+        category: categoryId, // 确保使用正确的分类ID
         tagIds: tagsData
       };
+
+      console.log('设置当前分类ID:', categoryId);
     } else {
       message.error('获取图片详情失败');
     }
@@ -537,6 +655,14 @@ const fetchPictureDetail = async (id) => {
     message.error('获取图片详情出错');
   }
 };
+
+// 添加监听函数，当分类数据加载完成后，重新检查选中状态
+watch(categoryData, (newVal) => {
+  if (newVal.length > 0 && pictureForm.value.category) {
+    // 分类数据加载完成后，重新确认选中状态
+    console.log('分类数据加载完成，当前选中分类ID:', pictureForm.value.category);
+  }
+}, { deep: true });
 
 // 提交表单
 const submitForm = async () => {
@@ -569,7 +695,6 @@ const submitForm = async () => {
 
     // 调用编辑接口
     const result = await editPictureUsingPost(formData);
-    console.log(JSON.stringify(formData));
 
     if (result && result.data) {
       // 提交成功的处理逻辑
@@ -581,8 +706,8 @@ const submitForm = async () => {
         description: '更新了图片信息'
       });
 
-      // 重新获取图片详情,以更新页面数据
-      await fetchPictureDetail(pictureId.value);
+      // 更新成功后跳转到详情页
+      router.push(`/picture/${pictureId.value}`);
 
     } else {
       // 提交失败的处理逻辑
@@ -597,6 +722,74 @@ const submitForm = async () => {
   }
 };
 
+
+// 图片加载完成
+const onImageLoad = () => {
+  imageLoading.value = false;
+};
+
+// 缩放功能
+const zoomIn = () => {
+  if (zoomLevel.value < 3) {
+    zoomLevel.value += 0.1;
+  }
+};
+
+const zoomOut = () => {
+  if (zoomLevel.value > 0.5) {
+    zoomLevel.value -= 0.1;
+  }
+};
+
+// 旋转功能
+const rotateLeft = () => {
+  rotationDegree.value = (rotationDegree.value - 90) % 360;
+};
+
+const rotateRight = () => {
+  rotationDegree.value = (rotationDegree.value + 90) % 360;
+};
+
+// 重置视图
+const resetView = () => {
+  zoomLevel.value = 1;
+  rotationDegree.value = 0;
+};
+
+// 显示全屏图片
+const showFullImage = () => {
+  Modal.info({
+    title: pictureData.value.name || '图片预览',
+    icon: null,
+    width: '90%',
+    centered: true,
+    maskClosable: true,
+    okText: '关闭',
+    content: h('div', {
+      style: {
+        textAlign: 'center',
+        margin: '20px 0'
+      }
+    }, [
+      h('img', {
+        src: pictureData.value.url,
+        alt: pictureData.value.name || '图片预览',
+        style: {
+          maxWidth: '100%',
+          maxHeight: '80vh',
+          objectFit: 'contain'
+        }
+      })
+    ])
+  });
+};
+
+// 监听窗口大小变化
+const handleResize = () => {
+  // 窗口大小变化时的处理逻辑
+};
+
+// 组件挂载完成后的操作
 onMounted(async () => {
   // 获取图片详情
   await fetchPictureDetail(pictureId.value);
@@ -604,10 +797,19 @@ onMounted(async () => {
   // 获取分类和标签数据
   await fetchCategoryTree();
   await fetchTags();
+
+  // 添加窗口大小变化监听
+  window.addEventListener('resize', handleResize);
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 </script>
 
 <style scoped>
+/* 原有样式保持不变 */
 .edit-picture-page {
   padding: 24px;
   background-color: #f5f7fa;
@@ -623,7 +825,6 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-
 .form-card-title {
   display: flex;
   align-items: center;
@@ -632,19 +833,11 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-
-.technical-info .info-item {
-  display: flex;
-  align-items: center;
-}
-
-
 /* 表单区域样式 */
 .form-section {
   margin-bottom: 24px;
   padding: 0 24px;
 }
-
 
 .section-title {
   font-size: 16px;
@@ -652,7 +845,6 @@ onMounted(async () => {
   margin: 0 0 16px 0;
   font-weight: 500;
 }
-
 
 /* 编辑历史样式 */
 .edit-history {
@@ -687,16 +879,89 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
-/*增强版页面头部样式 */
+/* 增强版页面头部样式 - 减小高度 */
 .enhanced-page-header {
-  margin-bottom: 32px;
-  padding: 32px 24px 24px;
+  margin-bottom: 24px; /* 减小底部边距 */
+  padding: 30px 30px 24px; /* 减小上下内边距 */
   background: linear-gradient(135deg, #4569ef 0%, #8b45d5 100%);
   border-radius: 16px;
   color: white;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 20px rgba(122, 79, 245, 0.2);
+  box-shadow: 0 10px 30px rgba(122, 79, 245, 0.3);
+  transition: all 0.3s ease;
+}
+
+.enhanced-page-header:hover {
+  box-shadow: 0 15px 40px rgba(122, 79, 245, 0.4);
+}
+
+/* 装饰性背景图案 */
+.decorative-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.bg-pattern-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.5;
+}
+
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.5;
+}
+
+.glow-1 {
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  right: 10%;
+  background: rgba(255, 255, 255, 0.2);
+  animation: float 15s infinite alternate ease-in-out;
+}
+
+.glow-2 {
+  width: 400px;
+  height: 400px;
+  bottom: -200px;
+  left: -100px;
+  background: rgba(127, 217, 255, 0.15);
+  animation: float 20s infinite alternate-reverse ease-in-out;
+}
+
+.glow-3 {
+  width: 250px;
+  height: 250px;
+  top: 40%;
+  right: 25%;
+  background: rgba(255, 186, 255, 0.15);
+  animation: float 17s infinite alternate ease-in-out;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-20px) translateX(15px);
+  }
+  100% {
+    transform: translateY(10px) translateX(-15px);
+  }
 }
 
 .header-content {
@@ -704,135 +969,233 @@ onMounted(async () => {
   justify-content: space-between;
   position: relative;
   z-index: 2;
+  margin-bottom: 16px;
 }
 
 .header-left {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 60%;
+  max-width: 65%;
 }
 
 .title-container {
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.title-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.title-icon-wrapper:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.title-icon {
+  font-size: 24px;
+  color: white;
+}
+
+.title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .main-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
   color: white;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.main-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 2px;
 }
 
 .page-desc {
   margin: 12px 0 0;
-  font-size: 15px;
+  font-size: 14px;
   opacity: 0.9;
-  max-width: 90%;
-  line-height: 1.6;
+  max-width: 95%;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 顶部统计卡片样式 */
+.edit-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.edit-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  padding: 10px 14px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.edit-stat-card:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.stat-card-icon {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-card-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-card-value {
+  font-size: 16px;
+  font-weight: 600;
   color: white;
 }
 
-.picture-info-container {
-  display: flex;
-  gap: 16px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: rgba(255, 255, 255, 0.15);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.preview-container {
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  padding: 16px;
-  border-radius: 12px;
-  max-width: 220px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.preview-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 12px;
+.stat-card-label {
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
 }
 
-.thumbnail-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 180px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.thumbnail-image {
-  width: 100%;
-  display: block;
-  object-fit: cover;
-  aspect-ratio: 4/3;
-}
-
-.image-actions {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 8px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  display: flex;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.thumbnail-wrapper:hover .image-actions {
-  opacity: 1;
-}
-
-/* 编辑进度指示器 */
-.edit-progress {
-  margin-top: 32px;
+/* 头部右侧预览区域*/
+.header-right {
   position: relative;
   z-index: 2;
 }
 
-.progress-steps {
+.header-preview-container {
+  width: 240px;
+  position: relative;
+}
+
+.preview-frame {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+  transform: perspective(800px) rotateY(-5deg) rotateX(5deg);
+}
+
+.preview-frame:hover {
+  transform: perspective(800px) rotateY(0deg) rotateX(0deg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.header-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 16px;
-  max-width: 300px;
-  margin: 0 auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.preview-frame:hover .preview-overlay {
+  opacity: 1;
+}
+
+.preview-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 0 6px;
+}
+
+.preview-format, .preview-dimensions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 增强版进度指示器 */
+.edit-progress {
+  position: relative;
+  z-index: 2;
+  margin-top: 20px;
+}
+
+.progress-line {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 1;
+}
+
+.progress-steps {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 100px; /* 减小间距 */
 }
 
 .step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  opacity: 0.6;
+  position: relative;
+  opacity: 0.7;
   transition: all 0.3s ease;
 }
 
@@ -841,42 +1204,60 @@ onMounted(async () => {
 }
 
 .step.completed {
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .step-icon {
-  background-color: rgba(255, 255, 255, 0.2);
-  width: 40px;
-  height: 40px;
+  background-color: rgba(255, 255, 255, 0.15);
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
 }
 
 .step.active .step-icon {
   background-color: white;
   color: #5d54f5;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .step.completed .step-icon {
-  background-color: rgba(0, 255, 0, 0.2);
+  background-color: #52c41a;
   color: white;
 }
 
 .step-text {
   font-size: 13px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.step-divider {
-  width: 60px;
-  height: 2px;
-  background-color: rgba(255, 255, 255, 0.3);
-  margin: 0 8px;
+.step.active .step-text {
+  color: white;
+}
+
+/* 流程引导文本 */
+.progress-guide {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  padding: 8px 14px;
+  border-radius: 8px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* 装饰性元素 */
@@ -893,166 +1274,455 @@ onMounted(async () => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
 .circle-1 {
-  width: 200px;
-  height: 200px;
-  top: -80px;
+  width: 300px;
+  height: 300px;
+  top: -150px;
   right: 10%;
+  animation: pulse 15s infinite alternate;
 }
 
 .circle-2 {
-  width: 300px;
-  height: 300px;
-  bottom: -150px;
-  left: -50px;
+  width: 400px;
+  height: 400px;
+  bottom: -250px;
+  left: -100px;
+  animation: pulse 20s infinite alternate-reverse;
 }
 
 .circle-3 {
-  width: 120px;
-  height: 120px;
-  top: 20%;
-  right: 20%;
+  width: 150px;
+  height: 150px;
+  top: 30%;
+  right: 25%;
+  animation: pulse 8s infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
 }
 
 .square {
   position: absolute;
   width: 60px;
   height: 60px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.08);
   transform: rotate(45deg);
-  bottom: 20px;
+  bottom: 30px;
   right: 15%;
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(45deg);
+  }
+  100% {
+    transform: rotate(405deg);
+  }
 }
 
 .triangle {
   position: absolute;
   width: 0;
   height: 0;
-  border-left: 50px solid transparent;
-  border-right: 50px solid transparent;
-  border-bottom: 86px solid rgba(255, 255, 255, 0.05);
-  top: 10%;
-  left: 20%;
-  transform: rotate(20deg);
+  border-left: 40px solid transparent;
+  border-right: 40px solid transparent;
+  border-bottom: 70px solid rgba(255, 255, 255, 0.08);
+  top: 15%;
+  left: 15%;
+  animation: float-rotate 25s infinite alternate ease-in-out;
 }
 
+@keyframes float-rotate {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(10deg);
+  }
+  100% {
+    transform: translateY(10px) rotate(-5deg);
+  }
+}
 
-/* 添加内容卡片容器的样式 */
-.content-cards-container {
+/* 新增的装饰性浮动图标*/
+.floating-icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  animation: float-icon 10s infinite ease-in-out;
+}
+
+.camera-icon {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.picture-icon {
+  top: 65%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.tag-icon {
+  top: 30%;
+  right: 8%;
+  animation-delay: 4s;
+}
+
+@keyframes float-icon {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* 装饰性线条  */
+.decorative-line {
+  position: absolute;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+  height: 1px;
+  transform-origin: center;
+}
+
+.line-1 {
+  width: 250px;
+  top: 30%;
+  right: 5%;
+  transform: rotate(-30deg);
+  animation: line-fade 8s infinite alternate;
+}
+
+.line-2 {
+  width: 180px; /* 减小宽度 */
+  bottom: 25%;
+  left: 10%;
+  transform: rotate(45deg);
+  animation: line-fade 12s infinite alternate-reverse;
+}
+
+@keyframes line-fade {
+  0% {
+    opacity: 0.2;
+    width: 0;
+  }
+  100% {
+    opacity: 0.5;
+    width: 100%;
+  }
+}
+
+/* 全新设计的图片预览区域 */
+.image-preview-container {
+  display: flex;
+  margin-bottom: 36px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.image-preview-left {
+  flex: 1;
+  min-width: 0;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 增强型图片预览窗口 */
+.enhanced-preview-window {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 36px; /* 增加卡片之间的间距 */
 }
 
-/* 增强页面头部与内容之间的间距 */
-.enhanced-page-header {
-  margin-bottom: 36px; /* 增加与内容的间距 */
-  /* 其他样式保持不变 */
+.preview-image-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(45deg, #f5f5f5 25%, transparent 25%, transparent 75%, #f5f5f5 75%, #f5f5f5) 0 0 / 20px 20px,
+  linear-gradient(45deg, #f5f5f5 25%, transparent 25%, transparent 75%, #f5f5f5 75%, #f5f5f5) 10px 10px / 20px 20px;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .edit-picture-page {
-    padding: 20px 16px;
-  }
-
-  .content-cards-container {
-    gap: 24px;
-  }
-
-  .enhanced-page-header {
-    margin-bottom: 24px;
-  }
+.enhanced-preview-image {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .edit-picture-page {
-    padding: 16px 12px;
-  }
+/* 图片加载状态 */
+.image-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
 
-  .enhanced-page-header {
-    padding: 24px 16px 20px;
-  }
+/* 图片控制面板 */
+.image-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px;
+  background-color: #f0f0f0;
+  border-top: 1px solid #e8e8e8;
+}
 
-  .header-content {
-    flex-direction: column;
-    gap: 24px;
-  }
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-  .header-left {
-    max-width: 100%;
-  }
+.control-divider {
+  width: 1px;
+  height: 24px;
+  background-color: #d9d9d9;
+}
 
-  .main-title {
-    font-size: 24px;
-  }
+.zoom-indicator {
+  font-size: 13px;
+  color: #666;
+  min-width: 46px;
+  text-align: center;
+  background-color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
 
-  .header-right {
-    justify-content: flex-start;
-  }
+/* 右侧信息面板 - 重新设计 */
+.image-preview-right {
+  width: 300px;
+  flex-shrink: 0;
+  border-left: 1px solid #f0f0f0;
+  background: linear-gradient(to bottom, #ffffff, #f8f8f8);
+}
 
-  .preview-container {
-    max-width: 100%;
-  }
+.streamlined-info-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+}
 
-  .thumbnail-wrapper {
-    max-width: 100%;
-  }
+.preview-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 24px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #1f1f1f;
+}
 
-  .picture-info-container {
-    flex-wrap: wrap;
-  }
+/* 行式信息布局 */
+.info-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
-  .progress-steps {
-    padding: 12px 8px;
-  }
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
 
-  .step-icon {
-    width: 36px;
-    height: 36px;
-  }
+.info-row:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
 
-  .step-text {
-    font-size: 12px;
-  }
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+}
 
-  .step-divider {
-    width: 30px;
-  }
+.info-value {
+  color: #1f1f1f;
+  font-weight: 500;
+  font-size: 14px;
+}
 
+/* 重新设计的统计信息样式 */
+.stats-section {
+  margin-top: 24px;
+}
 
+.stats-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stats-title::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  background: linear-gradient(to bottom, #4569ef, #8b45d5);
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.09);
+  border-color: rgba(69, 105, 239, 0.3);
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.stat-header .anticon {
+  font-size: 14px;
+}
+
+.stat-header .anticon-eye {
+  color: #1890ff;
+}
+
+.stat-header .anticon-heart {
+  color: #f5222d;
+}
+
+.stat-header .anticon-star {
+  color: #faad14;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #262626;
+  text-align: center;
 }
 
 /* 暗黑模式适配 */
 @media (prefers-color-scheme: dark) {
-  .edit-picture-page {
-    background-color: #121212;
+  .stats-title {
+    color: #aaa;
   }
 
-  .enhanced-page-header {
-    background: linear-gradient(135deg, #3a59c7 0%, #5d3eae 100%);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  }
-
-  .edit-history {
+  .stat-card {
     background-color: #2a2a2a;
     border-color: #333;
   }
 
-  .history-time {
-    color: #999;
+  .stat-card:hover {
+    border-color: rgba(90, 120, 220, 0.4);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
   }
 
-  .history-content {
-    color: #ddd;
+  .stat-header {
+    color: #aaa;
   }
 
-  .form-actions {
-    border-top-color: #333;
+  .stat-value {
+    color: #e0e0e0;
+  }
+}
+
+/* 响应式样式调整 */
+@media (max-width: 1200px) {
+  .stats-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .stat-card {
+    padding: 10px;
+  }
+
+  .stat-value {
+    font-size: 18px;
   }
 }
 </style>
