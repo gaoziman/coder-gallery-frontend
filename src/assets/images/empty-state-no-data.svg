@@ -1,0 +1,31 @@
+<svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- 背景装饰 -->
+    <ellipse cx="43" cy="25" rx="25" ry="10" fill="#EEF2FF" opacity="0.6"/>
+    <ellipse cx="197" cy="32" rx="25" ry="10" fill="#EEF2FF" opacity="0.7"/>
+    <ellipse cx="130" cy="15" rx="15" ry="5" fill="#EEF2FF" opacity="0.5"/>
+
+    <!-- 图片框架 -->
+    <rect x="70" y="45" width="100" height="80" rx="5" fill="white" stroke="#C7D2FE" stroke-width="2" stroke-dasharray="4 2"/>
+
+    <!-- 图片框架内的元素 -->
+    <circle cx="95" cy="65" r="8" fill="#EEF2FF" stroke="#8B5CF6" stroke-width="1.5"/>
+    <path d="M87 95L105 80L115 90L135 70L153 95" fill="none" stroke="#C7D2FE" stroke-width="2"/>
+    <circle cx="140" cy="60" r="12" fill="#EEF2FF" stroke="#6366F1" stroke-width="1.5"/>
+
+    <!-- 图片框下方的装饰 -->
+    <rect x="85" y="135" width="70" height="5" rx="2.5" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+    <rect x="90" y="145" width="60" height="5" rx="2.5" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+
+    <!-- 叹号图标 -->
+    <g transform="translate(120, 85)">
+        <circle cx="0" cy="0" r="15" fill="#F1F5F9"/>
+        <path d="M0 -8L0 3" stroke="#6366F1" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="0" cy="8" r="1.5" fill="#6366F1"/>
+    </g>
+
+    <!-- 底部装饰 -->
+    <path d="M40 160C70 145 170 145 200 160" stroke="#C7D2FE" stroke-width="2" stroke-dasharray="4 2" fill="none"/>
+
+    <!-- 底部文字说明 -->
+    <text x="120" y="175" font-family="sans-serif" font-size="10" fill="#6366F1" text-anchor="middle">暂无图片数据</text>
+</svg>
