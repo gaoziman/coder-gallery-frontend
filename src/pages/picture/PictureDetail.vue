@@ -17,27 +17,53 @@
 
     <!-- 中间：分类标签 -->
     <div class="category-container">
-      <a class="category-tag">动物摄影</a>
-      <a  class="category-tag">表情包</a>
-      <span class="image-title">熊猫表情包 1</span>
+      <a-tag class="category-tag" v-if="currentImage.category">{{ currentImage.category }}</a-tag>
+      <template v-if="currentImage.tags && currentImage.tags.length > 0">
+        <a-tag
+            v-for="(tag, index) in visibleTags"
+            :key="index"
+            class="tag"
+            :style="getTagStyleFromBackend(tag)"
+        >
+          {{ typeof tag === 'string' ? tag : tag.name }}
+        </a-tag>
+
+        <!-- 如果有更多标签，显示+N更多 -->
+        <a-tag
+            v-if="hasMoreTags"
+            class="tag more-tag"
+            @click="showAllTags"
+        >
+          +{{ currentImage.tags.length - 3 }} 更多
+        </a-tag>
+      </template>
     </div>
+
 
     <!-- 右侧：功能按钮 -->
     <div class="action-buttons">
-      <a-button class="feature-button">
-        <template #icon><IconFont type="icon-search" /></template>
+      <a-button class="feature-button" @click="handleImageSearchClick">
+        <template #icon>
+          <IconFont type="icon-yitusoutu3" />
+        </template>
         以图搜图
       </a-button>
-      <a-button class="feature-button">
-        <template #icon><IconFont type="icon-search" /></template>
+      <a-button class="feature-button" @click="navigateToSimilarPictures">
+        <template #icon>
+          <IconFont type="icon-shengchengxiangsitupian" />
+        </template>
         相似图片
       </a-button>
       <a-button class="feature-button">
-        <template #icon><IconFont type="icon-yuantu" /></template>
+        <template #icon>
+          <IconFont type="icon-iconecitemfuzhi" />
+        </template>
         查看原图
       </a-button>
       <a-button class="feature-button">
-        <template #icon><IconFont type="icon-yuantu" /></template>
+        <template #icon>
+          <IconFont type="icon-jinggao-L" />
+        </template>
         我要举报
       </a-button>
     </div>
@@ -265,40 +291,40 @@
                 </div>
 
                 <div class="section-content">
-                  <!-- 分类 -->
-                  <div class="categories-wrapper">
+                  <!-- 分类和标签容器，设置为左右排布 -->
+                  <div class="categories-tags-container">
+                    <!-- 分类 -->
                     <a-tag
-                        color="blue"
                         class="category-tag"
                     >
                       {{ currentImage.category || '风景壁纸' }}
                     </a-tag>
-                  </div>
 
-                  <!-- 标签 -->
-                  <div class="tags-wrapper">
-                    <template v-if="currentImage.tags && currentImage.tags.length > 0">
-                      <a-tag
-                          v-for="(tag, index) in visibleTags"
-                          :key="index"
-                          class="tag"
-                          :color="tagColors[index % tagColors.length]"
-                      >
-                        {{ typeof tag === 'string' ? tag : tag.name }}
-                      </a-tag>
+                    <!-- 标签 -->
+                    <div class="tags-wrapper">
+                      <template v-if="currentImage.tags && currentImage.tags.length > 0">
+                        <a-tag
+                            v-for="(tag, index) in visibleTags"
+                            :key="index"
+                            class="tag"
+                            :style="getTagStyleFromBackend(tag)"
+                        >
+                          {{ typeof tag === 'string' ? tag : tag.name }}
+                        </a-tag>
 
-                      <!-- 如果有更多标签，显示+N更多 -->
-                      <a-tag
-                          v-if="hasMoreTags"
-                          class="tag more-tag"
-                          @click="showAllTags"
-                      >
-                        +{{ currentImage.tags.length - 3 }} 更多
-                      </a-tag>
-                    </template>
-                    <div v-else class="no-tags">
-                      <IconFont type="icon-empty" class="no-tags-icon" />
-                      <span>暂无标签</span>
+                        <!-- 如果有更多标签，显示+N更多 -->
+                        <a-tag
+                            v-if="hasMoreTags"
+                            class="tag more-tag"
+                            @click="showAllTags"
+                        >
+                          +{{ currentImage.tags.length - 3 }} 更多
+                        </a-tag>
+                      </template>
+                      <div v-else class="no-tags">
+                        <IconFont type="icon-empty" class="no-tags-icon" />
+                        <span>暂无标签</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -387,14 +413,14 @@
         </a-col>
       </a-row>
 
-<!--      <a-row>-->
-<!--        <a-col :span="24">-->
-<!--          <div v-motion :initial="{ opacity: 0, y: 10 }"-->
-<!--               :enter="{ opacity: 1, y: 0, transition: { delay: 600, duration: 300 } }">-->
-<!--            <ImageStoryBackground :story-data="storyData"/>-->
-<!--          </div>-->
-<!--        </a-col>-->
-<!--      </a-row>-->
+      <!--      <a-row>-->
+      <!--        <a-col :span="24">-->
+      <!--          <div v-motion :initial="{ opacity: 0, y: 10 }"-->
+      <!--               :enter="{ opacity: 1, y: 0, transition: { delay: 600, duration: 300 } }">-->
+      <!--            <ImageStoryBackground :story-data="storyData"/>-->
+      <!--          </div>-->
+      <!--        </a-col>-->
+      <!--      </a-row>-->
 
       <div style="margin-top: 20px">
         <!-- 评论系统 -->
@@ -439,11 +465,12 @@ import dayjs from 'dayjs';
 import {useUserStore} from "@/stores/user";
 import CommentSystem from '@/components/comment/CommentSystem.vue';
 import RelatedPictures from "@/components/picture/RelatedPictures.vue";
-import ImageStoryBackground from "@/components/picture/ImageStoryBackground.vue";
 import {commentService} from '@/services/commentService';
 import {getNextPictureUsingGet, getPictureByIdUsingGet, getPreviousPictureUsingGet} from "@/api/tupianxiangguanjiekou";
 import {useUserReactionStore} from '@/stores/userReaction';
 import ShareComponent from "@/components/common/ShareComponent.vue";
+
+
 
 const userReactionStore = useUserReactionStore();
 
@@ -470,10 +497,6 @@ const commentTotal = ref(0)
 const shareUrl = ref('');
 
 
-// 计算图片是否被收藏
-const isCollected = computed(() => {
-  return userReactionStore.isFavorited(imageId.value);
-});
 
 // 标签显示控制
 const visibleTags = computed(() => {
@@ -686,6 +709,56 @@ const navigateToNext = async () => {
   }
 };
 
+// 相似图片点击事件
+const navigateToSimilarPictures = () => {
+  router.push({
+    name: 'SimilarPictures',
+    params: { id: imageId.value },
+    query: {
+      originalName: currentImage.value.name || '相似图片'
+    }
+  });
+};
+
+
+// 以图搜图点击事件
+const handleImageSearchClick = () => {
+  if (currentImage.value && currentImage.value.url) {
+    const searchParams = {
+      pictureId: imageId.value,
+      image: currentImage.value.url,
+      includeSameUser: false,
+      saveResults: false,
+      customKeyword: '',
+      isResearch: false
+    };
+
+    // 调用专用的以图搜图导航函数
+    navigateToImageSearch(searchParams);
+  } else {
+    message.error('无法获取当前图片信息');
+  }
+};
+
+
+// 1. 以图搜图的导航函数
+const navigateToImageSearch = (searchParams) => {
+  // 将搜索参数保存到sessionStorage中
+  const toSearchId = `imageSearch-${Date.now()}`;
+
+  sessionStorage.setItem(toSearchId, JSON.stringify({
+    ...searchParams,
+    searchType: 'image' // 标记这是以图搜图
+  }));
+
+  // 导航到图像搜索结果页面
+  router.push({
+    name: 'ImageToSearchResults',
+    query: { searchId: toSearchId }
+  });
+};
+
+
 // 在 fetchComments 中添加递归处理多级嵌套评论的函数
 const processCommentReplies = (commentsList) => {
   if (!commentsList || !commentsList.length) return [];
@@ -861,6 +934,256 @@ const downloadImage = () => {
   }, 1000);
 };
 
+
+const getTagStyleFromBackend = (tag) => {
+  // 如果标签对象有color属性并且是合法的颜色值
+  if (tag.color && typeof tag.color === 'string') {
+    // 判断是否是有效的颜色值
+    const isValidColor = /^#([0-9A-F]{3}){1,2}$/i.test(tag.color);
+
+    if (isValidColor) {
+      // 从颜色值生成相应的浅色背景和边框颜色
+      const color = tag.color;
+
+      // 调整对比度：为颜色计算一个浅色的背景色
+      const lighterBg = getLightColorFromHex(color);
+
+      // 为颜色计算一个适合的边框颜色
+      const borderColor = getMediumColorFromHex(color);
+
+      // 获取更好对比度的文字颜色
+      const textColor = getContrastTextColor(color);
+
+      // 轻量化标签样式，与分类形成对比
+      return {
+        backgroundColor: lighterBg,
+        color: textColor,
+        borderColor: borderColor,
+        fontWeight: '400', // 更轻的字重
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)', // 更浅的阴影
+        padding: '2px 8px',
+        borderRadius: '100px', // 改为圆角以保持一致
+      };
+    }
+  }
+
+  // 如果没有有效的颜色信息，使用默认的标签样式
+  return {
+    backgroundColor: '#f0f5ff',
+    color: '#2f54eb',
+    borderColor: '#d6e4ff',
+    fontWeight: '400',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    borderRadius: '100px' // 改为圆角以保持一致
+  };
+};
+
+// 优化：获取对比度更好的文字颜色
+const getContrastTextColor = (hexColor) => {
+  // 移除可能的#前缀
+  let hex = hexColor.replace('#', '');
+
+  // 将3位颜色转为6位
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+
+  // 解析RGB值
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // 计算亮度 (使用标准公式)
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+  // 计算颜色的亮度和对比度
+  const isDark = brightness < 160; // 使用160作为阈值
+
+  if (isDark) {
+    // 如果颜色较深，使用白色或浅灰文字
+    return '#ffffff';
+  } else {
+    // 如果颜色较浅，使用原色但加深或使用深灰
+    // 获取原色的深色变体
+    const darkerColor = getDarkerColorFromHex(hexColor);
+
+    // 确保足够深以提供良好对比度
+    const darkerRgb = hexToRgb(darkerColor);
+    const darkerBrightness = (darkerRgb.r * 299 + darkerRgb.g * 587 + darkerRgb.b * 114) / 1000;
+
+    // 如果深色变体仍然不够深，使用标准深色
+    return darkerBrightness > 100 ? '#333333' : darkerColor;
+  }
+};
+
+// 辅助函数：从十六进制颜色生成浅色背景
+const getLightColorFromHex = (hexColor) => {
+  // 移除可能的#前缀
+  let hex = hexColor.replace('#', '');
+
+  // 将3位颜色转为6位
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+
+  // 解析RGB值
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // 将颜色转换为HSL
+  const hsl = rgbToHsl(r, g, b);
+
+  // 调高亮度和降低饱和度制作浅色背景
+  const lighterHsl = [
+    hsl[0],           // 保持色相不变
+    Math.min(hsl[1] * 0.65, 0.3),  // 降低饱和度
+    Math.min(0.96, hsl[2] * 1.3)   // 提高亮度，但不超过96%
+  ];
+
+  // 转回RGB然后再转为HEX
+  const lighterRgb = hslToRgb(lighterHsl[0], lighterHsl[1], lighterHsl[2]);
+
+  return rgbToHex(lighterRgb[0], lighterRgb[1], lighterRgb[2]);
+};
+
+// 辅助函数：从十六进制颜色生成更深的颜色（用于文字）
+const getDarkerColorFromHex = (hexColor) => {
+  // 移除可能的#前缀
+  let hex = hexColor.replace('#', '');
+
+  // 将3位颜色转为6位
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+
+  // 解析RGB值
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // 将颜色转换为HSL
+  const hsl = rgbToHsl(r, g, b);
+
+  // 调低亮度和提高饱和度制作深色文字
+  const darkerHsl = [
+    hsl[0],           // 保持色相不变
+    Math.min(1, hsl[1] * 1.2),  // 增加饱和度
+    Math.max(0.1, hsl[2] * 0.6)   // 降低亮度
+  ];
+
+  // 转回RGB然后再转为HEX
+  const darkerRgb = hslToRgb(darkerHsl[0], darkerHsl[1], darkerHsl[2]);
+
+  return rgbToHex(darkerRgb[0], darkerRgb[1], darkerRgb[2]);
+};
+
+// 辅助函数：从十六进制颜色生成中等深度的边框颜色
+const getMediumColorFromHex = (hexColor) => {
+  // 移除可能的#前缀
+  let hex = hexColor.replace('#', '');
+
+  // 将3位颜色转为6位
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+
+  // 解析RGB值
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // 将颜色转换为HSL
+  const hsl = rgbToHsl(r, g, b);
+
+  // 调整亮度和饱和度制作边框颜色
+  const mediumHsl = [
+    hsl[0],           // 保持色相不变
+    Math.min(hsl[1] * 0.85, 0.5),  // 稍微降低饱和度
+    Math.min(0.85, hsl[2] * 1.1)    // 稍微提高亮度
+  ];
+
+  // 转回RGB然后再转为HEX
+  const mediumRgb = hslToRgb(mediumHsl[0], mediumHsl[1], mediumHsl[2]);
+
+  return rgbToHex(mediumRgb[0], mediumRgb[1], mediumRgb[2]);
+};
+
+// 辅助函数：将十六进制转换为RGB对象
+const hexToRgb = (hex) => {
+  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+};
+
+// 辅助函数：RGB转HSL
+const rgbToHsl = (r, g, b) => {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+
+    h /= 6;
+  }
+
+  return [h, s, l];
+};
+
+// 辅助函数：HSL转RGB
+const hslToRgb = (h, s, l) => {
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l; // achromatic
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+};
+
+// 辅助函数：RGB转HEX
+const rgbToHex = (r, g, b) => {
+  const toHex = (c) => {
+    const hex = c.toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
 // 是否是图片所有者（用于控制编辑按钮显示）
 const isOwner = computed(() => {
   if (userStore.userInfo && currentImage.value.user) {
@@ -948,14 +1271,23 @@ watch(() => route.params.id, (newId) => {
 <style scoped>
 .image-detail-header {
   display: flex;
-  align-items: center;
+  align-items: center; /* 确保垂直居中对齐 */
   justify-content: space-between;
   width: 100%;
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: 12px 0;
+  max-width: 1390px;
+  margin: 0 auto 24px auto;
+  padding: 16px 24px;
   box-sizing: border-box;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(234, 236, 240, 0.4);
+  transition: all 0.3s ease;
+  min-height: 72px;
 }
+
+
 
 /* 左侧返回与进度 */
 .header-left {
@@ -1011,30 +1343,7 @@ watch(() => route.params.id, (newId) => {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.category-tag {
-  display: inline-flex;
-  align-items: center;
   height: 28px;
-  padding: 0 14px;
-  background: #eef2ff;
-  color: #4f46e5;
-  border-radius: 14px;
-  font-size: 13px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.category-tag:hover {
-  transform: translateY(-1px);
-}
-
-.image-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: #1f2937;
-  margin-left: 4px;
 }
 
 /* 右侧功能按钮 */
@@ -1098,9 +1407,9 @@ watch(() => route.params.id, (newId) => {
   }
 
   .category-container {
-    order: 3;
-    width: 100%;
-    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .action-buttons {
@@ -1122,7 +1431,7 @@ watch(() => route.params.id, (newId) => {
 /* 整体页面布局 */
 .redesigned-detail-page {
   padding: 24px 0 32px;
-  background-color: #f7f9fc;
+  background-color: transparent;
   min-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
@@ -1581,7 +1890,7 @@ watch(() => route.params.id, (newId) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 12px;
+  padding: 1px 2px;
   border-radius: 12px;
   background: linear-gradient(145deg, #f9fafb, #ffffff);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.03);
@@ -1651,49 +1960,58 @@ watch(() => route.params.id, (newId) => {
 }
 
 /* 分类与标签 */
-.categories-wrapper {
-  margin-bottom: 16px;
+.categories-tags-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .category-tag {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  border: none;
-  border-radius: 100px;
-  padding: 6px 16px;
-  font-size: 14px;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-  height: 32px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 14px;
+  background-color: #6366f1;
+  color: white;
+  font-size: 13px;
+  border: none;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: all 0.3s;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
 }
 
 .category-tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
-}
-
-.tags-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  background-color: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
 }
 
 .tag {
   border-radius: 100px;
-  padding: 5px 14px;
+  padding: 0 14px;
   font-size: 13px;
   transition: all 0.3s;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   height: 28px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
 
 .tag:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.tags-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
 }
 
 .more-tag {

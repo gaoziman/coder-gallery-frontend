@@ -608,6 +608,25 @@ declare namespace API {
     id: number;
   };
 
+  type ImageSearchRequest = {
+    /** 自定义搜索关键词 */
+    customKeyword?: string;
+    /** 是否包含同一用户图片 */
+    includeSameUser?: boolean;
+    /** 是否是再次搜索 */
+    isResearch?: boolean;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 图片ID */
+    pictureId: number;
+    /** 是否保存搜索结果 */
+    saveResults?: boolean;
+    /** 搜索来源 */
+    source?: string;
+  };
+
   type likeCommentUsingGETParams = {
     /** commentId */
     commentId: number;
@@ -992,6 +1011,7 @@ declare namespace API {
   type PageResultCategoryVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: CategoryVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1002,6 +1022,7 @@ declare namespace API {
   type PageResultCommentVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: CommentVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1012,6 +1033,7 @@ declare namespace API {
   type PageResultLoginLogVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: LoginLogVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1022,6 +1044,7 @@ declare namespace API {
   type PageResultOperationLogVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: OperationLogVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1029,9 +1052,21 @@ declare namespace API {
     total?: number;
   };
 
+  type PageResultPictureVO_ = {
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    list?: PictureVO[];
+    pageNum?: number;
+    pageSize?: number;
+    pages?: number;
+    records?: PictureVO[];
+    total?: number;
+  };
+
   type PageResultRelatedItemVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: RelatedItemVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1042,6 +1077,7 @@ declare namespace API {
   type PageResultTagRelatedItemVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: TagRelatedItemVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1052,6 +1088,7 @@ declare namespace API {
   type PageResultTagVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: TagVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1062,6 +1099,7 @@ declare namespace API {
   type PageResultUserVO_ = {
     hasNext?: boolean;
     hasPrevious?: boolean;
+    list?: UserVO[];
     pageNum?: number;
     pageSize?: number;
     pages?: number;
@@ -1147,6 +1185,8 @@ declare namespace API {
     reviewTime?: string;
     /** 审核人 id */
     reviewerId?: number;
+    /** 与源图片的相似度 */
+    similarity?: number;
     /** 图片大小 */
     size?: number;
     /** 标签颜色 */
@@ -1365,6 +1405,12 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultPageResultPictureVO_ = {
+    code?: number;
+    data?: PageResultPictureVO_;
+    message?: string;
+  };
+
   type ResultPageResultRelatedItemVO_ = {
     code?: number;
     data?: PageResultRelatedItemVO_;
@@ -1455,6 +1501,19 @@ declare namespace API {
     commentId: number;
     /** isTop */
     isTop: boolean;
+  };
+
+  type SimilarPictureRequest = {
+    /** 是否包含同一用户图片 */
+    includeSameUser?: boolean;
+    /** 匹配类型(1:所有维度 2:仅分类 3:仅标签) */
+    matchType?: number;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 图片ID */
+    pictureId: number;
   };
 
   type TagBatchDeleteRequest = {

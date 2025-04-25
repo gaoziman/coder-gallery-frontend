@@ -59,6 +59,36 @@ export async function editPictureUsingPost(
   });
 }
 
+/** 以图搜图功能 POST /api/picture/search/image */
+export async function searchByImageUsingPost(
+  body: API.ImageSearchRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.ResultPageResultPictureVO_>("/api/picture/search/image", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
+/** 获取相似图片列表 POST /api/picture/similar */
+export async function findSimilarPicturesUsingPost(
+  body: API.SimilarPictureRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.ResultPageResultPictureVO_>("/api/picture/similar", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
 /** 上传图片（可重新上传） POST /api/picture/upload */
 export async function uploadPictureUsingPost(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
