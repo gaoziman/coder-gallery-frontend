@@ -2,12 +2,12 @@
 
 
 
-# 智能云图库 | Smart Cloud Gallery
+# 星云图阁 | Smart Cloud Gallery
 
 <div align="center">
 
 
-![智能云图库 版本](https://gaoziman.oss-cn-hangzhou.aliyuncs.com/uPic/2025-04-06-%E7%89%88%E6%9C%AC-1.0.0-blue)
+![星云图阁 版本](https://gaoziman.oss-cn-hangzhou.aliyuncs.com/uPic/2025-04-06-%E7%89%88%E6%9C%AC-1.0.0-blue)
 ![Vue](https://gaoziman.oss-cn-hangzhou.aliyuncs.com/uPic/2025-04-06-Vue-3.x-42b883)
 ![TypeScript](https://gaoziman.oss-cn-hangzhou.aliyuncs.com/uPic/2025-04-06-TypeScript-5.x-3178c6)
 ![Vite](https://gaoziman.oss-cn-hangzhou.aliyuncs.com/uPic/2025-04-06-Vite-6.x-646cff)
@@ -16,10 +16,10 @@
 
 ## ✨ 项目介绍
 
-智能云图库是一个现代化的图片管理与展示平台，基于Vue 3、TypeScript和Vite构建。项目致力于提供简洁优雅的用户界面和流畅的浏览体验，让用户能够轻松管理、分类和欣赏高质量图片。
+星云图阁是一个现代化的图片管理与展示平台，基于Vue 3、TypeScript和Vite构建。项目致力于提供简洁优雅的用户界面和流畅的浏览体验，让用户能够轻松管理、分类和欣赏高质量图片。
 
 <div align="center">
-  <img src="https://gaoziman.oss-cn-hangzhou.aliyuncs.com/uPic/2025-04-06-image-20250406225937394.png" alt="智能云图库预览" width="80%">
+  <img src="https://gaoziman.oss-cn-hangzhou.aliyuncs.com/uPic/2025-04-06-image-20250406225937394.png" alt="星云图阁预览" width="80%">
 </div>
 
 
@@ -46,7 +46,7 @@
 ## 📦 项目结构
 
 ```
-智能云图库/
+星云图阁/
 coder-gallery-frontend/
 ├── .vscode/              # VS Code配置
 │   └── extensions.json   # 推荐扩展
@@ -169,11 +169,11 @@ yarn build
 
 - 官方网站：[leocoder.cn](https://leocoder.cn)
 - 邮箱：m2942894660@163.com
-- 微信公众号：智能云图库
+- 微信公众号：星云图阁
 
 ---
 
 <div align="center">
   <p>用科技定格美好瞬间，让艺术触手可及</p>
-  <p>© 2025 智能云图库 保留所有权利</p>
+  <p>© 2025 星云图阁 保留所有权利</p>
 </div>

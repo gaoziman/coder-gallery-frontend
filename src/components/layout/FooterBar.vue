@@ -1,4 +1,3 @@
-<!-- src/components/layout/FooterBar.vue -->
 <template>
   <a-layout-footer class="footer">
     <div class="footer-container">
@@ -8,15 +7,9 @@
         <div class="footer-brand">
           <div class="brand-title">
             <span class="icon"><i class="ant-icon ant-icon-cloud"></i></span>
-            智能云图库
+            星云图阁
           </div>
           <div class="brand-desc">发现、创作、分享，让创意无限展动</div>
-          <div class="social-links">
-            <a href="#" class="social-link"><i class="ant-icon ant-icon-wechat"></i></a>
-            <a href="#" class="social-link"><i class="ant-icon ant-icon-weibo"></i></a>
-            <a href="#" class="social-link"><i class="ant-icon ant-icon-notification"></i></a>
-            <a href="#" class="social-link"><i class="ant-icon ant-icon-github"></i></a>
-          </div>
         </div>
 
         <!-- 中间列：关于我们 -->
@@ -51,7 +44,7 @@
       <!-- 第二行：底部版权信息 -->
       <div class="footer-bottom">
         <div class="copyright">
-          © {{ currentYear }} 智能云图库, 版权所有 &nbsp;&nbsp; 京ICP备12345678号-1
+          © {{ currentYear }} 星云图阁, 版权所有 &nbsp;&nbsp; 鄂ICP备2025089543号-1
         </div>
         <div class="bottom-links">
           <a href="#">关于我们</a>

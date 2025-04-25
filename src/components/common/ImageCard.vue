@@ -358,9 +358,6 @@ import {computed, defineProps, defineEmits, ref, onMounted, watch, onUnmounted, 
 import { Modal } from 'ant-design-vue';
 import dayjs from 'dayjs';
 
-// 导入Teleport
-import { Teleport } from 'vue';
-
 
 
 // 添加加载状态
@@ -451,7 +448,7 @@ const isOwner = computed(() => {
   if (currentUser.role === 'admin') return true;
 
   // 普通用户需要检查是否是作者
-  return currentUser.id === props.image.user.id;
+  return currentUser.id === props.image.raw.id;
 });
 
 // 获取图片格式
@@ -1075,7 +1072,6 @@ const toggleLike = async () => {
     emit('like', props.image);
   } catch (error) {
     console.error('toggleLike 发生错误:', error);
-    // 错误已在store内处理，这里不再显示额外消息
   } finally {
     likeLoading.value = false;
   }
@@ -1268,10 +1264,10 @@ onUnmounted(() => {
   justify-content: center !important;
   align-items: center !important;
   padding: 0 !important;
-  line-height: 0 !important; /* 修改为0 */
+  line-height: 0 !important;
   transition: all 0.3s ease;
   overflow: hidden !important;
-  position: relative !important; /* 建立新的定位上下文 */
+  position: relative !important;
 }
 
 /* 深度选择按钮内部的span元素 */

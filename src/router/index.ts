@@ -3,6 +3,8 @@ import MainLayout from '@/components/layout/MainLayout.vue';
 import HomePage from '@/pages/home/HomePage.vue';
 import {message} from "ant-design-vue";
 import {useUserStore} from "@/stores/user";
+import ImageSearchResultPage from "@/components/search/ImageSearchResultPage.vue";
+import ImageToSearchResults from "@/components/search/ImageToSearchResults.vue";
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -14,7 +16,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'Home',
                 component: HomePage,
                 meta: {
-                    title: '发现精彩图片世界 - 智能云图库',
+                    title: '发现精彩图片世界 - 星云图阁',
                     requiresAuth: false
                 },
             },
@@ -23,7 +25,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'MySpacePage',
                 component: () => import('@/pages/space/MySpacePage.vue'),
                 meta: {
-                    title: '我的空间 - 智能云图库',
+                    title: '我的空间 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -32,7 +34,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'CreateSpace',
                 component: () => import('@/pages/space/CreateSpace.vue'),
                 meta: {
-                    title: '创建空间 - 智能云图库',
+                    title: '创建空间 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -41,7 +43,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'FavoritePage',
                 component: () => import('@/pages/other/FavoritePage.vue'),
                 meta: {
-                    title: '我的收藏 - 智能云图库',
+                    title: '我的收藏 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -50,7 +52,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'ExplorePage',
                 component: () => import('@/pages/explore/ExplorePage.vue'),
                 meta: {
-                    title: '探索发现 - 智能云图库',
+                    title: '探索发现 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -59,7 +61,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'HistoryPage',
                 component: () => import('@/pages/other/HistoryPage.vue'),
                 meta: {
-                    title: '浏览历史 - 智能云图库',
+                    title: '浏览历史 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -68,7 +70,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'CreatePicture',
                 component: () => import('@/pages/picture/CreatePicture.vue'),
                 meta: {
-                    title: '创建图片 - 智能云图库',
+                    title: '创建图片 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -77,7 +79,7 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'BatchCreatePicture',
                 component: () => import('@/pages/picture/BatchCreatePicture.vue'),
                 meta: {
-                    title: '批量创建图片 - 智能云图库',
+                    title: '批量创建图片 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -86,16 +88,32 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'PictureDetail',
                 component: () => import('@/pages/picture/PictureDetail.vue'),
                 meta: {
-                    title: '图片详情 - 智能云图库',
+                    title: '图片详情 - 星云图阁',
                     requiresAuth: false
                 },
+            },
+            {
+                path: '/pictures/similar/:id',
+                name: 'SimilarPictures',
+                component: () => import('@/components/search/SimilarPictures.vue'),
+                meta: {
+                    title: '相似图片',
+                    requiresAuth: false,
+                    keepAlive: false
+                }
+            },
+            {
+                path: '/picture/search/result',
+                name: 'ImageToSearchResults',
+                component:  () => import('@/components/search/ImageToSearchResults.vue'),
+                meta: { title: '图片搜索结果', requiresAuth: false }
             },
             {
                 path: '/edit-picture/:id',
                 name: 'EditPicture',
                 component: () => import('@/pages/picture/EditPicture.vue'),
                 meta: {
-                    title: '编辑图片 - 智能云图库',
+                    title: '编辑图片 - 星云图阁',
                     requiresAuth: true
                 },
             },
@@ -111,7 +129,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'AdminDashboard',
                         component: () => import('@/pages/admin/content/DashboardPage.vue'),
                         meta: {
-                            title: '管理仪表盘 - 智能云图库',
+                            title: '管理仪表盘 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -121,7 +139,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'UsersManagement',
                         component: () => import('@/pages/admin/content/UsersManagement.vue'),
                         meta: {
-                            title: '用户管理 - 智能云图库',
+                            title: '用户管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -131,7 +149,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'PictureManagement',
                         component: () => import('@/pages/admin/content/PictureManagement.vue'),
                         meta: {
-                            title: '图片管理 - 智能云图库',
+                            title: '图片管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -141,7 +159,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'SpaceManagement',
                         component: () => import('@/pages/admin/content/SpaceManagement.vue'),
                         meta: {
-                            title: '空间管理 - 智能云图库',
+                            title: '空间管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -151,7 +169,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'CategoryManagement',
                         component: () => import('@/pages/admin/content/CategoryManagement.vue'),
                         meta: {
-                            title: '分类管理 - 智能云图库',
+                            title: '分类管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -161,7 +179,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'TagsManagement',
                         component: () => import('@/pages/admin/content/TagsManagement.vue'),
                         meta: {
-                            title: '标签管理 - 智能云图库',
+                            title: '标签管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -171,7 +189,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'CommentsManagement',
                         component: () => import('@/pages/admin/content/CommentsManagement.vue'),
                         meta: {
-                            title: '评论管理 - 智能云图库',
+                            title: '评论管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -181,7 +199,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'IconManagement',
                         component: () => import('@/pages/admin/content/IconManagement.vue'),
                         meta: {
-                            title: '图标管理 - 智能云图库',
+                            title: '图标管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         }
@@ -191,7 +209,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'StorageManagement',
                         component: () => import('@/pages/admin/storage/StorageManagement.vue'),
                         meta: {
-                            title: '存储管理 - 智能云图库',
+                            title: '存储管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -201,7 +219,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'LoginLogManagement',
                         component: () => import('@/pages/admin/log/LoginLogManagement.vue'),
                         meta: {
-                            title: '登录日志管理 - 智能云图库',
+                            title: '登录日志管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -211,7 +229,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'OperationLogManagement',
                         component: () => import('@/pages/admin/log/OperationLogManagement.vue'),
                         meta: {
-                            title: '操作日志管理 - 智能云图库',
+                            title: '操作日志管理 - 星云图阁',
                             requiresAuth: true,
                             requiresAdmin: true
                         },
@@ -221,7 +239,7 @@ const routes: Array<RouteRecordRaw> = [
                         name: 'UserProfile',
                         component: () => import('@/pages/user/UserProfile.vue'),
                         meta: {
-                            title: '个人资料 - 智能云图库',
+                            title: '个人资料 - 星云图阁',
                             requiresAuth: false
                         },
                     }
@@ -239,7 +257,7 @@ const router = createRouter({
 // 路由守卫导航
 router.beforeEach(async (to, from, next) => {
     // 动态设置页面标题
-    document.title = to.meta.title as string || '智能云图库';
+    document.title = to.meta.title as string || '星云图阁';
 
     const userStore = useUserStore();
 
