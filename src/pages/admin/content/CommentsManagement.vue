@@ -1230,7 +1230,7 @@ function submitReply() {
       selectedComment.value.replies += 1;
     }
 
-    message.success('回复已发送');
+    message.success('回复成功');
     replyContent.value = '';
     loading.value = false;
   }, 500);

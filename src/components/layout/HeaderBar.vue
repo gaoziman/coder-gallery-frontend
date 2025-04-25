@@ -71,7 +71,7 @@
           上传图片
         </a-button>
         <a-button type="primary" :disabled="!userStore.isLoggedIn" @click="navigateToBatchCreatePicture">
-          <IconFont type="icon-piliangguanli"/>
+          <IconFont type="icon-B-shuliang" />
           批量创建图片
         </a-button>
 
@@ -471,7 +471,7 @@ onUnmounted(() => {
   position: fixed;
   top: 0;
   right: 0;
-  z-index: 999; /* 降低z-index，确保低于模态框遮罩层 */
+  z-index: 999;
   padding: 0;
   height: 64px;
   line-height: 64px;
@@ -482,7 +482,7 @@ onUnmounted(() => {
 }
 
 body.modal-open .header {
-  z-index: 900; /* 当模态框打开时进一步降低z-index */
+  z-index: 900;
 }
 
 /* 添加侧边栏折叠状态的样式 */
@@ -494,29 +494,29 @@ body.modal-open .header {
 /* 修改header-content样式 */
 .header-content {
   display: flex;
-  justify-content: space-between; /* 这确保子元素分布在两端 */
+  justify-content: space-between;
   align-items: center;
   height: 100%;
-  width: 100%; /* 确保宽度为100% */
-  padding: 0; /* 移除内边距，让内容延伸到边缘 */
+  width: 100%;
+  padding: 0;
 }
 
-/* 修改nav-links样式，保证它不会挤压右侧内容 */
+
 .nav-links {
   display: flex;
   height: 100%;
-  flex-shrink: 0; /* 防止被压缩 */
-  margin-left: 24px; /* 左侧留出空间 */
+  flex-shrink: 0;
+  margin-left: 0;
 }
 
-/* 修改user-actions样式，确保它始终靠右 */
+/*确保它始终靠右 */
 .user-actions {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding-right: 24px; /* 只保留右侧内边距 */
-  margin-left: auto; /* 这会将元素推到右侧 */
-  flex-shrink: 0; /* 防止被压缩 */
+  padding-right: 24px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .dropdown-menu {
@@ -655,8 +655,8 @@ body.modal-open .header {
 .login-button {
   height: 36px;
   border-radius: 8px;
-  background: #4F46E5; /* 改为实心按钮，与主题色一致 */
-  color: white; /* 白色文字 */
+  background: #4F46E5;
+  color: white;
   border: none;
   transition: all 0.3s ease;
   display: flex;
@@ -665,7 +665,7 @@ body.modal-open .header {
 }
 
 .login-button:hover {
-  background: #6366F1; /* 悬停时稍微变亮 */
+  background: #6366F1;
   transform: translateY(-2px);
   box-shadow: 0 6px 10px -2px rgba(79, 70, 229, 0.3);
 }
@@ -710,14 +710,14 @@ body.modal-open .header {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 4px 0;
-  min-width: 160px; /* 减小宽度 */
+  min-width: 160px;
   overflow: hidden;
 }
 
 .custom-menu-item {
   display: flex;
   align-items: center;
-  padding: 8px 16px; /* 减小内边距 */
+  padding: 8px 16px;
   color: #666;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -733,9 +733,9 @@ body.modal-open .header {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 16px; /* 减小图标固定宽度 */
-  font-size: 16px; /* 减小图标大小 */
-  margin-right: 12px; /* 保持适度的间距 */
+  min-width: 16px;
+  font-size: 16px;
+  margin-right: 12px;
 }
 
 .menu-text {
@@ -745,7 +745,7 @@ body.modal-open .header {
 .menu-divider {
   height: 1px;
   background-color: #f0f0f0;
-  margin: 4px 0; /* 减小分割线边距 */
+  margin: 4px 0;
 }
 
 @keyframes fadeIn {
@@ -844,7 +844,7 @@ body.modal-open .header {
 }
 
 
-/* 用户头像容器 - 精简版 */
+/* 用户头像容器 */
 .user-avatar-container {
   display: flex;
   align-items: center;
@@ -876,7 +876,7 @@ body.modal-open .header {
   text-overflow: ellipsis;
 }
 
-/* 下拉菜单 - 精简版 */
+/* 下拉菜单 */
 .user-dropdown-menu {
   background: white;
   border-radius: 8px;

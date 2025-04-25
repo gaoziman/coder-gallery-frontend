@@ -18,7 +18,7 @@
             <div class="logo-container">
               <cloud-outlined class="logo-icon"/>
             </div>
-            <h1 class="brand-name">智能云图库</h1>
+            <h1 class="brand-name">星云图阁</h1>
           </div>
 
           <!-- 品牌标语 -->

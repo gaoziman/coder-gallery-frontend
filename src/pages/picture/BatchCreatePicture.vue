@@ -26,7 +26,7 @@
           <div class="inspiration-container">
             <div class="inspiration-text">批量效率提示</div>
             <div class="inspiration-quote">"使用精准的关键词和合适的数量设置，可以提高图片采集的相关性和质量"</div>
-            <div class="inspiration-author">— 智能云图库</div>
+            <div class="inspiration-author">— 星云图阁</div>
           </div>
         </div>
       </div>

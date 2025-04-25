@@ -15,7 +15,7 @@
         <div class="logo-icon-wrapper">
           <cloud-outlined class="logo-icon"/>
         </div>
-        <h1 class="logo-title" v-if="!collapsed">智能云图库</h1>
+        <h1 class="logo-title" v-if="!collapsed">星云图阁</h1>
       </div>
     </div>
 
