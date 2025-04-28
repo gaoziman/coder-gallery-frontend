@@ -6,6 +6,8 @@ import * as fenleiguanli from "./fenleiguanli";
 import * as guanliyuanpinglunxiangguanjiekou from "./guanliyuanpinglunxiangguanjiekou";
 import * as denglurizhiguanli from "./denglurizhiguanli";
 import * as caozuorizhiguanli from "./caozuorizhiguanli";
+import * as tupianhoutaiguanlijiekou from "./tupianhoutaiguanlijiekou";
+import * as xitongweihuguanlijiekou from "./xitongweihuguanlijiekou";
 import * as biaoqianguanli from "./biaoqianguanli";
 import * as yonghuguanli from "./yonghuguanli";
 import * as biaoqianguanxiguanli from "./biaoqianguanxiguanli";
@@ -21,6 +23,8 @@ export default {
   guanliyuanpinglunxiangguanjiekou,
   denglurizhiguanli,
   caozuorizhiguanli,
+  tupianhoutaiguanlijiekou,
+  xitongweihuguanlijiekou,
   biaoqianguanli,
   yonghuguanli,
   biaoqianguanxiguanli,

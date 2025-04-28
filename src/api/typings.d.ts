@@ -128,62 +128,30 @@ declare namespace API {
   };
 
   type CategoryStatisticsVO = {
-    /** 激活状态的分类数量 */
-    activeCategories?: number;
-    /** 最近一月活跃分类数 */
-    activeLastMonthCategories?: number;
-    /** 最近一周活跃分类数 */
-    activeLastWeekCategories?: number;
-    /** 平均子分类数 */
-    averageChildrenCount?: number;
-    /** 平均每个分类的内容数 */
-    averageItemsPerCategory?: number;
-    /** 分类总增长率(与上月相比) */
-    categoryGrowthRate?: number;
-    /** 分类深度分布占比 */
-    depthDistributionPercentage?: Record<string, any>;
-    /** 禁用状态的分类数量 */
-    disabledCategories?: number;
     /** 空分类数量(不包含任何内容) */
     emptyCategoriesCount?: number;
-    /** 上月分类总数 */
-    lastMonthTotalCategories?: number;
-    /** 最少使用的分类ID */
-    leastContentsCategory?: number;
-    /** 最少使用的分类名称 */
-    leastContentsCategoryName?: string;
-    /** 最少使用的分类内容数 */
-    leastContentsCount?: number;
-    /** 各层级的分类数量分布 */
-    levelDistribution?: Record<string, any>;
-    /** 最大分类层级 */
-    maxCategoryLevel?: number;
-    /** 最多内容的分类ID */
-    mostContentsCategory?: number;
-    /** 最多内容的分类名称 */
-    mostContentsCategoryName?: string;
-    /** 最多内容的分类内容数 */
-    mostContentsCount?: number;
+    /** 空分类环比增长率 */
+    emptyCategoriesGrowthRate?: number;
+    /** 本月新增分类环比增长率 */
+    monthGrowthRate?: number;
     /** 本月新增分类数 */
     newCategoriesOfMonth?: number;
     /** 今日新增分类数 */
     newCategoriesOfToday?: number;
     /** 本周新增分类数 */
     newCategoriesOfWeek?: number;
-    /** 统计数据更新时间 */
-    statisticsUpdateTime?: string;
-    /** 今日分类增长率 */
-    todayCategoryGrowthRate?: number;
     /** 顶级分类数量 */
     topLevelCategories?: number;
-    /** 分类使用率排名(前10个) */
-    topUsedCategories?: Record<string, any>;
+    /** 顶级分类环比增长率 */
+    topLevelGrowthRate?: number;
     /** 分类总数 */
     totalCategories?: number;
-    /** 内容总数量 */
+    /** 使用分类的图片总数 */
     totalItems?: number;
-    /** 本周分类增长率 */
-    weeklyCategoryGrowthRate?: number;
+    /** 使用分类图片总数环比增长率 */
+    totalItemsGrowthRate?: number;
+    /** 本周新增分类环比增长率 */
+    weekGrowthRate?: number;
   };
 
   type CategoryTreeVO = {
@@ -406,6 +374,11 @@ declare namespace API {
   };
 
   type deleteOperationLogUsingDELETEParams = {
+    /** id */
+    id: number;
+  };
+
+  type deletePictureUsingDELETEParams = {
     /** id */
     id: number;
   };
@@ -734,6 +707,37 @@ declare namespace API {
     searchContent?: string;
     /** 操作状态 */
     status?: number;
+  };
+
+  type listPicturesByPageUsingGETParams = {
+    /** 分类ID */
+    categoryId?: number;
+    /** 创建时间结束 */
+    createTimeEnd?: string;
+    /** 创建时间起始 */
+    createTimeStart?: string;
+    /** 图片格式 */
+    format?: string;
+    /** 图片ID */
+    id?: number;
+    /** 图片名称 */
+    name?: string;
+    /** 原始文件名 */
+    originalName?: string;
+    /** 页码 */
+    pageNum?: number;
+    /** 每页大小 */
+    pageSize?: number;
+    /** 审核状态 */
+    reviewStatus?: number;
+    /** 排序字段 */
+    sortField?: string;
+    /** 排序方式(asc/desc) */
+    sortOrder?: string;
+    /** 标签ID列表 */
+    tagIds?: number[];
+    /** 上传者ID */
+    userId?: number;
   };
 
   type listTagByPageUsingGETParams = {
@@ -1120,6 +1124,42 @@ declare namespace API {
     tagIds: number[];
   };
 
+  type PictureReviewRequest = {
+    /** 图片ID */
+    pictureId?: number;
+    /** 图片ID列表(批量审核用) */
+    pictureIds?: number[];
+    /** 审核意见 */
+    reviewMessage?: string;
+    /** 审核状态(0-拒绝,1-通过) */
+    reviewStatus?: number;
+  };
+
+  type PictureStatisticsVO = {
+    /** 点赞量环比增长率 */
+    likeCountGrowthRate?: number;
+    /** 本月上传数量 */
+    monthUploadCount?: number;
+    /** 本月上传环比增长率 */
+    monthUploadGrowthRate?: number;
+    /** 待审核图片数量 */
+    pendingReviewCount?: number;
+    /** 今日上传数量 */
+    todayUploadCount?: number;
+    /** 图片总数 */
+    totalCount?: number;
+    /** 总点赞量 */
+    totalLikeCount?: number;
+    /** 总浏览量 */
+    totalViewCount?: number;
+    /** 浏览量环比增长率 */
+    viewCountGrowthRate?: number;
+    /** 本周上传数量 */
+    weekUploadCount?: number;
+    /** 本周上传环比增长率 */
+    weekUploadGrowthRate?: number;
+  };
+
   type PictureUploadByBatchRequest = {
     /** 分类ID */
     categoryId?: number;
@@ -1184,9 +1224,9 @@ declare namespace API {
     /** 审核时间 */
     reviewTime?: string;
     /** 审核人 id */
-    reviewerId?: number;
-    /** 与源图片的相似度 */
-    similarity?: number;
+    reviewUserId?: number;
+    /** 审核人名称 */
+    reviewerUserName?: string;
     /** 图片大小 */
     size?: number;
     /** 标签颜色 */
@@ -1259,6 +1299,11 @@ declare namespace API {
     thumbnail?: string;
     /** 内容标题 */
     title?: string;
+  };
+
+  type repairTagCountUsingPOSTParams = {
+    /** tagId */
+    tagId: number;
   };
 
   type ResultBoolean_ = {
@@ -1435,6 +1480,12 @@ declare namespace API {
     message?: string;
   };
 
+  type ResultPictureStatisticsVO_ = {
+    code?: number;
+    data?: PictureStatisticsVO;
+    message?: string;
+  };
+
   type ResultPictureVO_ = {
     code?: number;
     data?: PictureVO;
@@ -1583,6 +1634,10 @@ declare namespace API {
     inactiveCount?: number;
     /** 本月新增标签数 */
     monthCount?: number;
+    /** 本月新增标签环比增长率 */
+    monthGrowthRate?: number;
+    /** 引用总数环比增长率 */
+    referenceCountGrowthRate?: number;
     /** 今日创建标签数 */
     todayCount?: number;
     /** 标签总数 */
@@ -1591,8 +1646,12 @@ declare namespace API {
     totalReferenceCount?: number;
     /** 未使用的标签数 */
     unusedTag?: number;
+    /** 未使用标签环比增长率 */
+    unusedTagGrowthRate?: number;
     /** 本周新增标签数 */
     weekCount?: number;
+    /** 本周新增标签环比增长率 */
+    weekGrowthRate?: number;
   };
 
   type TagStatusUpdateRequest = {
@@ -1643,6 +1702,8 @@ declare namespace API {
     sortOrder?: number;
     /** 状态(active-已启用,inactive-未启用) */
     status?: string;
+    /** 更新时间 */
+    updateTime?: string;
   };
 
   type unbanUserUsingPOSTParams = {
